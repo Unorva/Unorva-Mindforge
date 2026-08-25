@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: mindforge-server
+
+server:
+  port: 8080
