@@ -1,4 +1,4 @@
-package com.unorva.mindforge.module.system.login.domain.param;
+package com.unorva.mindforge.module.system.auth.domain.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;

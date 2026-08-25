@@ -53,6 +53,10 @@ public class Result<T> {
         return new Result<>(true, ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getMessage(), data);
     }
 
+    public static <T> Result<T> success() {
+        return new Result<>(true, ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getMessage(), null);
+    }
+
     public static <T> Result<T> error(Integer errorCode, String errorMsg) {
         return new Result<>(false, errorCode, errorMsg, null);
     }
