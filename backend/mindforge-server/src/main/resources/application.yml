@@ -1,6 +1,9 @@
 spring:
   application:
     name: mindforge-server
+  profiles:
+    # 本地直接启动时加载 application-dev.yml；生产环境通过 SPRING_PROFILES_ACTIVE=prod 覆盖。
+    default: dev
 
 server:
   port: 8080

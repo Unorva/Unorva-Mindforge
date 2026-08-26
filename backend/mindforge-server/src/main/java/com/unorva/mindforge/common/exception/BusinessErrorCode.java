@@ -15,7 +15,7 @@ public enum BusinessErrorCode implements ErrorCode {
 
     ;
 
-    private final String code;
+    private final Integer code;
 
     private final String message;
 }

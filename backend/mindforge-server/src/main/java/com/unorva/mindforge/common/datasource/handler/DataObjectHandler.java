@@ -16,8 +16,8 @@ public class DataObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         LocalDateTime now = LocalDateTime.now();
-        strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
-        strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
+        strictInsertFill(metaObject, "createdTime", LocalDateTime.class, now);
+        strictInsertFill(metaObject, "updatedTime", LocalDateTime.class, now);
         strictInsertFill(metaObject, "deleted", Integer.class, 0);
         strictInsertFill(metaObject, "version", Integer.class, 0);
     }

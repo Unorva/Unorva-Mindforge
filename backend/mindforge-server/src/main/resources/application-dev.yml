@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/mind_forge?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: B@n@n@_La15_YSJ
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      validation-timeout: 5000
+
+mybatis-plus:
+  configuration:
+    # 本地调试时输出执行的 SQL；生产配置不会启用。
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
