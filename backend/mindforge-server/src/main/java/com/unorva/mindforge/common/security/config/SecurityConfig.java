@@ -6,10 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -48,8 +50,9 @@ public class SecurityConfig {
     }
 
     /**
-     * 密码加密器
-     * @return 密码加密器对象
+     * 密码编码器
+     *
+     * @return 密码编码器对象
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -60,10 +63,23 @@ public class SecurityConfig {
     }
 
     /**
-     * Spring Security 认证管理器
+     * 用户名密码认证提供者。
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
-        return configuration.getAuthenticationManager();
+    public DaoAuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        // 1. 创建认证提供者
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        // 2. 设置密码编码器
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
+
+    /**
+     * 认证管理器。它负责把认证请求分派给能够处理该请求的 AuthenticationProvider。
+     * 将来增加短信登录、Google 登录等方式时，可以继续添加对应 Provider，而不修改 AuthService 的调用方式。
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(DaoAuthenticationProvider daoAuthenticationProvider) {
+        return new ProviderManager(daoAuthenticationProvider);
     }
 }

@@ -64,12 +64,14 @@ public class AuthController {
      * @param request Http请求
      */
     @PostMapping("/logout")
-    public void logout(HttpServletRequest request) {
+    @Operation(summary = "退出登录", description = "使当前 Bearer Token 立即失效。")
+    public Result<Void> logout(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return;
+            return Result.success();
         }
         String token = authorization.substring(7);
         tokenService.deleteToken(token);
+        return Result.success();
     }
 }

@@ -9,6 +9,7 @@ import com.unorva.mindforge.module.system.auth.domain.param.LoginParam;
 import com.unorva.mindforge.module.system.auth.domain.param.RegisterParam;
 import com.unorva.mindforge.module.system.auth.domain.vo.LoginVO;
 import com.unorva.mindforge.module.system.auth.exception.AuthException;
+import org.springframework.security.core.AuthenticationException;
 import com.unorva.mindforge.module.system.user.domain.entity.UserEntity;
 import com.unorva.mindforge.module.system.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,12 @@ public class AuthService {
         // 1. 创建未认证的 Authentication
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginParam.email(), loginParam.password());
         // 2. 交给 Spring Security 执行认证
-        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(authenticationToken);
+        } catch (AuthenticationException exception) {
+            throw new BusinessException(AuthException.EMAIL_OR_PASSWORD_ERROR);
+        }
         // 3. 获取认证成功后的登录用户
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         // 4. 检查是否需要记住登录状态 原因 防止 Boolean 值为 null 时的异常

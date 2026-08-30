@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '../src/css/globals.css';
 import App from './App.tsx';
 import Spinner from './views/spinner/Spinner.tsx';
-
+import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './context/shadcntheme/ThemeContext.tsx';
 
 async function deferRender() {
@@ -19,6 +19,7 @@ deferRender().then(() => {
       <Suspense fallback={<Spinner />}>
         <App />
       </Suspense>
+      <Toaster position="top-center" richColors closeButton />
     </ThemeProvider>,
   );
 });

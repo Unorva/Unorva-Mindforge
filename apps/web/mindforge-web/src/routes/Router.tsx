@@ -3,6 +3,7 @@
 import { lazy } from 'react';
 import { Navigate, createBrowserRouter } from 'react-router';
 import Loadable from '../layouts/full/shared/loadable/Loadable';
+import RequireAuth from './RequireAuth';
 
 /* ***Layouts**** */
 const FullLayout = Loadable(lazy(() => import('../layouts/full/FullLayout')));
@@ -49,32 +50,29 @@ const Maintainance = Loadable(lazy(() => import('../views/auth/maintenance')));
 
 const Router = [
   {
-    path: '/',
-    element: <FullLayout />,
+    element: <RequireAuth />,
     children: [
-      { path: '/', element: <ModernDashboard /> },
-
-      { path: '/dashboards/modern', element: <ModernDashboard /> },
-
-      { path: '/apps/blog/post', element: <Blog /> },
-      { path: '/apps/blog/detail/:id', element: <BlogDetail /> },
-      { path: '/apps/blog/create', element: <BlogAdd /> },
-      { path: '/apps/blog/edit', element: <BlogEdit /> },
-      { path: '/apps/blog/manage-blog', element: <BlogTable /> },
-
-      { path: '/apps/notes', element: <Notes /> },
-
-      { path: '/apps/tickets', element: <Tickets /> },
-      { path: '/apps/tickets/create', element: <TicketCreate /> },
-
-      { path: '/pages/tables', element: <TablesPage /> },
-      { path: '/pages/form', element: <FormPage /> },
-      { path: '/pages/user-profile', element: <UserProfilePage /> },
-
-      { path: '/icons/iconify', element: <SolarIcon /> },
-
-    
-      { path: '*', element: <Navigate to="/auth/404" /> },
+      {
+        path: '/',
+        element: <FullLayout />,
+        children: [
+          { index: true, element: <ModernDashboard /> },
+          { path: 'dashboards/modern', element: <ModernDashboard /> },
+          { path: 'apps/blog/post', element: <Blog /> },
+          { path: 'apps/blog/detail/:id', element: <BlogDetail /> },
+          { path: 'apps/blog/create', element: <BlogAdd /> },
+          { path: 'apps/blog/edit', element: <BlogEdit /> },
+          { path: 'apps/blog/manage-blog', element: <BlogTable /> },
+          { path: 'apps/notes', element: <Notes /> },
+          { path: 'apps/tickets', element: <Tickets /> },
+          { path: 'apps/tickets/create', element: <TicketCreate /> },
+          { path: 'pages/tables', element: <TablesPage /> },
+          { path: 'pages/form', element: <FormPage /> },
+          { path: 'pages/user-profile', element: <UserProfilePage /> },
+          { path: 'icons/iconify', element: <SolarIcon /> },
+          { path: '*', element: <Navigate to="/auth/404" /> },
+        ],
+      },
     ],
   },
   {
@@ -82,11 +80,8 @@ const Router = [
     element: <BlankLayout />,
     children: [
       { path: '/auth/auth2/login', element: <Login2 /> },
-
       { path: '/auth/auth2/register', element: <Register2 /> },
-
       { path: '/auth/auth2/forgot-password', element: <ForgotPassword2 /> },
-
       { path: '/auth/auth2/two-steps', element: <TwoSteps2 /> },
       { path: '/auth/maintenance', element: <Maintainance /> },
       { path: '404', element: <Error /> },
