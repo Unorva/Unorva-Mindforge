@@ -1,5 +1,6 @@
 package com.unorva.mindforge.module.system.auth.controller;
 
+import com.unorva.mindforge.common.security.service.TokenService;
 import com.unorva.mindforge.common.web.vo.Result;
 import com.unorva.mindforge.module.system.auth.domain.param.LoginParam;
 import com.unorva.mindforge.module.system.auth.domain.param.RegisterParam;
@@ -7,6 +8,7 @@ import com.unorva.mindforge.module.system.auth.domain.vo.LoginVO;
 import com.unorva.mindforge.module.system.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +32,11 @@ public class AuthController {
     private final AuthService authService;
 
     /**
+     * 登录令牌服务
+     */
+    private final TokenService tokenService;
+
+    /**
      * 用户注册
      * @param registerParam 注册参数
      * @return 注册结果
@@ -50,5 +57,19 @@ public class AuthController {
     @PostMapping("/login")
     public Result<LoginVO> login(@Valid @RequestBody LoginParam loginParam){
         return Result.success(authService.login(loginParam));
+    }
+
+    /**
+     * 用户退出登录
+     * @param request Http请求
+     */
+    @PostMapping("/logout")
+    public void logout(HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return;
+        }
+        String token = authorization.substring(7);
+        tokenService.deleteToken(token);
     }
 }

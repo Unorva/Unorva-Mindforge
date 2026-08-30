@@ -10,7 +10,12 @@ spring:
       maximum-pool-size: 20
       connection-timeout: 30000
       validation-timeout: 5000
-
+  data:
+    redis:
+      port: 6379
+      host: ${REDIS_HOST}
+      password: ${REDIS_PASSWORD}
+      database: 0
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

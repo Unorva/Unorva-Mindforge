@@ -9,7 +9,12 @@ spring:
       maximum-pool-size: 10
       connection-timeout: 30000
       validation-timeout: 5000
-
+  data:
+    redis:
+      port: 6379
+      host: localhost
+      password:
+      database: 0
 mybatis-plus:
   configuration:
     # 本地调试时输出执行的 SQL；生产配置不会启用。
