@@ -24,7 +24,17 @@ public enum RepositoryErrorCode implements ErrorCode {
     /**
      * 数据库更新失败
      */
-    UPDATE_FAILED(10002, "数据库更新失败");
+    UPDATE_FAILED(10002, "数据库更新失败"),
+
+    /**
+     * 数据库插入或更新失败
+     */
+    INSERT_OR_UPDATE_FAILED(1003, "数据库插入或更新失败"),
+
+    /**
+     * 数据库删除失败
+     */
+    DELETE_FAILED(1004, "数据库删除失败");
 
     private final Integer code;
 
