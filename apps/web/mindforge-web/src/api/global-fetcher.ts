@@ -1,60 +1,109 @@
-// SWR fetcher function
+/**
+ * GET 请求
+ */
+const getFetcher = async (
+  url: string,
+  params?: Record<string, string | number | boolean | undefined>,
+) => {
+  if (params) {
+    const searchParams = new URLSearchParams();
 
-const getFetcher = (url: string | Request | URL) =>
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, String(value));
+      }
+    });
 
-  fetch(url).then((res) => {
-    if (!res.ok) {
-      throw new Error('Failed to fetch the data');
+    const queryString = searchParams.toString();
+
+    if (queryString) {
+      url += `?${queryString}`;
     }
-    return res.json();
-  });
+  }
 
-const postFetcher = (url: string, arg: any) =>
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error('Failed to fetch the data');
+  }
+  return await res.json();
+};
+
+/**
+ * POST 请求
+ */
+const postFetcher = (url: string, arg?: unknown) =>
   fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(arg),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
     if (!res.ok) {
       throw new Error('Failed to post data');
     }
+
     return res.json();
   });
 
-const putFetcher = (url: string, arg: any) =>
+/**
+ * PUT 请求
+ */
+const putFetcher = (url: string, arg?: unknown) =>
   fetch(url, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(arg),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
     if (!res.ok) {
-      throw new Error('Failed to updated data');
+      throw new Error('Failed to update data');
     }
+
     return res.json();
   });
 
-const patchFetcher = (url: string, arg: any) =>
+/**
+ * PATCH 请求
+ */
+const patchFetcher = (url: string, arg?: unknown) =>
   fetch(url, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(arg),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
     if (!res.ok) {
-      throw new Error('Failed to updated data');
+      throw new Error('Failed to update data');
     }
+
     return res.json();
   });
 
-const deleteFetcher = (url: string, arg: any) =>
+/**
+ * DELETE 请求
+ */
+const deleteFetcher = (url: string, arg?: unknown) =>
   fetch(url, {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(arg),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
     if (!res.ok) {
       throw new Error('Failed to delete data');
     }
+
     return res.json();
   });
 
-export { getFetcher, postFetcher, putFetcher, deleteFetcher, patchFetcher };
+export {
+  getFetcher,
+  postFetcher,
+  putFetcher,
+  patchFetcher,
+  deleteFetcher,
+};

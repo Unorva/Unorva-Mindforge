@@ -55,6 +55,7 @@ import {
   Table,
   Tag,
   Ticket,
+  ClipboardCheck,
   Unlink,
   UserPlus, Smile, House, NotebookText, Component,
   Table2,
@@ -120,6 +121,12 @@ const SidebarContent: MenuItem[] = [
         name: "Notes",
         icon: NotebookText,
         url: "/apps/notes",
+      },
+      {
+        id: uniqueId(),
+        name: "每日复盘",
+        icon: ClipboardCheck,
+        url: "/apps/daily-review",
       },
       {
         name: "Blogs",
