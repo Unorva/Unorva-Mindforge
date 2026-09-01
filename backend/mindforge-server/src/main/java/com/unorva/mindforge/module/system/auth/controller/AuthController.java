@@ -49,7 +49,7 @@ public class AuthController {
     }
 
     /**
-     * 用户登录
+     * 用户登录c
      * @param loginParam 登录参数
      * @return 登录返回信息
      */

@@ -1,0 +1,8 @@
+# pnpm local package store
+.pnpm-store/
+
+# JavaScript dependencies in all nested projects
+node_modules/
+
+# JetBrains local IDE settings
+.idea/

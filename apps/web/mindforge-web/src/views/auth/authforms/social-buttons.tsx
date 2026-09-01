@@ -26,7 +26,7 @@ const SocialButtons: React.FC<MyAppProps> = () => {
             height={16}
             className="w-4 h-4"
           />
-          Sign in with Google
+          用 谷歌 登录
         </Button>
         <Button
           variant="outline"
@@ -39,13 +39,13 @@ const SocialButtons: React.FC<MyAppProps> = () => {
             height={16}
             className="w-4 h-4 dark:invert"
           />
-          Sign in with Github
+          用 Github 登录
         </Button>
       </div>
       {/* Divider */}
 
       <div className="w-full flex items-center gap-3 text-sm font-normal text-muted-foreground before:content-[''] before:h-px before:flex-1 before:bg-border after:content-[''] after:h-px after:flex-1 after:bg-border">
-        or sign in with
+        或者用
       </div>
     </>
   );

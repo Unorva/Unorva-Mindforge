@@ -15,6 +15,13 @@ spring:
       host: localhost
       password:
       database: 0
+  oss:
+    endpoint: http://127.0.0.1:9000 # 对象存储端点
+    bucket: mindforge # 存储桶名称
+    access-key: 98nSpNAKu9BOEd2VpkNy # 访问密钥
+    secret-key: WjMQI4vnEvGCZt1UNqs1WUZUxLuHSXBB2Vd241IY # 密钥
+    region: us-east-1 # 区域
+    path-style: true # 开启路径样式访问，避免路径中包含特殊字符导致的访问问题。
 mybatis-plus:
   configuration:
     # 本地调试时输出执行的 SQL；生产配置不会启用。

@@ -75,7 +75,7 @@ const BoxedLogin = () => {
                   htmlFor="email"
                   className="text-sm font-normal text-muted-foreground"
                 >
-                  Email*
+                  邮箱*
                 </Label>
                 <Input
                   id="email"
@@ -93,7 +93,7 @@ const BoxedLogin = () => {
                   htmlFor="password"
                   className="text-sm font-normal text-muted-foreground"
                 >
-                  Password*
+                  密码*
                 </Label>
                 <Input
                   id="password"
@@ -118,14 +118,14 @@ const BoxedLogin = () => {
                     htmlFor="remember"
                     className="text-muted-foreground font-normal cursor-pointer leading-0"
                   >
-                    Remember this device
+                    记住这个设备
                   </Label>
                 </div>
                 <Link
                   to="/auth/auth2/forgot-password"
                   className="text-sm font-medium hover:underline underline-offset-4 transition-all"
                 >
-                  Forgot Password?
+                  忘记密码?
                 </Link>
               </div>
             </div>
@@ -140,7 +140,7 @@ const BoxedLogin = () => {
           </form>
           {/* Footer */}
           <div className="flex gap-2 text-base font-medium mt-4 items-center justify-center">
-            <p className="text-muted-foreground">New to ShadcnDashboard ?</p>
+            <p className="text-muted-foreground">还没有账号 ?</p>
             <Link
               to={'/auth/auth2/register'}
               className="text-primary/80 hover:text-primary text-sm font-medium"

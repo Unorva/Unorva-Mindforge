@@ -1,14 +1,62 @@
-import { Card } from "@/components/ui/card";
-
-
-import { Link } from "react-router";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import FullLogo from "src/layouts/full/shared/logo/FullLogo";
-import SocialButtons from "../../authforms/social-buttons";
+import { Card } from '@/components/ui/card';
+import { Link, useNavigate } from 'react-router';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import FullLogo from 'src/layouts/full/shared/logo/FullLogo';
+import SocialButtons from '../../authforms/social-buttons';
+import { useState, type SubmitEvent } from 'react';
+import { register } from '@/api/system/auth/auth';
+import { toast } from 'sonner';
 
 const BoxedRegister = () => {
+  const navigate = useNavigate();
+  // 表单输入状态；重复密码仅用于页面校验，不会提交给后端。
+  const [nickname, setNickname] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // 请求进行中禁用提交按钮，避免用户重复注册。
+  const [submitting, setSubmitting] = useState(false);
+
+  /** 提交注册表单，并在成功后引导用户登录。 */
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    // 阻止浏览器默认提交，以免页面刷新。
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('两次输入的密码不一致。');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const result = await register({
+        nickname: nickname.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      // HTTP 成功不代表业务成功，仍需检查统一响应体的 success。
+      if (!result.success) {
+        toast.error(result.message || '注册失败，请稍后重试。');
+        return;
+      }
+
+      toast.success('注册成功，请登录。');
+      // 注册后不保留注册页的历史记录，避免返回后重复提交。
+      navigate('/auth/auth2/login', { replace: true });
+    } catch {
+      toast.error('注册请求失败，请检查网络或稍后重试。');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <div className="relative overflow-hidden h-screen bg-muted">
@@ -20,20 +68,23 @@ const BoxedRegister = () => {
 
             <SocialButtons />
 
-            <form className="space-y-6 w-full">
+            <form className="space-y-6 w-full" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label
-                    htmlFor="name"
+                    htmlFor="nickname"
                     className="text-sm font-normal text-muted-foreground"
                   >
-                    Name*
+                    用户名*
                   </Label>
                   <Input
-                    id="name"
+                    id="nickname"
+                    name="nickname"
                     type="text"
-                    placeholder="Enter your name"
-
+                    placeholder="输入你的用户名"
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
+                    autoComplete="nickname"
                     required
                   />
                 </div>
@@ -42,13 +93,16 @@ const BoxedRegister = () => {
                     htmlFor="email"
                     className="text-sm font-normal text-muted-foreground"
                   >
-                    Email*
+                    邮箱*
                   </Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
-                    placeholder="Enter Your Email"
-
+                    placeholder="输入你的邮箱"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -57,31 +111,54 @@ const BoxedRegister = () => {
                     htmlFor="password"
                     className="text-sm font-normal text-muted-foreground"
                   >
-                    Password*
+                    密码*
                   </Label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
-                    placeholder="Enter your password"
-
+                    placeholder="输入你的密码"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-normal text-muted-foreground"
+                  >
+                    重复密码*
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="再次输入密码"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
                     required
                   />
                 </div>
               </div>
               <Button
+                type="submit"
                 size="lg"
                 className="w-full rounded-lg"
+                disabled={submitting}
               >
-                Sign in
+                {submitting ? '注册中...' : '注册'}
               </Button>
             </form>
             <div className="flex gap-2 text-base text-muted-foreground font-medium mt-4 items-center justify-center">
-              <p>Already have an Account?</p>
+              <p>已有账号?</p>
               <Link
-                to={"/auth/auth2/login"}
+                to={'/auth/auth2/login'}
                 className="text-primary/80 text-base hover:text-primary font-medium"
               >
-                Sign in
+                去登录
               </Link>
             </div>
           </Card>

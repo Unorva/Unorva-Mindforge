@@ -16,6 +16,14 @@ spring:
       host: ${REDIS_HOST}
       password: ${REDIS_PASSWORD}
       database: 0
+  # 对象存储凭据仅由部署环境注入，不写入配置文件或代码仓库。
+  oss:
+    endpoint: ${RUSTFS_ENDPOINT}
+    bucket: ${RUSTFS_BUCKET:mindforge}
+    access-key: ${RUSTFS_ACCESS_KEY}
+    secret-key: ${RUSTFS_SECRET_KEY}
+    region: ${RUSTFS_REGION:us-east-1}
+    path-style: ${RUSTFS_PATH_STYLE:true}
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
