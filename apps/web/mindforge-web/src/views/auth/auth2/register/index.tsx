@@ -7,7 +7,7 @@ import FullLogo from 'src/layouts/full/shared/logo/FullLogo';
 import SocialButtons from '../../authforms/social-buttons';
 import { useState, type SubmitEvent } from 'react';
 import { register } from '@/api/system/auth/auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const BoxedRegister = () => {
   const navigate = useNavigate();
@@ -29,7 +29,12 @@ const BoxedRegister = () => {
     }
 
     if (password !== confirmPassword) {
-      toast.error('两次输入的密码不一致。');
+      toast.add({
+        description: '两次输入的密码不一致。',
+        priority: 'high',
+        title: '注册失败',
+        type: 'error',
+      });
       return;
     }
 
@@ -43,15 +48,29 @@ const BoxedRegister = () => {
 
       // HTTP 成功不代表业务成功，仍需检查统一响应体的 success。
       if (!result.success) {
-        toast.error(result.message || '注册失败，请稍后重试。');
+        toast.add({
+          description: result.message || '注册失败，请稍后重试。',
+          priority: 'high',
+          title: '注册失败',
+          type: 'error',
+        });
         return;
       }
 
-      toast.success('注册成功，请登录。');
+      toast.add({
+        description: '注册成功，请登录。',
+        title: '操作成功',
+        type: 'success',
+      });
       // 注册后不保留注册页的历史记录，避免返回后重复提交。
       navigate('/auth/auth2/login', { replace: true });
     } catch {
-      toast.error('注册请求失败，请检查网络或稍后重试。');
+      toast.add({
+        description: '注册请求失败，请检查网络或稍后重试。',
+        priority: 'high',
+        title: '注册失败',
+        type: 'error',
+      });
     } finally {
       setSubmitting(false);
     }

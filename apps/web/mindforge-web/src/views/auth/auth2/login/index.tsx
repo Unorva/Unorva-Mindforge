@@ -9,7 +9,7 @@ import { useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { login } from '@/api/system/auth/auth';
 import { saveAccessToken } from '@/utils/auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const BoxedLogin = () => {
   const navigate = useNavigate();
@@ -41,19 +41,33 @@ const BoxedLogin = () => {
       });
       // 后端虽可能返回 HTTP 200，但业务仍可能失败，因此继续检查 success
       if (!result.success || !result.data?.token) {
-        toast.error(result.message || '登录失败，请检查邮箱和密码。');
+        toast.add({
+          description: result.message || '登录失败，请检查邮箱和密码。',
+          priority: 'high',
+          title: '登录失败',
+          type: 'error',
+        });
         return;
       }
       // 保存后端签发的 Bearer Token
       saveAccessToken(result.data.token, remember);
-      toast.success('登录成功');
+      toast.add({
+        description: '登录成功',
+        title: '操作成功',
+        type: 'success',
+      });
       // 获取路由守卫记录的原访问地址；没有则进入首页
       const from = (location.state as { from?: string } | null)?.from ?? '/';
       // replace 避免用户按返回键回到登录页
       navigate(from, { replace: true });
     } catch {
       // 例如网络不可用、后端返回非 2xx 状态码
-      toast.error('登录请求失败，请检查网络或稍后重试。');
+      toast.add({
+        description: '登录请求失败，请检查网络或稍后重试。',
+        priority: 'high',
+        title: '登录失败',
+        type: 'error',
+      });
     } finally {
       setSubmitting(false);
     }

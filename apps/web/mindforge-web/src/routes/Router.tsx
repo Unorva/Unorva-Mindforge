@@ -25,6 +25,7 @@ const BlogTable = Loadable(lazy(() => import('../views/apps/blog/manage-blog')))
 
 const Notes = Loadable(lazy(() => import('../views/apps/notes')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
+const Test = Loadable(lazy(() => import('../views/apps/test')));
 
 const Tickets = Loadable(lazy(() => import('../views/apps/tickets')));
 const TicketCreate = Loadable(lazy(() => import('../views/apps/tickets/create')));
@@ -72,6 +73,7 @@ const Router = [
           { path: 'pages/form', element: <FormPage /> },
           { path: 'pages/user-profile', element: <UserProfilePage /> },
           { path: 'icons/iconify', element: <SolarIcon /> },
+          { path: 'apps/test', element: <Test /> },
           { path: '*', element: <Navigate to="/auth/404" /> },
         ],
       },

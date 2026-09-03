@@ -19,7 +19,7 @@ import { Link, useNavigate } from "react-router";
 import avatar from '@/assets/images/profile/avtar.webp';
 import Buynow from '@/assets/images/backgrounds/sidebarbuynow.svg';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { logout } from '@/api/system/auth/auth';
 import { clearAccessToken } from '@/utils/auth';
 
@@ -39,13 +39,27 @@ export default function ProfileSheet() {
       setLoggingOut(true);
       const result = await logout();
       if (!result.success) {
-        toast.error(result.message || '退出登录失败，已清除本地登录状态。');
+        toast.add({
+          description: result.message || '退出登录失败，已清除本地登录状态。',
+          priority: 'high',
+          title: '退出登录失败',
+          type: 'error',
+        });
       } else {
-        toast.success('已退出登录');
+        toast.add({
+          description: '已退出登录',
+          title: '操作成功',
+          type: 'success',
+        });
       }
     } catch {
       // 网络异常时仍应退出本机，避免令牌继续保留在浏览器中。
-      toast.error('退出登录请求失败，已清除本地登录状态。');
+      toast.add({
+        description: '退出登录请求失败，已清除本地登录状态。',
+        priority: 'high',
+        title: '退出登录失败',
+        type: 'error',
+      });
     } finally {
       clearAccessToken();
       navigate('/auth/auth2/login', { replace: true });

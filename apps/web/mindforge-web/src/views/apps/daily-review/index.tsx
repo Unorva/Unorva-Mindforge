@@ -9,10 +9,20 @@ import {
   updateDailyReview,
 } from '@/api/daily-review/daily-review'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -329,9 +339,34 @@ export default function DailyReviewPage() {
             />
           </CardContent>
         </Card>
-        <Button className="w-full" onClick={() => setIsSummaryDialogOpen(true)} type="button" variant="outline">
-          <CalendarRange />AI 总结
-        </Button>
+        <AlertDialog onOpenChange={setIsSummaryDialogOpen} open={isSummaryDialogOpen}>
+          <AlertDialogTrigger
+            render={<Button className="w-full" type="button" variant="outline" />}
+          >
+            <CalendarRange />AI 总结
+          </AlertDialogTrigger>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle>AI 总结</AlertDialogTitle>
+              <AlertDialogDescription>选择需要汇总的每日复盘日期区间。</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex justify-center rounded-lg border py-2">
+              <Calendar
+                locale={zhCN}
+                mode="range"
+                onSelect={setSummaryRange}
+                selected={summaryRange}
+              />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">{formatSummaryRange(summaryRange)}</p>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction disabled={!summaryRange?.from || !summaryRange.to} onClick={startSummary} type="button">
+                <Sparkles />开始 AI 总结
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </aside>
 
       <main>
@@ -355,9 +390,22 @@ export default function DailyReviewPage() {
                 </div>
               ) : hasReview ? (
                 <div className="flex items-center gap-2">
-                  <Button disabled={isLoading} onClick={() => setDevelopmentFeature('AI 润色')} type="button" variant="outline">
-                    <Sparkles />AI 润色
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={<Button disabled={isLoading} type="button" variant="outline" />}
+                    >
+                      <Sparkles />AI 润色
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>AI 润色</AlertDialogTitle>
+                        <AlertDialogDescription>功能正在开发中，敬请期待。</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel variant="default">我知道了</AlertDialogCancel>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <Button disabled={isLoading} onClick={beginEditing} type="button"><Pencil />编辑</Button>
                 </div>
               ) : null}
@@ -394,40 +442,17 @@ export default function DailyReviewPage() {
         </Card>
       </main>
 
-      <Dialog onOpenChange={setIsSummaryDialogOpen} open={isSummaryDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>AI 总结</DialogTitle>
-            <DialogDescription>选择需要汇总的每日复盘日期区间。</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center rounded-lg border py-2">
-            <Calendar
-              locale={zhCN}
-              mode="range"
-              onSelect={setSummaryRange}
-              selected={summaryRange}
-            />
-          </div>
-          <p className="text-center text-sm text-muted-foreground">{formatSummaryRange(summaryRange)}</p>
-          <DialogFooter>
-            <Button disabled={!summaryRange?.from || !summaryRange.to} onClick={startSummary} type="button">
-              <Sparkles />开始 AI 总结
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{developmentFeature}</DialogTitle>
-            <DialogDescription>功能正在开发中，敬请期待。</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setDevelopmentFeature(null)} type="button">我知道了</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{developmentFeature}</AlertDialogTitle>
+            <AlertDialogDescription>功能正在开发中，敬请期待。</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel variant="default">我知道了</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
