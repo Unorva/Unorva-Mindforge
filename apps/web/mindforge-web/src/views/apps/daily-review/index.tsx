@@ -170,7 +170,7 @@ function MarkdownViewer({ content }: { content: string }) {
   }
 
   return (
-    <article className="prose prose-sm max-w-none px-1 py-2 dark:prose-invert">
+    <article className="typeset typeset-mindforge max-w-none px-1 py-2">
       {blocks}
     </article>
   )
