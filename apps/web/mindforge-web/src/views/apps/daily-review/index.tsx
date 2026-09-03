@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { type DateRange } from 'react-day-picker'
 import { zhCN } from 'react-day-picker/locale'
-import { CalendarRange, FilePenLine, LoaderCircle, Pencil, Save, Sparkles, X } from 'lucide-react'
+import { Bold, CalendarRange, Code, Code2, Eye, FilePenLine, Italic, Link, List, LoaderCircle, Quote, Save, Sparkles } from 'lucide-react'
 
 import {
   getDailyReview,
   getDailyReviewCalendar,
   updateDailyReview,
 } from '@/api/daily-review/daily-review'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +22,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 
 function dateKey(date: Date) {
@@ -41,27 +48,123 @@ function hasReviewContent(content: string) {
   return Boolean(content.trim())
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback
-}
-
 function formatSummaryRange(range: DateRange | undefined) {
   if (!range?.from) return '请选择开始日期和结束日期'
   const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' })
   return range.to ? `${formatter.format(range.from)} 至 ${formatter.format(range.to)}` : `${formatter.format(range.from)} 至 …`
 }
 
-function MarkdownEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
+/** 计算 textarea 选区末尾的视口坐标，使浮动菜单跟随用户正在编辑的位置。 */
+function getSelectionAnchor(textarea: HTMLTextAreaElement, selectionEnd: number) {
+  const styles = window.getComputedStyle(textarea)
+  const mirror = document.createElement('div')
+  const marker = document.createElement('span')
+  const copiedStyles = [
+    'boxSizing', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing',
+    'lineHeight', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+  ] as const
+
+  copiedStyles.forEach((property) => {
+    mirror.style[property] = styles[property]
+  })
+  mirror.style.position = 'fixed'
+  mirror.style.top = '0'
+  mirror.style.left = '-9999px'
+  mirror.style.width = `${textarea.offsetWidth}px`
+  mirror.style.visibility = 'hidden'
+  mirror.style.whiteSpace = 'pre-wrap'
+  mirror.style.overflowWrap = 'break-word'
+  mirror.style.wordBreak = 'break-word'
+
+  mirror.textContent = textarea.value.slice(0, selectionEnd)
+  marker.textContent = '\u200b'
+  mirror.appendChild(marker)
+  document.body.appendChild(mirror)
+
+  const textareaRect = textarea.getBoundingClientRect()
+  const anchor = {
+    left: textareaRect.left + marker.offsetLeft - textarea.scrollLeft,
+    top: textareaRect.top + marker.offsetTop - textarea.scrollTop,
+  }
+  mirror.remove()
+  return anchor
+}
+
+function MarkdownEditor({
+  content,
+  isSaving,
+  onChange,
+}: {
+  content: string
+  isSaving: boolean
+  onChange: (content: string) => void
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [selection, setSelection] = useState<{ start: number; end: number; left: number; top: number } | null>(null)
+
+  const syncSelection = () => {
+    const textarea = textareaRef.current
+    if (!textarea || textarea.selectionStart === textarea.selectionEnd) {
+      setSelection(null)
+      return
+    }
+    const anchor = getSelectionAnchor(textarea, textarea.selectionEnd)
+    setSelection({ start: textarea.selectionStart, end: textarea.selectionEnd, ...anchor })
+    // 菜单为非模态状态，选中文字后仍保持编辑器焦点，可直接继续输入。
+    requestAnimationFrame(() => textarea.focus({ preventScroll: true }))
+  }
+
+  const formatSelection = (prefix: string, suffix = prefix) => {
+    if (!selection) return
+
+    const selectedText = content.slice(selection.start, selection.end)
+    const nextContent = `${content.slice(0, selection.start)}${prefix}${selectedText}${suffix}${content.slice(selection.end)}`
+    const selectionStart = selection.start + prefix.length
+    onChange(nextContent)
+    setSelection(null)
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+      // 完成格式化后将光标放到选区末尾，菜单不会因程序重新选中文本而再次弹出。
+      textareaRef.current?.setSelectionRange(selectionStart + selectedText.length, selectionStart + selectedText.length)
+    })
+  }
+
   return (
-    <div className="overflow-hidden rounded-lg border border-input bg-background">
+    <div className="relative overflow-hidden rounded-lg border border-input bg-background">
       <div className="border-b border-border bg-muted/35 px-4 py-2 text-sm text-muted-foreground">
         使用 Markdown 编写，支持标题、列表、引用、链接和代码块。
       </div>
+      <DropdownMenu modal={false} open={selection !== null} onOpenChange={(open) => !open && setSelection(null)}>
+        <DropdownMenuTrigger
+          aria-hidden="true"
+          className="pointer-events-none fixed z-10 size-px opacity-0"
+          render={<button type="button" />}
+          style={{ left: selection?.left ?? -9999, top: selection?.top ?? -9999 }}
+          tabIndex={-1}
+        />
+        <DropdownMenuContent align="start" side="bottom" sideOffset={8}>
+          <DropdownMenuItem onClick={() => formatSelection('**')}><Bold />加粗</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatSelection('*')}><Italic />斜体</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatSelection('`')}><Code />行内代码</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => formatSelection('[', '](https://)')}><Link />链接</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatSelection('> ', '')}><Quote />引用</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatSelection('- ', '')}><List />列表</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Textarea
         aria-label="每日复盘 Markdown 正文"
         className="min-h-[calc(100vh-420px)] resize-y rounded-none border-0 px-5 py-4 font-mono text-sm leading-7 shadow-none focus-visible:ring-0"
-        onChange={(event) => onChange(event.target.value)}
+        disabled={isSaving}
+        onChange={(event) => {
+          setSelection(null)
+          onChange(event.target.value)
+        }}
+        onSelect={syncSelection}
         placeholder={'# 今天的复盘\n\n- 完成了什么\n- 有什么收获\n- 明天准备怎么做'}
+        ref={textareaRef}
         value={content}
       />
     </div>
@@ -180,11 +283,10 @@ export default function DailyReviewPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
   const [content, setContent] = useState('')
-  const [editSnapshot, setEditSnapshot] = useState('')
-  const [isEditing, setIsEditing] = useState(false)
+  const [savedContent, setSavedContent] = useState('')
+  const [activeTab, setActiveTab] = useState<'preview' | 'source'>('preview')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
   const [completedDateKeys, setCompletedDateKeys] = useState<string[]>([])
   const [summaryRange, setSummaryRange] = useState<DateRange | undefined>()
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
@@ -192,11 +294,11 @@ export default function DailyReviewPage() {
   const loadRequestId = useRef(0)
   const selectedDateKey = dateKey(selectedDate)
   const hasReview = hasReviewContent(content)
+  const hasUnsavedChanges = content !== savedContent
 
   const loadDailyReview = useCallback(async (date: Date) => {
     const requestId = ++loadRequestId.current
     setIsLoading(true)
-    setErrorMessage('')
     try {
       const result = await getDailyReview(dateKey(date))
       if (requestId !== loadRequestId.current) return
@@ -205,14 +307,13 @@ export default function DailyReviewPage() {
       }
       const nextContent = result.data ?? ''
       setContent(nextContent)
-      setEditSnapshot(nextContent)
-      setIsEditing(false)
-    } catch (error) {
+      setSavedContent(nextContent)
+      setActiveTab('preview')
+    } catch {
       if (requestId !== loadRequestId.current) return
       setContent('')
-      setEditSnapshot('')
-      setIsEditing(false)
-      setErrorMessage(getErrorMessage(error, '加载每日复盘失败，请检查网络后重试。'))
+      setSavedContent('')
+      setActiveTab('preview')
     } finally {
       if (requestId === loadRequestId.current) setIsLoading(false)
     }
@@ -225,9 +326,7 @@ export default function DailyReviewPage() {
         throw new Error(result.message || '加载复盘日历失败。')
       }
       setCompletedDateKeys(result.data ?? [])
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, '加载复盘日历失败，请稍后重试。'))
-    }
+    } catch {}
   }, [])
 
   useEffect(() => {
@@ -240,7 +339,6 @@ export default function DailyReviewPage() {
 
   const persistDailyReview = useCallback(async (date: Date, nextContent: string, existedBeforeEditing: boolean) => {
     setIsSaving(true)
-    setErrorMessage('')
     const key = dateKey(date)
     try {
       // 已存在的复盘即使清空正文也只更新为空，不再隐式删除历史记录。
@@ -254,13 +352,18 @@ export default function DailyReviewPage() {
           : keys.filter((item) => item !== key))
       }
       return true
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, '保存每日复盘失败，请稍后重试。'))
+    } catch {
       return false
     } finally {
       setIsSaving(false)
     }
   }, [])
+
+  const saveSource = async () => {
+    if (isSaving || !hasUnsavedChanges) return
+    const saved = await persistDailyReview(selectedDate, content, hasReviewContent(savedContent))
+    if (saved) setSavedContent(content)
+  }
 
   const handleDateSelect = async (date: Date | undefined) => {
     if (!date || isSaving) return
@@ -268,32 +371,14 @@ export default function DailyReviewPage() {
       setCalendarMonth(date)
       return
     }
-    if (isEditing) {
-      const saved = await persistDailyReview(selectedDate, content, hasReviewContent(editSnapshot))
+    // 切换日期前自动保存源码标签中的未保存内容，避免草稿丢失。
+    if (hasUnsavedChanges) {
+      const saved = await persistDailyReview(selectedDate, content, hasReviewContent(savedContent))
       if (!saved) return
     }
     setSelectedDate(date)
     setCalendarMonth(date)
-  }
-
-  const beginEditing = () => {
-    setEditSnapshot(content)
-    setErrorMessage('')
-    setIsEditing(true)
-  }
-
-  const cancelEditing = () => {
-    setContent(editSnapshot)
-    setIsEditing(false)
-  }
-
-  const finishEditing = async () => {
-    if (isSaving) return
-    const saved = await persistDailyReview(selectedDate, content, hasReviewContent(editSnapshot))
-    if (saved) {
-      setEditSnapshot(content)
-      setIsEditing(false)
-    }
+    setActiveTab('preview')
   }
 
   const startSummary = () => {
@@ -369,77 +454,72 @@ export default function DailyReviewPage() {
         </AlertDialog>
       </aside>
 
-      <main>
-        <Card>
+      <main className="min-w-0 w-full">
+        <Tabs
+          // 预览正文较短时也占满右侧网格列，避免切换标签时标题和 Tabs 左移。
+          className="w-full gap-0"
+          onValueChange={(value) => setActiveTab(value === 'source' ? 'source' : 'preview')}
+          value={activeTab}
+        >
+        <Card className="w-full">
           <CardHeader className="border-b">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
               <div>
                 <CardTitle>每日复盘</CardTitle>
                 <CardDescription className="mt-1">
                   {formattedDate}
-                  {isEditing && ' · 编辑完成后将保存到服务器'}
+                  {activeTab === 'source' && (hasUnsavedChanges ? ' · 有未保存的修改' : ' · 所有修改已保存')}
                 </CardDescription>
               </div>
-              {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <Button disabled={isSaving} onClick={cancelEditing} type="button" variant="outline"><X />取消</Button>
-                  <Button disabled={isSaving} onClick={() => void finishEditing()} type="button">
-                    {isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}
-                    完成编辑
-                  </Button>
-                </div>
-              ) : hasReview ? (
-                <div className="flex items-center gap-2">
-                  <AlertDialog>
-                    <AlertDialogTrigger
-                      render={<Button disabled={isLoading} type="button" variant="outline" />}
-                    >
-                      <Sparkles />AI 润色
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>AI 润色</AlertDialogTitle>
-                        <AlertDialogDescription>功能正在开发中，敬请期待。</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel variant="default">我知道了</AlertDialogCancel>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <Button disabled={isLoading} onClick={beginEditing} type="button"><Pencil />编辑</Button>
-                </div>
-              ) : null}
+              <TabsList aria-label="每日复盘视图" className="shrink-0">
+                <TabsTrigger value="preview"><Eye />显示</TabsTrigger>
+                <TabsTrigger value="source"><Code2 />源码</TabsTrigger>
+              </TabsList>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-5">
-            {errorMessage && (
-              <Alert variant="destructive">
-                <AlertTitle>操作未完成</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
-            {isLoading ? (
-              <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
-                <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
-              </div>
-            ) : isEditing ? (
-              <MarkdownEditor content={content} onChange={setContent} />
-            ) : hasReview ? (
-              <MarkdownViewer content={content} />
-            ) : (
-              <Empty className="min-h-105 border-dashed">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon"><FilePenLine /></EmptyMedia>
-                  <EmptyTitle>这一天还没有复盘</EmptyTitle>
-                  <EmptyDescription>用 Markdown 记录值得记住的事、收获或反思。</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button onClick={beginEditing} type="button"><Pencil />开始复盘</Button>
-                </EmptyContent>
-              </Empty>
-            )}
+            <TabsContent value="preview">
+              {isLoading ? (
+                <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
+                </div>
+              ) : hasReview ? (
+                <MarkdownViewer content={content} />
+              ) : (
+                <Empty className="min-h-105 border-dashed">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon"><FilePenLine /></EmptyMedia>
+                    <EmptyTitle>这一天还没有复盘</EmptyTitle>
+                    <EmptyDescription>切换到“源码”标签，用 Markdown 记录值得记住的事、收获或反思。</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              )}
+            </TabsContent>
+
+            <TabsContent className="space-y-4" value="source">
+              {isLoading ? (
+                <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
+                </div>
+              ) : (
+                <>
+                  <MarkdownEditor
+                    content={content}
+                    isSaving={isSaving}
+                    onChange={setContent}
+                  />
+                  <div className="flex justify-end">
+                    <Button disabled={isSaving || !hasUnsavedChanges} onClick={() => void saveSource()} type="button">
+                      {isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}
+                      保存复盘
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
           </CardContent>
         </Card>
+        </Tabs>
       </main>
 
       <AlertDialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>

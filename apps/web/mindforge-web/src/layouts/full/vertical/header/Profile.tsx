@@ -38,14 +38,7 @@ export default function ProfileSheet() {
     try {
       setLoggingOut(true);
       const result = await logout();
-      if (!result.success) {
-        toast.add({
-          description: result.message || '退出登录失败，已清除本地登录状态。',
-          priority: 'high',
-          title: '退出登录失败',
-          type: 'error',
-        });
-      } else {
+      if (result.success) {
         toast.add({
           description: '已退出登录',
           title: '操作成功',
@@ -53,13 +46,7 @@ export default function ProfileSheet() {
         });
       }
     } catch {
-      // 网络异常时仍应退出本机，避免令牌继续保留在浏览器中。
-      toast.add({
-        description: '退出登录请求失败，已清除本地登录状态。',
-        priority: 'high',
-        title: '退出登录失败',
-        type: 'error',
-      });
+      // 网络异常会由全局请求封装提示；仍应退出本机，避免令牌继续保留在浏览器中。
     } finally {
       clearAccessToken();
       navigate('/auth/auth2/login', { replace: true });

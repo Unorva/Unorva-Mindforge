@@ -1,4 +1,68 @@
 import { getAccessToken } from '@/utils/auth';
+import { toast } from '@/components/ui/toast';
+
+type ApiErrorPayload = Record<string, unknown>;
+
+class ReportedRequestError extends Error {}
+
+function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
+  return typeof value === 'object' && value !== null;
+}
+
+function getResponseErrorMessage(value: unknown, fallback: string) {
+  if (isApiErrorPayload(value) && typeof value.message === 'string' && value.message.trim()) {
+    return value.message;
+  }
+  return fallback;
+}
+
+function showRequestError(message: string) {
+  toast.add({
+    description: message,
+    priority: 'high',
+    title: '请求失败',
+    type: 'error',
+  });
+}
+
+/**
+ * 所有 HTTP 请求共用同一条失败反馈：网络、状态码和业务响应失败都会提示一次。
+ * 业务响应仍原样返回，调用方可以继续根据 success 决定后续交互。
+ */
+async function request(url: string, init: RequestInit, fallbackMessage: string) {
+  try {
+    const response = await fetch(url, init);
+    const payload = await response.json().catch(() => undefined);
+
+    if (!response.ok) {
+      const message = getResponseErrorMessage(payload, fallbackMessage);
+      showRequestError(message);
+      throw new ReportedRequestError(message);
+    }
+
+    if (payload === undefined) {
+      const message = '服务器响应格式错误，请稍后重试。';
+      showRequestError(message);
+      throw new ReportedRequestError(message);
+    }
+
+    if (isApiErrorPayload(payload) && payload.success === false) {
+      showRequestError(getResponseErrorMessage(payload, fallbackMessage));
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof ReportedRequestError) throw error;
+
+    const message = error instanceof TypeError
+      ? '网络请求失败，请检查网络后重试。'
+      : error instanceof Error && error.message
+        ? error.message
+        : '网络请求失败，请检查网络后重试。';
+    showRequestError(message);
+    throw error;
+  }
+}
 
 /**
  * 为已登录用户的请求附带当前 Bearer Token。
@@ -32,100 +96,62 @@ const getFetcher = async (
     }
   }
 
-  const res = await fetch(url, {
+  return request(url, {
     headers: getAuthorizationHeader(),
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch the data');
-  }
-  return await res.json();
+  }, '获取数据失败，请稍后重试。');
 };
 
 /**
  * POST 请求
  */
 const postFetcher = (url: string, arg?: unknown) =>
-  fetch(url, {
+  request(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error('Failed to post data');
-    }
-
-    return res.json();
-  });
+  }, '提交数据失败，请稍后重试。');
 
 /**
  * PUT 请求
  */
 const putFetcher = (url: string, arg?: unknown) =>
-  fetch(url, {
+  request(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }).then((res) => {
-    if (!res.ok) {
-      // 后端校验或业务异常会放在统一响应的 message 中，保留它便于页面直接提示用户。
-      return res.json()
-        .then((result: { message?: string }) => {
-          throw new Error(result.message || '更新数据失败');
-        })
-        .catch((error: unknown) => {
-          if (error instanceof Error && error.message !== 'Unexpected end of JSON input') {
-            throw error;
-          }
-          throw new Error('更新数据失败');
-        });
-    }
-
-    return res.json();
-  });
+  }, '更新数据失败，请稍后重试。');
 
 /**
  * PATCH 请求
  */
 const patchFetcher = (url: string, arg?: unknown) =>
-  fetch(url, {
+  request(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error('Failed to update data');
-    }
-
-    return res.json();
-  });
+  }, '更新数据失败，请稍后重试。');
 
 /**
  * DELETE 请求
  */
 const deleteFetcher = (url: string, arg?: unknown) =>
-  fetch(url, {
+  request(url, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error('Failed to delete data');
-    }
-
-    return res.json();
-  });
+  }, '删除数据失败，请稍后重试。');
 
 export {
   getFetcher,

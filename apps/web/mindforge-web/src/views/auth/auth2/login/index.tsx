@@ -40,7 +40,10 @@ const BoxedLogin = () => {
         remember,
       });
       // 后端虽可能返回 HTTP 200，但业务仍可能失败，因此继续检查 success
-      if (!result.success || !result.data?.token) {
+      if (!result.success) {
+        return;
+      }
+      if (!result.data?.token) {
         toast.add({
           description: result.message || '登录失败，请检查邮箱和密码。',
           priority: 'high',
@@ -61,13 +64,7 @@ const BoxedLogin = () => {
       // replace 避免用户按返回键回到登录页
       navigate(from, { replace: true });
     } catch {
-      // 例如网络不可用、后端返回非 2xx 状态码
-      toast.add({
-        description: '登录请求失败，请检查网络或稍后重试。',
-        priority: 'high',
-        title: '登录失败',
-        type: 'error',
-      });
+      // 网络与非 2xx 响应已由全局请求封装提示。
     } finally {
       setSubmitting(false);
     }

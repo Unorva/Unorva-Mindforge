@@ -48,12 +48,6 @@ const BoxedRegister = () => {
 
       // HTTP 成功不代表业务成功，仍需检查统一响应体的 success。
       if (!result.success) {
-        toast.add({
-          description: result.message || '注册失败，请稍后重试。',
-          priority: 'high',
-          title: '注册失败',
-          type: 'error',
-        });
         return;
       }
 
@@ -65,12 +59,7 @@ const BoxedRegister = () => {
       // 注册后不保留注册页的历史记录，避免返回后重复提交。
       navigate('/auth/auth2/login', { replace: true });
     } catch {
-      toast.add({
-        description: '注册请求失败，请检查网络或稍后重试。',
-        priority: 'high',
-        title: '注册失败',
-        type: 'error',
-      });
+      // 网络与非 2xx 响应已由全局请求封装提示。
     } finally {
       setSubmitting(false);
     }
