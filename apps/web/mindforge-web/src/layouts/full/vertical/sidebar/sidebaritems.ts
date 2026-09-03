@@ -14,6 +14,7 @@ export interface ChildItem {
   isActive?: boolean;
   external?: boolean;
   isPro?: boolean
+  action?: 'open-account-settings';
 }
 
 export interface MenuItem {
@@ -118,15 +119,15 @@ const SidebarContent: MenuItem[] = [
     items: [
       {
         id: uniqueId(),
-        name: "Notes",
-        icon: NotebookText,
-        url: "/apps/notes",
-      },
-      {
-        id: uniqueId(),
         name: "每日复盘",
         icon: ClipboardCheck,
         url: "/apps/daily-review",
+      },
+      {
+        id: uniqueId(),
+        name: "Notes",
+        icon: NotebookText,
+        url: "/apps/notes",
       },
       {
         name: "Blogs",
@@ -328,8 +329,8 @@ const SidebarContent: MenuItem[] = [
             external: true,
             isPro: true
           },
-        
-         
+
+
           {
             id: uniqueId(),
             name: "Form Validation",
@@ -360,7 +361,7 @@ const SidebarContent: MenuItem[] = [
           },
         ],
       },
-      
+
     ],
   },
   {
@@ -374,7 +375,7 @@ const SidebarContent: MenuItem[] = [
         external: true
 
       },
-      
+
       {
         name: "Charts",
         id: uniqueId(),
@@ -498,7 +499,7 @@ const SidebarContent: MenuItem[] = [
         external: true,
         isPro: true
       },
-    
+
     ],
   },
 
@@ -953,9 +954,7 @@ const SidebarContent: MenuItem[] = [
         name: "Account Setting",
         icon: Settings,
         id: uniqueId(),
-        url: "https://demos.shadcndashboard.dev/theme-pages/account-settings",
-        isPro: true,
-        external: true,
+        action: 'open-account-settings',
       },
       {
         name: "FAQ",

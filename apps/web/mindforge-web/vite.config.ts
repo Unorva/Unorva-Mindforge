@@ -20,6 +20,11 @@ export default defineConfig({
                 target: 'http://localhost:8080',
                 changeOrigin: true,
             },
+            // 每日复盘接口与认证接口一样由本地 Spring Boot 服务提供。
+            '/daily-reviews': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
         },
     },
     resolve: {

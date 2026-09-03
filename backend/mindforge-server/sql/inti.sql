@@ -29,7 +29,7 @@ CREATE TABLE daily_review
     id           BIGINT     NOT NULL AUTO_INCREMENT COMMENT '主键',
     user_id      BIGINT     NOT NULL COMMENT '所属用户 ID',
     review_date  DATE       NOT NULL COMMENT '复盘所属日期，按用户本地日期保存',
-    content      MEDIUMTEXT NOT NULL COMMENT 'TipTap 生成的 HTML 正文',
+    content      MEDIUMTEXT NOT NULL COMMENT 'Markdown 正文',
     version      INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     deleted      TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0未删除，1已删除',
     created_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

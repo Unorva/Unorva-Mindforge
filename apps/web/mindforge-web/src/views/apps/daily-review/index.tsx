@@ -1,39 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
-import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import Link from '@tiptap/extension-link'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type DateRange } from 'react-day-picker'
 import { zhCN } from 'react-day-picker/locale'
-import {
-  Bold,
-  FilePenLine,
-  Heading1,
-  Heading2,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
-  Pencil,
-  Quote,
-  Redo2,
-  Underline as UnderlineIcon,
-  Undo2,
-  X,
-} from 'lucide-react'
+import { CalendarRange, FilePenLine, LoaderCircle, Pencil, Save, Sparkles, X } from 'lucide-react'
 
+import {
+  getDailyReview,
+  getDailyReviewCalendar,
+  updateDailyReview,
+} from '@/api/daily-review/daily-review'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { cn } from '@/lib/utils'
-
-type ReviewDraft = {
-  content: string
-}
-
-const STORAGE_PREFIX = 'mindforge.daily-review.'
-
-const createEmptyDraft = (): ReviewDraft => ({ content: '<p></p>' })
+import { Textarea } from '@/components/ui/textarea'
 
 function dateKey(date: Date) {
   const year = date.getFullYear()
@@ -42,160 +23,273 @@ function dateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function draftHasContent(draft: ReviewDraft) {
-  return Boolean(draft.content.replace(/<[^>]*>/g, '').trim())
+function monthKey(date: Date) {
+  return dateKey(date).slice(0, 7)
 }
 
-function ReviewEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
-  const editor = useEditor({
-    extensions: [StarterKit, Underline, Link.configure({ openOnClick: false })],
-    content,
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'px-5 py-4 outline-none prose prose-sm dark:prose-invert max-w-none',
-      },
-    },
-    onUpdate: ({ editor: currentEditor }) => onChange(currentEditor.getHTML()),
-  })
+function hasReviewContent(content: string) {
+  return Boolean(content.trim())
+}
 
-  useEffect(() => {
-    if (editor && editor.getHTML() !== content) {
-      editor.commands.setContent(content, { emitUpdate: false })
-    }
-  }, [content, editor])
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
+}
 
-  const addLink = () => {
-    const url = window.prompt('请输入链接地址')
-    if (url) editor?.chain().focus().setLink({ href: url }).run()
-  }
+function formatSummaryRange(range: DateRange | undefined) {
+  if (!range?.from) return '请选择开始日期和结束日期'
+  const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' })
+  return range.to ? `${formatter.format(range.from)} 至 ${formatter.format(range.to)}` : `${formatter.format(range.from)} 至 …`
+}
 
-  if (!editor) return null
-
-  const toolbarItems = [
-    { label: '加粗', icon: Bold, active: editor.isActive('bold'), action: () => editor.chain().focus().toggleBold().run() },
-    { label: '斜体', icon: Italic, active: editor.isActive('italic'), action: () => editor.chain().focus().toggleItalic().run() },
-    { label: '下划线', icon: UnderlineIcon, active: editor.isActive('underline'), action: () => editor.chain().focus().toggleUnderline().run() },
-    { label: '一级标题', icon: Heading1, active: editor.isActive('heading', { level: 1 }), action: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
-    { label: '二级标题', icon: Heading2, active: editor.isActive('heading', { level: 2 }), action: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
-    { label: '无序列表', icon: List, active: editor.isActive('bulletList'), action: () => editor.chain().focus().toggleBulletList().run() },
-    { label: '有序列表', icon: ListOrdered, active: editor.isActive('orderedList'), action: () => editor.chain().focus().toggleOrderedList().run() },
-    { label: '引用', icon: Quote, active: editor.isActive('blockquote'), action: () => editor.chain().focus().toggleBlockquote().run() },
-  ]
-
+function MarkdownEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
   return (
-    <div className="min-h-[calc(100vh-360px)] overflow-hidden rounded-lg border border-input bg-background">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/35 p-2">
-        {toolbarItems.map(({ label, icon: Icon, active, action }) => (
-          <Button
-            aria-label={label}
-            className={cn('size-8 p-0', active && 'bg-accent text-accent-foreground')}
-            key={label}
-            onClick={action}
-            size="icon"
-            title={label}
-            type="button"
-            variant="ghost"
-          >
-            <Icon className="size-4" />
-          </Button>
-        ))}
-        <span className="mx-1 h-5 border-l border-border" />
-        <Button aria-label="插入链接" className="size-8 p-0" onClick={addLink} size="icon" title="插入链接" type="button" variant="ghost">
-          <Link2 className="size-4" />
-        </Button>
-        <Button aria-label="撤销" className="size-8 p-0" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()} size="icon" title="撤销" type="button" variant="ghost">
-          <Undo2 className="size-4" />
-        </Button>
-        <Button aria-label="重做" className="size-8 p-0" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()} size="icon" title="重做" type="button" variant="ghost">
-          <Redo2 className="size-4" />
-        </Button>
+    <div className="overflow-hidden rounded-lg border border-input bg-background">
+      <div className="border-b border-border bg-muted/35 px-4 py-2 text-sm text-muted-foreground">
+        使用 Markdown 编写，支持标题、列表、引用、链接和代码块。
       </div>
-      <EditorContent className="[&_.ProseMirror]:min-h-[calc(100vh-430px)]" editor={editor} />
+      <Textarea
+        aria-label="每日复盘 Markdown 正文"
+        className="min-h-[calc(100vh-420px)] resize-y rounded-none border-0 px-5 py-4 font-mono text-sm leading-7 shadow-none focus-visible:ring-0"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={'# 今天的复盘\n\n- 完成了什么\n- 有什么收获\n- 明天准备怎么做'}
+        value={content}
+      />
     </div>
   )
 }
 
-function ReviewViewer({ content }: { content: string }) {
-  // 正文由本地 TipTap 编辑器产生；接入后端后仍需在服务端做 HTML 白名单清洗。
-  return <article className="prose prose-sm max-w-none px-1 py-2 dark:prose-invert" dangerouslySetInnerHTML={{ __html: content }} />
+function renderInlineMarkdown(value: string): ReactNode[] {
+  const tokenPattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^\s)]+\))/g
+  const nodes: ReactNode[] = []
+  let lastIndex = 0
+
+  for (const match of value.matchAll(tokenPattern)) {
+    const token = match[0]
+    const index = match.index ?? 0
+    if (index > lastIndex) nodes.push(value.slice(lastIndex, index))
+
+    if (token.startsWith('**')) {
+      nodes.push(<strong key={`${index}-bold`}>{token.slice(2, -2)}</strong>)
+    } else if (token.startsWith('`')) {
+      nodes.push(<code key={`${index}-code`}>{token.slice(1, -1)}</code>)
+    } else {
+      const linkMatch = /^\[([^\]]+)\]\(([^\s)]+)\)$/.exec(token)
+      if (linkMatch) {
+        nodes.push(<a href={linkMatch[2]} key={`${index}-link`} rel="noreferrer" target="_blank">{linkMatch[1]}</a>)
+      }
+    }
+    lastIndex = index + token.length
+  }
+
+  if (lastIndex < value.length) nodes.push(value.slice(lastIndex))
+  return nodes.length ? nodes : [value]
+}
+
+function MarkdownViewer({ content }: { content: string }) {
+  const lines = content.split('\n')
+  const blocks: ReactNode[] = []
+
+  for (let index = 0; index < lines.length;) {
+    const line = lines[index]
+    if (!line.trim()) {
+      index += 1
+      continue
+    }
+
+    if (line.startsWith('```')) {
+      const codeLines: string[] = []
+      const language = line.slice(3).trim()
+      index += 1
+      while (index < lines.length && !lines[index].startsWith('```')) {
+        codeLines.push(lines[index])
+        index += 1
+      }
+      if (index < lines.length) index += 1
+      blocks.push(<pre key={`code-${index}`}><code className={language ? `language-${language}` : undefined}>{codeLines.join('\n')}</code></pre>)
+      continue
+    }
+
+    const heading = /^(#{1,6})\s+(.+)$/.exec(line)
+    if (heading) {
+      const title = renderInlineMarkdown(heading[2])
+      const key = `heading-${index}`
+      if (heading[1].length === 1) blocks.push(<h1 key={key}>{title}</h1>)
+      else if (heading[1].length === 2) blocks.push(<h2 key={key}>{title}</h2>)
+      else if (heading[1].length === 3) blocks.push(<h3 key={key}>{title}</h3>)
+      else blocks.push(<h4 key={key}>{title}</h4>)
+      index += 1
+      continue
+    }
+
+    if (/^[-*+]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^[-*+]\s+/.test(lines[index])) {
+        items.push(lines[index].replace(/^[-*+]\s+/, ''))
+        index += 1
+      }
+      blocks.push(<ul key={`list-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInlineMarkdown(item)}</li>)}</ul>)
+      continue
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index])) {
+        items.push(lines[index].replace(/^\d+\.\s+/, ''))
+        index += 1
+      }
+      blocks.push(<ol key={`ordered-list-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInlineMarkdown(item)}</li>)}</ol>)
+      continue
+    }
+
+    if (line.startsWith('> ')) {
+      const quotes: string[] = []
+      while (index < lines.length && lines[index].startsWith('> ')) {
+        quotes.push(lines[index].slice(2))
+        index += 1
+      }
+      blocks.push(<blockquote key={`quote-${index}`}>{quotes.map((quote, quoteIndex) => <p key={quoteIndex}>{renderInlineMarkdown(quote)}</p>)}</blockquote>)
+      continue
+    }
+
+    const paragraph: string[] = []
+    while (index < lines.length && lines[index].trim() && !/^(#{1,6})\s+|^```|^[-*+]\s+|^\d+\.\s+|^> /.test(lines[index])) {
+      paragraph.push(lines[index])
+      index += 1
+    }
+    blocks.push(<p key={`paragraph-${index}`}>{renderInlineMarkdown(paragraph.join(' '))}</p>)
+  }
+
+  return (
+    <article className="prose prose-sm max-w-none px-1 py-2 dark:prose-invert">
+      {blocks}
+    </article>
+  )
 }
 
 export default function DailyReviewPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
-  const [draft, setDraft] = useState<ReviewDraft>(createEmptyDraft)
-  const [editSnapshot, setEditSnapshot] = useState<ReviewDraft>(createEmptyDraft)
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date())
+  const [content, setContent] = useState('')
+  const [editSnapshot, setEditSnapshot] = useState('')
   const [isEditing, setIsEditing] = useState(false)
-  const [loadedDateKey, setLoadedDateKey] = useState('')
-  const [savedAt, setSavedAt] = useState<Date | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [completedDateKeys, setCompletedDateKeys] = useState<string[]>([])
+  const [summaryRange, setSummaryRange] = useState<DateRange | undefined>()
+  const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
+  const [developmentFeature, setDevelopmentFeature] = useState<string | null>(null)
+  const loadRequestId = useRef(0)
   const selectedDateKey = dateKey(selectedDate)
-  const hasReview = draftHasContent(draft)
+  const hasReview = hasReviewContent(content)
 
-  useEffect(() => {
-    setCompletedDateKeys(
-      Object.keys(localStorage)
-        .filter((key) => key.startsWith(STORAGE_PREFIX))
-        .map((key) => key.replace(STORAGE_PREFIX, '')),
-    )
+  const loadDailyReview = useCallback(async (date: Date) => {
+    const requestId = ++loadRequestId.current
+    setIsLoading(true)
+    setErrorMessage('')
+    try {
+      const result = await getDailyReview(dateKey(date))
+      if (requestId !== loadRequestId.current) return
+      if (!result.success) {
+        throw new Error(result.message || '加载每日复盘失败。')
+      }
+      const nextContent = result.data ?? ''
+      setContent(nextContent)
+      setEditSnapshot(nextContent)
+      setIsEditing(false)
+    } catch (error) {
+      if (requestId !== loadRequestId.current) return
+      setContent('')
+      setEditSnapshot('')
+      setIsEditing(false)
+      setErrorMessage(getErrorMessage(error, '加载每日复盘失败，请检查网络后重试。'))
+    } finally {
+      if (requestId === loadRequestId.current) setIsLoading(false)
+    }
+  }, [])
+
+  const loadCalendar = useCallback(async (date: Date) => {
+    try {
+      const result = await getDailyReviewCalendar(monthKey(date))
+      if (!result.success) {
+        throw new Error(result.message || '加载复盘日历失败。')
+      }
+      setCompletedDateKeys(result.data ?? [])
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, '加载复盘日历失败，请稍后重试。'))
+    }
   }, [])
 
   useEffect(() => {
-    const storedDraft = localStorage.getItem(`${STORAGE_PREFIX}${selectedDateKey}`)
-    try {
-      const nextDraft = storedDraft ? { ...createEmptyDraft(), ...JSON.parse(storedDraft) } : createEmptyDraft()
-      setDraft(nextDraft)
-      setEditSnapshot(nextDraft)
-    } catch {
-      setDraft(createEmptyDraft())
-      setEditSnapshot(createEmptyDraft())
-    }
-    setIsEditing(false)
-    setSavedAt(null)
-    setLoadedDateKey(selectedDateKey)
-  }, [selectedDateKey])
+    void loadDailyReview(selectedDate)
+  }, [loadDailyReview, selectedDate])
 
-  const saveDraft = useCallback((nextDraft: ReviewDraft) => {
-    const hasContent = draftHasContent(nextDraft)
-    if (hasContent) {
-      localStorage.setItem(`${STORAGE_PREFIX}${selectedDateKey}`, JSON.stringify(nextDraft))
-    } else {
-      localStorage.removeItem(`${STORAGE_PREFIX}${selectedDateKey}`)
-    }
-    setCompletedDateKeys((keys) => hasContent
-      ? [...new Set([...keys, selectedDateKey])]
-      : keys.filter((key) => key !== selectedDateKey))
-    setSavedAt(hasContent ? new Date() : null)
-  }, [selectedDateKey])
-
-  // 只在编辑状态自动保存，阅读历史笔记时不会触发任何写入。
   useEffect(() => {
-    if (!isEditing || loadedDateKey !== selectedDateKey) return
-    const timer = window.setTimeout(() => saveDraft(draft), 700)
-    return () => window.clearTimeout(timer)
-  }, [draft, isEditing, loadedDateKey, saveDraft, selectedDateKey])
+    void loadCalendar(calendarMonth)
+  }, [calendarMonth, loadCalendar])
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return
-    if (isEditing) saveDraft(draft)
+  const persistDailyReview = useCallback(async (date: Date, nextContent: string, existedBeforeEditing: boolean) => {
+    setIsSaving(true)
+    setErrorMessage('')
+    const key = dateKey(date)
+    try {
+      // 已存在的复盘即使清空正文也只更新为空，不再隐式删除历史记录。
+      if (hasReviewContent(nextContent) || existedBeforeEditing) {
+        const result = await updateDailyReview({ date: key, content: nextContent })
+        if (!result.success) {
+          throw new Error(result.message || '保存每日复盘失败。')
+        }
+        setCompletedDateKeys((keys) => hasReviewContent(nextContent)
+          ? [...new Set([...keys, key])]
+          : keys.filter((item) => item !== key))
+      }
+      return true
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, '保存每日复盘失败，请稍后重试。'))
+      return false
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const handleDateSelect = async (date: Date | undefined) => {
+    if (!date || isSaving) return
+    if (dateKey(date) === selectedDateKey) {
+      setCalendarMonth(date)
+      return
+    }
+    if (isEditing) {
+      const saved = await persistDailyReview(selectedDate, content, hasReviewContent(editSnapshot))
+      if (!saved) return
+    }
     setSelectedDate(date)
+    setCalendarMonth(date)
   }
 
   const beginEditing = () => {
-    setEditSnapshot(draft)
+    setEditSnapshot(content)
+    setErrorMessage('')
     setIsEditing(true)
   }
 
   const cancelEditing = () => {
-    setDraft(editSnapshot)
-    saveDraft(editSnapshot)
+    setContent(editSnapshot)
     setIsEditing(false)
   }
 
-  const finishEditing = () => {
-    saveDraft(draft)
-    setEditSnapshot(draft)
-    setIsEditing(false)
+  const finishEditing = async () => {
+    if (isSaving) return
+    const saved = await persistDailyReview(selectedDate, content, hasReviewContent(editSnapshot))
+    if (saved) {
+      setEditSnapshot(content)
+      setIsEditing(false)
+    }
+  }
+
+  const startSummary = () => {
+    if (!summaryRange?.from || !summaryRange.to) return
+    setIsSummaryDialogOpen(false)
+    setDevelopmentFeature('AI 总结')
   }
 
   const formattedDate = new Intl.DateTimeFormat('zh-CN', {
@@ -203,7 +297,10 @@ export default function DailyReviewPage() {
     day: 'numeric',
     weekday: 'long',
   }).format(selectedDate)
-  const completedDates = completedDateKeys.map((key) => new Date(`${key}T00:00:00`))
+  const completedDates = useMemo(
+    () => completedDateKeys.map((key) => new Date(`${key}T00:00:00`)),
+    [completedDateKeys],
+  )
 
   return (
     <div className="grid gap-6 xl:grid-cols-[290px_minmax(0,1fr)]">
@@ -211,21 +308,29 @@ export default function DailyReviewPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">日历</CardTitle>
-            <CardDescription>带圆点的日期已有复盘笔记</CardDescription>
+            <CardDescription>绿色表示已写，红色表示未写</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center px-2 pb-3">
             <Calendar
               locale={zhCN}
               mode="single"
               modifiers={{ completed: completedDates }}
-              modifiersClassNames={{ completed: 'after:absolute after:bottom-1 after:size-1 after:rounded-full after:bg-primary' }}
-              onSelect={handleDateSelect}
+              classNames={{
+                // 状态点需附着于日期按钮，避免被按钮的层级遮挡；默认显示居中的红点。
+                day: '[&>button]:after:pointer-events-none [&>button]:after:absolute [&>button]:after:bottom-1 [&>button]:after:left-1/2 [&>button]:after:size-1 [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full [&>button]:after:bg-red-500',
+                // 月份之外的占位日期不显示状态点，避免造成误解。
+                outside: '[&>button]:after:hidden',
+              }}
+              modifiersClassNames={{ completed: '[&>button]:after:!bg-emerald-500' }}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              onSelect={(date) => void handleDateSelect(date)}
               selected={selectedDate}
             />
           </CardContent>
         </Card>
-        <Button className="w-full" onClick={() => handleDateSelect(new Date())} type="button" variant="outline">
-          今天
+        <Button className="w-full" onClick={() => setIsSummaryDialogOpen(true)} type="button" variant="outline">
+          <CalendarRange />AI 总结
         </Button>
       </aside>
 
@@ -237,30 +342,48 @@ export default function DailyReviewPage() {
                 <CardTitle>每日复盘</CardTitle>
                 <CardDescription className="mt-1">
                   {formattedDate}
-                  {isEditing && ` · ${savedAt ? '已自动保存' : '正在编辑'}`}
+                  {isEditing && ' · 编辑完成后将保存到服务器'}
                 </CardDescription>
               </div>
               {isEditing ? (
                 <div className="flex items-center gap-2">
-                  <Button onClick={cancelEditing} type="button" variant="outline"><X />取消</Button>
-                  <Button onClick={finishEditing} type="button">完成编辑</Button>
+                  <Button disabled={isSaving} onClick={cancelEditing} type="button" variant="outline"><X />取消</Button>
+                  <Button disabled={isSaving} onClick={() => void finishEditing()} type="button">
+                    {isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}
+                    完成编辑
+                  </Button>
                 </div>
               ) : hasReview ? (
-                <Button onClick={beginEditing} type="button"><Pencil />编辑</Button>
+                <div className="flex items-center gap-2">
+                  <Button disabled={isLoading} onClick={() => setDevelopmentFeature('AI 润色')} type="button" variant="outline">
+                    <Sparkles />AI 润色
+                  </Button>
+                  <Button disabled={isLoading} onClick={beginEditing} type="button"><Pencil />编辑</Button>
+                </div>
               ) : null}
             </div>
           </CardHeader>
-          <CardContent className="pt-5">
-            {isEditing ? (
-              <ReviewEditor content={draft.content} onChange={(content) => setDraft({ content })} />
+          <CardContent className="space-y-4 pt-5">
+            {errorMessage && (
+              <Alert variant="destructive">
+                <AlertTitle>操作未完成</AlertTitle>
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            {isLoading ? (
+              <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
+              </div>
+            ) : isEditing ? (
+              <MarkdownEditor content={content} onChange={setContent} />
             ) : hasReview ? (
-              <ReviewViewer content={draft.content} />
+              <MarkdownViewer content={content} />
             ) : (
               <Empty className="min-h-105 border-dashed">
                 <EmptyHeader>
                   <EmptyMedia variant="icon"><FilePenLine /></EmptyMedia>
                   <EmptyTitle>这一天还没有复盘</EmptyTitle>
-                  <EmptyDescription>把值得记住的事、收获或反思写下来。</EmptyDescription>
+                  <EmptyDescription>用 Markdown 记录值得记住的事、收获或反思。</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
                   <Button onClick={beginEditing} type="button"><Pencil />开始复盘</Button>
@@ -270,6 +393,41 @@ export default function DailyReviewPage() {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog onOpenChange={setIsSummaryDialogOpen} open={isSummaryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>AI 总结</DialogTitle>
+            <DialogDescription>选择需要汇总的每日复盘日期区间。</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center rounded-lg border py-2">
+            <Calendar
+              locale={zhCN}
+              mode="range"
+              onSelect={setSummaryRange}
+              selected={summaryRange}
+            />
+          </div>
+          <p className="text-center text-sm text-muted-foreground">{formatSummaryRange(summaryRange)}</p>
+          <DialogFooter>
+            <Button disabled={!summaryRange?.from || !summaryRange.to} onClick={startSummary} type="button">
+              <Sparkles />开始 AI 总结
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{developmentFeature}</DialogTitle>
+            <DialogDescription>功能正在开发中，敬请期待。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setDevelopmentFeature(null)} type="button">我知道了</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -15,11 +15,42 @@ import { cn } from "src/lib/utils";
 import { Mailbox } from 'lucide-react';
 
 import { profileDD } from "./data";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import avatar from '@/assets/images/profile/avtar.webp';
 import Buynow from '@/assets/images/backgrounds/sidebarbuynow.svg';
-export default function ProfileSheet() {
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { logout } from '@/api/system/auth/auth';
+import { clearAccessToken } from '@/utils/auth';
 
+export default function ProfileSheet() {
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  /**
+   * 通知服务端当前 Token 失效，并在任何情况下清理本地会话，避免浏览器继续保留登录态。
+   */
+  const handleLogout = async () => {
+    if (loggingOut) {
+      return;
+    }
+
+    try {
+      setLoggingOut(true);
+      const result = await logout();
+      if (!result.success) {
+        toast.error(result.message || '退出登录失败，已清除本地登录状态。');
+      } else {
+        toast.success('已退出登录');
+      }
+    } catch {
+      // 网络异常时仍应退出本机，避免令牌继续保留在浏览器中。
+      toast.error('退出登录请求失败，已清除本地登录状态。');
+    } finally {
+      clearAccessToken();
+      navigate('/auth/auth2/login', { replace: true });
+    }
+  };
 
   return (
     <Sheet>
@@ -123,10 +154,11 @@ export default function ProfileSheet() {
 
               <Button
                 variant="secondary"
-                render={<Link to="/auth/auth2/login" />}
                 className="text-primary"
+                disabled={loggingOut}
+                onClick={handleLogout}
               >
-                Log Out
+                {loggingOut ? '退出中...' : '退出登录'}
               </Button>
             </div>
           </div>

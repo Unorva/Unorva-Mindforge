@@ -1,3 +1,14 @@
+import { getAccessToken } from '@/utils/auth';
+
+/**
+ * 为已登录用户的请求附带当前 Bearer Token。
+ * 登录、注册等匿名请求在没有 Token 时仍会正常发出。
+ */
+const getAuthorizationHeader = (): HeadersInit => {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 /**
  * GET 请求
  */
@@ -21,7 +32,9 @@ const getFetcher = async (
     }
   }
 
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: getAuthorizationHeader(),
+  });
   if (!res.ok) {
     throw new Error('Failed to fetch the data');
   }
@@ -36,6 +49,7 @@ const postFetcher = (url: string, arg?: unknown) =>
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
@@ -54,11 +68,22 @@ const putFetcher = (url: string, arg?: unknown) =>
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
     if (!res.ok) {
-      throw new Error('Failed to update data');
+      // 后端校验或业务异常会放在统一响应的 message 中，保留它便于页面直接提示用户。
+      return res.json()
+        .then((result: { message?: string }) => {
+          throw new Error(result.message || '更新数据失败');
+        })
+        .catch((error: unknown) => {
+          if (error instanceof Error && error.message !== 'Unexpected end of JSON input') {
+            throw error;
+          }
+          throw new Error('更新数据失败');
+        });
     }
 
     return res.json();
@@ -72,6 +97,7 @@ const patchFetcher = (url: string, arg?: unknown) =>
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
@@ -90,6 +116,7 @@ const deleteFetcher = (url: string, arg?: unknown) =>
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthorizationHeader(),
     },
     body: arg !== undefined ? JSON.stringify(arg) : undefined,
   }).then((res) => {
