@@ -1,6 +1,5 @@
 package com.unorva.mindforge.common.security.login;
 
-import com.unorva.mindforge.module.system.user.domain.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +22,11 @@ import java.util.List;
 @NullMarked
 public class LoginUser implements UserDetails, Serializable {
 
-    private UserEntity userEntity;
+    private Long userId;
+
+    private String username;
+
+    private String password;
 
     private List<String> permissions;
 
@@ -47,7 +50,7 @@ public class LoginUser implements UserDetails, Serializable {
      */
     @Override
     public String getPassword() {
-        return userEntity.getPassword();
+        return this.password;
     }
 
     /**
@@ -56,7 +59,7 @@ public class LoginUser implements UserDetails, Serializable {
      */
     @Override
     public String getUsername() {
-        return userEntity.getEmail();
+        return this.username;
     }
 
     /**

@@ -88,10 +88,13 @@ public class AuthService {
         }
         // 3. 获取认证成功后的登录用户
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        if (loginUser == null) {
+            throw new BusinessException(AuthException.EMAIL_OR_PASSWORD_ERROR);
+        }
         // 4. 检查是否需要记住登录状态 原因 防止 Boolean 值为 null 时的异常
         boolean remember = Boolean.TRUE.equals(loginParam.remember());
-        // 4. 生成 Token，并保存登录状态到 Redis
-        String token = tokenService.createToken(loginUser, remember);
+        // 4. 生成 Token，并仅将 token -> userId 保存到 Redis。
+        String token = tokenService.createToken(loginUser.getUserId(), remember);
         // 5. 返回 Token
         return new LoginVO(token);
     }

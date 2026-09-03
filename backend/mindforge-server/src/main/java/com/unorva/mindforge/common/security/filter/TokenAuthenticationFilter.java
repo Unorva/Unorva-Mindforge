@@ -2,6 +2,7 @@ package com.unorva.mindforge.common.security.filter;
 
 import com.unorva.mindforge.common.security.login.LoginUser;
 import com.unorva.mindforge.common.security.service.TokenService;
+import com.unorva.mindforge.common.security.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +26,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
 
+    private final UserDetailsServiceImpl userDetailsService;
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         // 1. 从 Header 获取 Token
@@ -34,10 +37,16 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        // 3. 从 Redis 获取用户
-        LoginUser loginUser = tokenService.getLoginUser(token);
-        // 4. Redis 中不存在
+        // 3. Redis 只保存 token -> userId，再按 userId 加载当前认证信息。
+        Long userId = tokenService.getUserId(token);
+        if (userId == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        LoginUser loginUser = userDetailsService.loadLoginUserById(userId);
+        // 4. 用户已不存在时，令旧 Token 立即失效。
         if (loginUser == null) {
+            tokenService.deleteToken(token);
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,9 +57,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             // 7. 保存当前请求用户
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-        // 8. 刷新 Redis 过期时间
-        tokenService.refreshToken(token);
-        // 9. 放行
+        // 8. 放行。Token 保持创建时的固定有效期，避免 remember 登录被错误缩短。
         filterChain.doFilter(request, response);
     }
 

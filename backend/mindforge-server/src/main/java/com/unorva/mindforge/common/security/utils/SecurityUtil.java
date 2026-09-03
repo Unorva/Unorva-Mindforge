@@ -29,6 +29,6 @@ public class SecurityUtil {
         if (loginUser == null) {
             return null;
         }
-        return loginUser.getUserEntity().getId();
+        return loginUser.getUserId();
     }
 }

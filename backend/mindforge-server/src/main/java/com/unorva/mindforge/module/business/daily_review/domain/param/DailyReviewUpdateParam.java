@@ -2,6 +2,7 @@ package com.unorva.mindforge.module.business.daily_review.domain.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
@@ -13,7 +14,7 @@ import java.time.LocalDate;
 public record DailyReviewUpdateParam(
 
         @Schema(description = "日期", example = "2023-01-01", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotBlank(message = "日期不能为空")
+        @NotNull(message = "日期不能为空")
         LocalDate date,
 
         @NotBlank(message = "内容不能为空")

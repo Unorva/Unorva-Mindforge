@@ -30,17 +30,20 @@ public class DailyReviewService {
 
     /**
      * 获取每日复盘内容
+     *
      * @param date 日期
      * @return 复盘内容
      */
     public String getDailyReviewContent(LocalDate date) {
         // 1. 获取当前日期的复盘笔记内容
-        return getDailyReview(date).getContent();
+        DailyReviewEntity dailyReview = getDailyReview(date);
+        return dailyReview == null ? "" : dailyReview.getContent();
     }
 
     /**
      * 更新每日复盘
-     * @param date 日期
+     *
+     * @param date    日期
      * @param content 内容
      */
     public void updateDailyReview(LocalDate date, String content) {
@@ -53,13 +56,14 @@ public class DailyReviewService {
         }
         // 2. 插入或更新复盘
         dailyReview.setContent(content);
-        if (dailyReviewManager.saveOrUpdate(dailyReview)) {
+        if (!dailyReviewManager.saveOrUpdate(dailyReview)) {
             throw new BusinessException(RepositoryErrorCode.INSERT_OR_UPDATE_FAILED);
         }
     }
 
     /**
      * 获取每日复盘日历
+     *
      * @param month 当前月份
      * @return 复盘日历
      */
@@ -81,6 +85,7 @@ public class DailyReviewService {
 
     /**
      * 删除每日复盘
+     *
      * @param date 当前日期
      */
     public void deleteDailyReview(LocalDate date) {
@@ -95,6 +100,7 @@ public class DailyReviewService {
 
     /**
      * 根据日期获取当前用户的复盘笔记对象
+     *
      * @param date 当前日期
      * @return 复盘笔记对象
      */

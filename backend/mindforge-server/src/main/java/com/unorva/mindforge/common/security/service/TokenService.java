@@ -1,8 +1,7 @@
 package com.unorva.mindforge.common.security.service;
 
-import com.unorva.mindforge.common.security.login.LoginUser;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,43 +21,38 @@ public class TokenService {
     private static final String LOGIN_KEY_PREFIX = "login:";
 
     /**
-     * 登录状态缓存有效期（分钟）
+     * 只读写字符串，避免把 Spring Security 对象序列化到 Redis。
      */
-    private static final long EXPIRE_TIME = 30;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
-     * Redis 模板
+     * 创建 Token。
      */
-    private final RedisTemplate<String, Object> redisTemplate;
-
-    /**
-     * 创建 Token UUID 版本
-     */
-    public String createToken(LoginUser loginUser, boolean remember) {
-        // 生成 Token
+    public String createToken(Long userId, boolean remember) {
+        // 1. 生成 Token
         String token = UUID.randomUUID().toString().replace("-", "");
         String redisKey = LOGIN_KEY_PREFIX + token;
-        // 根据remember设置有效期
+        // 2. 根据remember设置有效期
         Duration expiration = remember ? Duration.ofDays(30) : Duration.ofMinutes(30);
-        // 保存登录用户并设置有效期
-        redisTemplate.opsForValue().set(redisKey, loginUser, expiration);
-        // 返回创建的 Token
+        // 3. Redis 仅保存稳定的用户标识
+        stringRedisTemplate.opsForValue().set(redisKey, userId.toString(), expiration);
+        // 4. 返回创建的 Token
         return token;
     }
 
     /**
-     * 根据 Token 获取登录用户
+     * 根据 Token 获取登录用户 ID。
      */
-    public LoginUser getLoginUser(String token) {
+    public Long getUserId(String token) {
         if (token == null || token.isBlank()) {
             return null;
         }
         String redisKey = LOGIN_KEY_PREFIX + token;
-        Object value = redisTemplate.opsForValue().get(redisKey);
-        if (value == null) {
+        String userId = stringRedisTemplate.opsForValue().get(redisKey);
+        if (userId == null) {
             return null;
         }
-        return (LoginUser) value;
+        return Long.valueOf(userId);
     }
 
     /**
@@ -68,16 +62,6 @@ public class TokenService {
         if (token == null || token.isBlank()) {
             return;
         }
-        redisTemplate.delete(LOGIN_KEY_PREFIX + token);
-    }
-
-    /**
-     * 刷新 Token 有效期
-     */
-    public void refreshToken(String token) {
-        if (token == null || token.isBlank()) {
-            return;
-        }
-        redisTemplate.expire(LOGIN_KEY_PREFIX + token, Duration.ofMinutes(EXPIRE_TIME));
+        stringRedisTemplate.delete(LOGIN_KEY_PREFIX + token);
     }
 }
