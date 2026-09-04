@@ -27,3 +27,8 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
