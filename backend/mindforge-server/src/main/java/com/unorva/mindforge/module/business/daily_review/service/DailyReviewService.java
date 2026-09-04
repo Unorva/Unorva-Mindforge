@@ -1,9 +1,9 @@
 package com.unorva.mindforge.module.business.daily_review.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.common.exception.RepositoryErrorCode;
-import com.unorva.mindforge.common.security.utils.SecurityUtil;
 import com.unorva.mindforge.module.business.daily_review.domain.entity.DailyReviewEntity;
 import com.unorva.mindforge.module.business.daily_review.manager.DailyReviewManager;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class DailyReviewService {
         if (dailyReview == null) {
             dailyReview = new DailyReviewEntity();
             dailyReview.setReviewDate(date);
-            dailyReview.setUserId(SecurityUtil.getUserId());
+            dailyReview.setUserId(StpUtil.getLoginIdAsLong());
         }
         // 2. 插入或更新复盘
         dailyReview.setContent(content);
@@ -73,7 +73,7 @@ public class DailyReviewService {
         return dailyReviewManager.list(
                         new LambdaQueryWrapper<DailyReviewEntity>()
                                 .select(DailyReviewEntity::getReviewDate)
-                                .eq(DailyReviewEntity::getUserId, SecurityUtil.getUserId())
+                                .eq(DailyReviewEntity::getUserId, StpUtil.getLoginIdAsLong())
                                 .between(DailyReviewEntity::getReviewDate, startDate, endDate)
                                 .isNotNull(DailyReviewEntity::getContent)
                                 .apply("TRIM(content) <> ''")
@@ -92,7 +92,7 @@ public class DailyReviewService {
         if (!dailyReviewManager.remove(
                 new LambdaQueryWrapper<DailyReviewEntity>()
                         .eq(DailyReviewEntity::getReviewDate, date)
-                        .eq(DailyReviewEntity::getUserId, SecurityUtil.getUserId())
+                        .eq(DailyReviewEntity::getUserId, StpUtil.getLoginIdAsLong())
         )) {
             throw new BusinessException(RepositoryErrorCode.DELETE_FAILED);
         }
@@ -108,7 +108,7 @@ public class DailyReviewService {
         return dailyReviewManager.getOne(
                 new LambdaQueryWrapper<DailyReviewEntity>()
                         .eq(DailyReviewEntity::getReviewDate, date)
-                        .eq(DailyReviewEntity::getUserId, SecurityUtil.getUserId())
+                        .eq(DailyReviewEntity::getUserId, StpUtil.getLoginIdAsLong())
         );
     }
 }

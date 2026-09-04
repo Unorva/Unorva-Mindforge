@@ -7,3 +7,14 @@ spring:
 
 server:
   port: 8080
+
+sa-token:
+  # 与现有前端请求约定一致：Authorization: Bearer <token>
+  token-name: Authorization
+  token-prefix: Bearer
+  is-read-header: true
+  is-read-cookie: false
+  # 每次登录按“记住我”单独设置有效期，避免全局默认覆盖该策略。
+  timeout: -1
+  active-timeout: -1
+  token-style: random-32

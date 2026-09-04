@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <springdoc.version>3.1.0</springdoc.version>
-        <jwt.version>0.13.0</jwt.version>
+        <sa-token.version>1.45.0</sa-token.version>
     </properties>
 
     <dependencies>
@@ -42,12 +42,24 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
         </dependency>
-        <!-- Spring Boot Security -->
+        <!-- Sa-Token -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot4-starter</artifactId>
+            <version>${sa-token.version}</version>
         </dependency>
-        <!-- Argon2id 密码哈希所需的 Bouncy Castle 密码学实现 -->
+        <!-- Sa-Token 集成Redis -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-redis-template</artifactId>
+            <version>${sa-token.version}</version>
+        </dependency>
+        <!-- 仅提供密码哈希能力，不启用 Spring Security 的鉴权链 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <!-- Argon2PasswordEncoder 所需的底层实现 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
@@ -81,6 +93,12 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
             <version>2.25.27</version>
+        </dependency>
+        <!-- Hutool：提供 Argon2id 密码哈希实现 -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.46</version>
         </dependency>
         <!-- Lombok -->
         <dependency>

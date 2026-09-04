@@ -1,6 +1,6 @@
 package com.unorva.mindforge.module.system.auth.controller;
 
-import com.unorva.mindforge.common.security.service.TokenService;
+import cn.dev33.satoken.stp.StpUtil;
 import com.unorva.mindforge.common.web.vo.Result;
 import com.unorva.mindforge.module.system.auth.domain.param.LoginParam;
 import com.unorva.mindforge.module.system.auth.domain.param.RegisterParam;
@@ -8,7 +8,6 @@ import com.unorva.mindforge.module.system.auth.domain.vo.LoginVO;
 import com.unorva.mindforge.module.system.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,11 +29,6 @@ public class AuthController {
      * 登录服务
      */
     private final AuthService authService;
-
-    /**
-     * 登录令牌服务
-     */
-    private final TokenService tokenService;
 
     /**
      * 用户注册
@@ -61,17 +55,11 @@ public class AuthController {
 
     /**
      * 用户退出登录
-     * @param request Http请求
      */
     @PostMapping("/logout")
     @Operation(summary = "退出登录", description = "使当前 Bearer Token 立即失效。")
-    public Result<Void> logout(HttpServletRequest request) {
-        String authorization = request.getHeader("Authorization");
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return Result.success();
-        }
-        String token = authorization.substring(7);
-        tokenService.deleteToken(token);
+    public Result<Void> logout() {
+        StpUtil.logout();
         return Result.success();
     }
 }
