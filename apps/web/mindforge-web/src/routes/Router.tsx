@@ -25,6 +25,7 @@ const BlogTable = Loadable(lazy(() => import('../views/apps/blog/manage-blog')))
 
 const Notes = Loadable(lazy(() => import('../views/apps/notes')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
+const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Test = Loadable(lazy(() => import('../views/apps/test')));
 
 const Tickets = Loadable(lazy(() => import('../views/apps/tickets')));
@@ -67,6 +68,8 @@ const Router = [
           { path: 'apps/blog/manage-blog', element: <BlogTable /> },
           { path: 'apps/notes', element: <Notes /> },
           { path: 'apps/daily-review', element: <DailyReview /> },
+          { path: 'apps/projects', element: <Projects /> },
+          { path: 'apps/projects/:projectId', element: <Projects /> },
           { path: 'apps/tickets', element: <Tickets /> },
           { path: 'apps/tickets/create', element: <TicketCreate /> },
           { path: 'pages/tables', element: <TablesPage /> },

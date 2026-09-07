@@ -76,6 +76,7 @@ import {
   ChartBar,
   ShoppingCart,
   GraduationCap,
+  FolderKanban,
   HeartPulse
 } from "lucide-react"
 
@@ -122,6 +123,12 @@ const SidebarContent: MenuItem[] = [
         name: "每日复盘",
         icon: ClipboardCheck,
         url: "/apps/daily-review",
+      },
+      {
+        id: uniqueId(),
+        name: "项目管理",
+        icon: FolderKanban,
+        url: "/apps/projects",
       },
       {
         id: uniqueId(),

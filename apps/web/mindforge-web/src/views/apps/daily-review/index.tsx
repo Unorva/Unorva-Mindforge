@@ -363,7 +363,8 @@ export default function DailyReviewPage() {
           onValueChange={(value) => setActiveTab(value === 'edit' ? 'edit' : 'preview')}
           value={activeTab}
         >
-        <Card className="w-full">
+        {/* 显示页正文较短时也保留与编辑器接近的工作区高度，避免卡片随内容收缩。 */}
+        <Card className="min-h-[calc(100vh-220px)] w-full">
           <CardHeader className="border-b">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
               <div>

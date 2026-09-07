@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @import "/src/css/typeset.css";
 @import "tw-animate-css";
-@import "./pages/app.css";
-
-@import "./styles/style-lyra.css";
 
 
 @utility no-scrollbar {
@@ -16,14 +13,6 @@
 }
 
 @custom-variant dark (&:is(.dark *));
-
-/* shadcn style variants — applied as body classes (e.g. .style-nova) */
-
-@custom-variant style-lyra (&:where(.style-lyra *));
-
-
-
-
 
 @font-face {
   font-family: 'Geist';
@@ -172,12 +161,6 @@
 
 
 
-@utility frontend-page {
-  & .container {
-    @apply max-w-[1410px];
-  }
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -206,23 +189,6 @@
   }
 }
 
-@utility btn-circle-hover {
-  @apply h-9 w-9 flex justify-center items-center rounded-full hover:bg-primary/5 hover:text-primary cursor-pointer bg-transparent;
-}
-
-/* Card Shadow Control via Data Attribute */
-html[data-card-shadow="true"] [data-slot="card"] {
-  @apply shadow-md ring-0;
-}
-
-html[data-card-shadow="false"] [data-slot="card"] {
-  @apply border shadow-none ring-0;
-}
-
-[data-slot="checkbox"] {
-  /* @apply data-checked:bg-primary data-hover:bg-primary data-checked:border-primary data-checked:text-white; */
-}
-
 [data-slot="input"] {
   @apply focus-visible:border-primary focus-visible:ring-[0px];
 }
@@ -231,103 +197,8 @@ html[data-card-shadow="false"] [data-slot="card"] {
   @apply focus-visible:border-primary focus-visible:ring-[0px];
 }
 
-/*for sidebar */
-
-[data-sidebar-type="true"] {
-  /* Only apply the icon-only + hover-preview behavior while the sidebar
-     is actually in its real collapsed ("icon") state. When it's expanded
-     (data-collapsible is empty), labels render normally with no overrides. */
-  [data-slot="sidebar"][data-collapsible="icon"] {
-    .sidebar-box .hide-menu {
-      @apply hidden;
-    }
-
-    .sidebar-box:hover {
-      width: 250px !important;
-      @apply transition-all duration-300;
-
-      [data-slot="sidebar-container"],
-      [data-sidebar="sidebar"],
-      [data-sidebar="sidebar-inner"] {
-        width: 250px !important;
-        transition: width 0.3s ease-in-out !important;
-      }
-
-      .hide-menu {
-        display: flex !important;
-      }
-
-      div.hide-menu {
-        display: flex !important;
-        flex-direction: column !important;
-      }
-
-      span.hide-menu {
-        display: inline-block !important;
-        white-space: nowrap !important;
-      }
-
-      /* Powerfully override Shadcn's internal button restrictions on hover */
-      [data-slot="sidebar-menu-button"],
-      [data-sidebar="menu-button"] {
-        display: flex !important;
-        align-items: center !important;
-        width: 100% !important;
-        height: auto !important;
-        min-height: 44px !important;
-        padding: 0 !important;
-
-        overflow: visible !important;
-        justify-content: flex-start !important;
-      }
-
-
-
-      /* Inner alignment for NavUser and NavSecondary to match standard items */
-      [data-sidebar="menu-button"] .flex.items-center {
-        padding: 8px 12px !important;
-        width: 100% !important;
-        gap: 12px !important;
-      }
-
-
-
-
-    }
-
-    .sidebar-box:not(:hover) {
-
-      /* Ensure icons are perfectly centered in mini mode */
-      [data-sidebar="menu-button"] {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        padding: 0 !important;
-        width: 100% !important;
-      }
-
-      [data-sidebar="menu-button"] .flex.items-center {
-        justify-content: center !important;
-        padding: 0 !important;
-        gap: 0 !important;
-        width: 100% !important;
-      }
-
-
-
-    }
-  }
-}
-
-
 [data-slot="chart"] {
   @apply h-72 w-full;
-}
-
-@utility frontend-page {
-  & .container {
-    @apply max-w-[1410px];
-  }
 }
 
 @utility container {

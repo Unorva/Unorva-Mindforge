@@ -6,7 +6,6 @@ import { Button } from "src/components/ui/button";
 import { PanelLeft } from 'lucide-react';
 import { Separator } from "src/components/ui/separator";
 
-import { cn } from "src/lib/utils";
 import FullLogo from "../../shared/logo/FullLogo";
 import Search from "./Search";
 
@@ -21,8 +20,7 @@ const Header = () => {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <>
-      <header className={cn(`sticky top-0 z-2 bg-background border-b border-border`)}>
+      <header className="sticky top-0 z-2 border-b border-border bg-background">
         <nav>
           <div className="mx-auto flex flex-wrap items-center justify-between p-2">
             <div className="flex gap-2 items-center">
@@ -43,14 +41,9 @@ const Header = () => {
 
 
 
-               {/* <Separator
+              <Separator
                 orientation="vertical"
-                className="w-px h-5 mx-2 bg-border self-center max-lg:hidden"
-              /> */}
-
- <Separator
-                orientation="vertical"
-                className="h-4 mr-4 w-px  ml-2   bg-border self-center max-lg:hidden"
+                className="ml-2 mr-4 h-4 w-px self-center bg-border max-lg:hidden"
               />
 
 
@@ -77,7 +70,6 @@ const Header = () => {
           </div>
         </nav>
       </header>
-    </>
   );
 };
 
