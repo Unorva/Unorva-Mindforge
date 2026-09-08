@@ -24,6 +24,7 @@ const BlogEdit = Loadable(lazy(() => import('../views/apps/blog/edit')));
 const BlogTable = Loadable(lazy(() => import('../views/apps/blog/manage-blog')));
 
 const Notes = Loadable(lazy(() => import('../views/apps/notes')));
+const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Test = Loadable(lazy(() => import('../views/apps/test')));
@@ -32,8 +33,6 @@ const Tickets = Loadable(lazy(() => import('../views/apps/tickets')));
 const TicketCreate = Loadable(lazy(() => import('../views/apps/tickets/create')));
 
 // pages
-const TablesPage = Loadable(lazy(() => import('../views/pages/tables')));
-const FormPage = Loadable(lazy(() => import('../views/pages/form')));
 const UserProfilePage = Loadable(lazy(() => import('../views/pages/user-profile')));
 
 //icons
@@ -67,13 +66,12 @@ const Router = [
           { path: 'apps/blog/edit', element: <BlogEdit /> },
           { path: 'apps/blog/manage-blog', element: <BlogTable /> },
           { path: 'apps/notes', element: <Notes /> },
+          { path: 'apps/mail', element: <Mail /> },
           { path: 'apps/daily-review', element: <DailyReview /> },
           { path: 'apps/projects', element: <Projects /> },
           { path: 'apps/projects/:projectId', element: <Projects /> },
           { path: 'apps/tickets', element: <Tickets /> },
           { path: 'apps/tickets/create', element: <TicketCreate /> },
-          { path: 'pages/tables', element: <TablesPage /> },
-          { path: 'pages/form', element: <FormPage /> },
           { path: 'pages/user-profile', element: <UserProfilePage /> },
           { path: 'icons/iconify', element: <SolarIcon /> },
           { path: 'apps/test', element: <Test /> },

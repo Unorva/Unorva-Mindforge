@@ -17,7 +17,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -25,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { AppPage, AppPageDivider, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
 
 function dateKey(date: Date) {
   const year = date.getFullYear()
@@ -300,9 +300,14 @@ export default function DailyReviewPage() {
   )
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[290px_minmax(0,1fr)]">
-      <aside className="space-y-3">
-        <Card>
+    <AppPage>
+      <AppPageHeader
+        title="每日复盘"
+      />
+      <AppPageDivider />
+      <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] xl:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="space-y-3 border-b p-4 xl:border-r xl:border-b-0">
+        <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">日历</CardTitle>
             <CardDescription>绿色表示已写，红色表示未写</CardDescription>
@@ -327,11 +332,6 @@ export default function DailyReviewPage() {
           </CardContent>
         </Card>
         <AlertDialog onOpenChange={setIsSummaryDialogOpen} open={isSummaryDialogOpen}>
-          <AlertDialogTrigger
-            render={<Button className="w-full" type="button" variant="outline" />}
-          >
-            <CalendarRange />AI 总结
-          </AlertDialogTrigger>
           <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle>AI 总结</AlertDialogTitle>
@@ -356,28 +356,32 @@ export default function DailyReviewPage() {
         </AlertDialog>
       </aside>
 
-      <main className="min-w-0 w-full">
+      <main className="min-h-0 min-w-0 p-4">
         <Tabs
           // 预览正文较短时也占满右侧网格列，避免切换标签时标题和 Tabs 左移。
-          className="w-full gap-0"
+          className="h-full w-full gap-0"
           onValueChange={(value) => setActiveTab(value === 'edit' ? 'edit' : 'preview')}
           value={activeTab}
         >
         {/* 显示页正文较短时也保留与编辑器接近的工作区高度，避免卡片随内容收缩。 */}
-        <Card className="min-h-[calc(100vh-220px)] w-full">
+        <Card className="h-full min-h-0 w-full border shadow-none">
           <CardHeader className="border-b">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle>每日复盘</CardTitle>
+                <CardTitle>复盘内容</CardTitle>
                 <CardDescription className="mt-1">
                   {formattedDate}
                   {activeTab === 'edit' && (hasUnsavedChanges ? ' · 有未保存的修改' : ' · 所有修改已保存')}
                 </CardDescription>
               </div>
-              <TabsList aria-label="每日复盘视图" className="shrink-0">
-                <TabsTrigger value="preview"><Eye />显示</TabsTrigger>
-                <TabsTrigger value="edit"><Pencil />编辑</TabsTrigger>
-              </TabsList>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button onClick={() => setIsSummaryDialogOpen(true)} size="sm" type="button" variant="outline"><CalendarRange />AI 总结</Button>
+                {activeTab === 'edit' ? <Button disabled={isSaving || !hasUnsavedChanges} onClick={() => void saveSource()} size="sm" type="button">{isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}保存复盘</Button> : null}
+                <TabsList aria-label="每日复盘视图" className="shrink-0">
+                  <TabsTrigger value="preview"><Eye />显示</TabsTrigger>
+                  <TabsTrigger value="edit"><Pencil />编辑</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-5">
@@ -414,7 +418,7 @@ export default function DailyReviewPage() {
                     isSaving={isSaving}
                     onChange={setContent}
                   />
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end">
                     <Button
                       disabled={isSaving || !hasReview}
                       onClick={() => setDevelopmentFeature('AI 润色')}
@@ -422,10 +426,6 @@ export default function DailyReviewPage() {
                       variant="outline"
                     >
                       <Sparkles />AI 润色
-                    </Button>
-                    <Button disabled={isSaving || !hasUnsavedChanges} onClick={() => void saveSource()} type="button">
-                      {isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}
-                      保存复盘
                     </Button>
                   </div>
                 </>
@@ -447,6 +447,7 @@ export default function DailyReviewPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </AppWorkspace>
+    </AppPage>
   )
 }

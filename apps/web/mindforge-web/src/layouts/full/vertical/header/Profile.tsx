@@ -19,7 +19,7 @@ import { Link, useNavigate } from "react-router";
 import avatar from '@/assets/images/profile/avtar.webp';
 import Buynow from '@/assets/images/backgrounds/sidebarbuynow.svg';
 import { useState } from 'react';
-import { toast } from '@/components/ui/toast';
+import { toast } from 'sonner';
 import { logout } from '@/api/system/auth/auth';
 import { clearAccessToken } from '@/utils/auth';
 
@@ -39,11 +39,7 @@ export default function ProfileSheet() {
       setLoggingOut(true);
       const result = await logout();
       if (result.success) {
-        toast.add({
-          description: '已退出登录',
-          title: '操作成功',
-          type: 'success',
-        });
+        toast.success('操作成功', { description: '已退出登录' });
       }
     } catch {
       // 网络异常会由全局请求封装提示；仍应退出本机，避免令牌继续保留在浏览器中。

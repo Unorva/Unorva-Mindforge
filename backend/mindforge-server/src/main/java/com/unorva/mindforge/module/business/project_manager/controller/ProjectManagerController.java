@@ -30,9 +30,13 @@ public class ProjectManagerController {
 
     private final ProjectManagerService projectManagerService;
 
+    /**
+     * 获取项目列表
+     * @return 项目列表
+     */
     @GetMapping
-    public Result<List<ProjectVO>> listProjects() {
-        return Result.success(projectManagerService.listProjects());
+    public Result<List<ProjectVO>> getProjectList() {
+        return Result.success(projectManagerService.getProjectList());
     }
 
     @GetMapping("/{projectId}")

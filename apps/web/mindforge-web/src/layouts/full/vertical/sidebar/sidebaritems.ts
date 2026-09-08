@@ -60,7 +60,6 @@ import {
   Unlink,
   UserPlus, Smile, House, NotebookText, Component,
   Table2,
-  Form,
   CircleUserRound,
   Sparkles,
   Calendar,
@@ -97,18 +96,6 @@ const SidebarContent: MenuItem[] = [
     items: [
       {
         id: uniqueId(),
-        name: "Table",
-        icon: Table2,
-        url: "/pages/tables",
-      },
-      {
-        id: uniqueId(),
-        name: "Form",
-        icon: Form,
-        url: "/pages/form",
-      },
-      {
-        id: uniqueId(),
         name: "User Profile",
         icon: CircleUserRound,
         url: "/pages/user-profile",
@@ -120,15 +107,21 @@ const SidebarContent: MenuItem[] = [
     items: [
       {
         id: uniqueId(),
-        name: "每日复盘",
-        icon: ClipboardCheck,
-        url: "/apps/daily-review",
-      },
-      {
-        id: uniqueId(),
         name: "项目管理",
         icon: FolderKanban,
         url: "/apps/projects",
+      },
+      {
+        id: uniqueId(),
+        name: "邮件中心",
+        icon: Mail,
+        url: "/apps/mail",
+      },
+      {
+        id: uniqueId(),
+        name: "每日复盘",
+        icon: ClipboardCheck,
+        url: "/apps/daily-review",
       },
       {
         id: uniqueId(),

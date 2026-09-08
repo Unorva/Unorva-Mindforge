@@ -9,7 +9,7 @@ import { useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { login } from '@/api/system/auth/auth';
 import { saveAccessToken } from '@/utils/auth';
-import { toast } from '@/components/ui/toast';
+import { toast } from 'sonner';
 
 const BoxedLogin = () => {
   const navigate = useNavigate();
@@ -44,21 +44,12 @@ const BoxedLogin = () => {
         return;
       }
       if (!result.data?.token) {
-        toast.add({
-          description: result.message || '登录失败，请检查邮箱和密码。',
-          priority: 'high',
-          title: '登录失败',
-          type: 'error',
-        });
+        toast.error('登录失败', { description: result.message || '登录失败，请检查邮箱和密码。' });
         return;
       }
       // 保存后端签发的 Bearer Token
       saveAccessToken(result.data.token, remember);
-      toast.add({
-        description: '登录成功',
-        title: '操作成功',
-        type: 'success',
-      });
+      toast.success('操作成功', { description: '登录成功' });
       // 获取路由守卫记录的原访问地址；没有则进入首页
       const from = (location.state as { from?: string } | null)?.from ?? '/';
       // replace 避免用户按返回键回到登录页

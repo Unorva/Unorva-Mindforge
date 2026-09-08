@@ -38,7 +38,7 @@ public class ProjectManagerService {
     private final RequirementManager requirementManager;
     private final DefectManager defectManager;
 
-    public List<ProjectVO> listProjects() {
+    public List<ProjectVO> getProjectList() {
         return projectManager.list(new LambdaQueryWrapper<ProjectEntity>()
                         .eq(ProjectEntity::getUserId, currentUserId())
                         .orderByDesc(ProjectEntity::getUpdatedTime))

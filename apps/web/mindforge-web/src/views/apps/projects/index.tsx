@@ -4,6 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import {
   Archive,
   ArrowLeft,
+  ArrowRight,
   Bug,
   CircleAlert,
   FileText,
@@ -12,11 +13,13 @@ import {
   Pencil,
   Plus,
   Settings,
+  Search,
   Trash2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,7 +65,10 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { DataTable, type DataTableFeatures } from '@/components/data-table/data-table'
+import InputPlaceholderAnimate from '@/components/animated-components/animatedinput-placeholder'
+import { DataTable } from '@/components/data-table/data-table'
+import { AppPage, AppPageDivider, AppPageHeader } from '@/components/shared/app-workspace'
+import { DashboardCard } from '@/components/shared/dashboard-card'
 import { cn } from '@/lib/utils'
 import {
   archiveProject as archiveProjectRequest,
@@ -182,6 +188,7 @@ export default function Projects() {
   const [requirementDetailsTarget, setRequirementDetailsTarget] = useState<Pick<Requirement, 'description' | 'title'> | null>(null)
   const [reproductionStepsTarget, setReproductionStepsTarget] = useState<Pick<Defect, 'description' | 'reproductionSteps' | 'title'> | null>(null)
   const [projectForm, setProjectForm] = useState(emptyProjectForm)
+  const [projectSearch, setProjectSearch] = useState('')
   const [requirementForm, setRequirementForm] = useState(emptyRequirementForm)
   const [defectForm, setDefectForm] = useState(emptyDefectForm)
 
@@ -204,6 +211,7 @@ export default function Projects() {
 
   const activeProject = projects.find((project) => project.id === Number(projectId))
   const activeProjects = projects.filter((project) => project.status !== '已归档')
+  const visibleProjects = activeProjects.filter((project) => `${project.name} ${project.description} ${project.owner}`.toLocaleLowerCase().includes(projectSearch.toLocaleLowerCase()))
 
   const updateActiveProject = (updater: (project: Project) => Project) => {
     if (!activeProject) return
@@ -333,27 +341,28 @@ export default function Projects() {
   if (!activeProject) {
     return (
       <>
-        <div className="space-y-6">
-          <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <div className="flex items-center gap-2 text-primary"><FolderKanban className="size-5" /><span className="text-sm font-medium">个人项目空间</span></div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight">项目管理</h1>
-              <p className="mt-1 text-sm text-muted-foreground">集中管理项目、需求和缺陷，先从一个清晰的目标开始。</p>
-            </div>
-            <Button onClick={() => setProjectDialogOpen(true)}><Plus />新建项目</Button>
-          </section>
+        <AppPage>
+          <AppPageHeader
+            title="项目管理"
+          />
+          <AppPageDivider />
+          <Card className="min-h-[calc(100dvh-15rem)] gap-0! p-0">
 
-          <section className="grid gap-4 sm:grid-cols-3">
+          <section className="grid grid-cols-12 gap-px border-b bg-border">
             <StatCard icon={FolderKanban} label="进行中的项目" value={projectStats.projects} />
-            <StatCard icon={ListTodo} label="全部需求" value={projectStats.requirements} />
+            <StatCard icon={ListTodo} label="全部需求" tone="warning" value={projectStats.requirements} />
             <StatCard icon={CircleAlert} label="待关闭缺陷" value={projectStats.openDefects} tone="destructive" />
           </section>
+          <AppPageDivider />
 
           {activeProjects.length ? (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between"><div><h2 className="font-semibold">我的项目</h2><p className="mt-0.5 text-sm text-muted-foreground">选择一个项目，继续处理其中的需求和缺陷。</p></div><span className="text-sm text-muted-foreground">{activeProjects.length} 个项目</span></div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {activeProjects.map((project) => {
+            <section id="project-list">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-y px-6 py-4">
+                <Button onClick={() => setProjectDialogOpen(true)}><Plus />新建项目</Button>
+                <div className="relative min-w-0 flex-1 sm:w-60 sm:flex-none"><Search className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" /><InputPlaceholderAnimate className="pl-9!" onChange={setProjectSearch} placeholders={["搜索项目…", "查找项目…", "按负责人搜索…"]} value={projectSearch} /></div>
+              </div>
+              <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+                {visibleProjects.map((project) => {
                   const openDefects = project.defects.filter((defect) => defect.status !== '已关闭').length
                   return (
                     <button
@@ -364,28 +373,21 @@ export default function Projects() {
                     >
                       <Card className="h-full border border-border/70 bg-card shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
                         <CardHeader>
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary"><FolderKanban className="size-4" /></div>
-                            <Pill className={statusClass(project.status)}>{project.status}</Pill>
-                          </div>
+                          <div className="flex items-start justify-between gap-3"><div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary"><FolderKanban className="size-4" /></div><Pill className={statusClass(project.status)}>{project.status}</Pill></div>
                           <CardTitle className="mt-2 line-clamp-1">{project.name}</CardTitle>
                           <CardDescription className="line-clamp-2 min-h-10">{project.description || '暂无项目简介'}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3 border-y py-3 text-sm">
-                            <div><p className="text-muted-foreground">需求</p><p className="mt-1 font-medium">{project.requirements.length} 条</p></div>
-                            <div><p className="text-muted-foreground">待处理缺陷</p><p className="mt-1 font-medium">{openDefects} 个</p></div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground"><span>负责人：{project.owner}</span><span>{project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}</span></div>
-                        </CardContent>
+                        <CardContent className="space-y-4"><div className="grid grid-cols-2 gap-3 border-y py-3 text-sm"><div><p className="text-muted-foreground">需求</p><p className="mt-1 font-medium">{project.requirements.length} 条</p></div><div><p className="text-muted-foreground">待处理缺陷</p><p className="mt-1 font-medium">{openDefects} 个</p></div></div><div className="flex items-center justify-between text-xs text-muted-foreground"><span>负责人：{project.owner}</span><span>{project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}</span></div></CardContent>
                       </Card>
                     </button>
                   )
                 })}
               </div>
+              {visibleProjects.length === 0 && <p className="px-6 py-10 text-center text-sm text-muted-foreground">没有找到匹配的项目。</p>}
             </section>
-          ) : <EmptyState icon={FolderKanban} title="还没有项目" description="新建一个项目，开始梳理需求和待解决的问题。" action={() => setProjectDialogOpen(true)} actionLabel="新建项目" disabled={false} />}
-        </div>
+          ) : <div className="p-6"><EmptyState icon={FolderKanban} title="还没有项目" description="新建一个项目，开始梳理需求和待解决的问题。" action={() => setProjectDialogOpen(true)} actionLabel="新建项目" disabled={false} /></div>}
+          </Card>
+        </AppPage>
         <ProjectDialog form={projectForm} onFormChange={setProjectForm} onOpenChange={setProjectDialogOpen} onSubmit={createProject} open={projectDialogOpen} />
       </>
     )
@@ -429,7 +431,8 @@ export default function Projects() {
 
   return (
     <>
-      <div className="space-y-6">
+      <AppPage>
+      <div className="space-y-4">
         <section className="border-b pb-5">
           <div className="min-w-0">
             <Breadcrumb className="mb-3">
@@ -449,7 +452,8 @@ export default function Projects() {
           </div>
         </section>
 
-        <Tabs className="h-[calc(100dvh-15rem)] min-h-0 flex-col gap-6 lg:flex-row" defaultValue="requirements" orientation="vertical">
+        <Card className="min-h-[calc(100dvh-15rem)] p-6">
+        <Tabs className="h-full min-h-0 flex-col gap-6 lg:flex-row" defaultValue="requirements" orientation="vertical">
           <aside className="shrink-0 lg:w-44">
             <p className="mb-2 px-2 text-xs font-medium text-muted-foreground">项目工作台</p>
             <TabsList aria-label="项目工作项" className="flex h-auto w-full flex-col items-stretch gap-1">
@@ -487,7 +491,9 @@ export default function Projects() {
             <ProjectSettings onArchive={() => setArchiveDialogOpen(true)} onSave={saveProjectSettings} project={activeProject} />
           </TabsContent>
         </Tabs>
+        </Card>
       </div>
+      </AppPage>
       <RequirementDialog editing={editingRequirementId !== null} form={requirementForm} onFormChange={setRequirementForm} onOpenChange={setRequirementDialogOpen} onSubmit={saveRequirement} open={requirementDialogOpen} />
       <DefectDialog editing={editingDefectId !== null} form={defectForm} onFormChange={setDefectForm} onOpenChange={setDefectDialogOpen} onSubmit={saveDefect} open={defectDialogOpen} requirements={activeProject.requirements} />
       <ArchiveProjectDialog onArchive={archiveProject} onOpenChange={setArchiveDialogOpen} open={archiveDialogOpen} projectName={activeProject.name} />
@@ -498,9 +504,10 @@ export default function Projects() {
   )
 }
 
-function StatCard({ icon: Icon, label, value, tone }: { icon: typeof FolderKanban; label: string; value: number; tone?: 'destructive' }) {
-  const isDestructive = tone === 'destructive'
-  return <Card className={cn('border-0 shadow-none', isDestructive ? 'bg-destructive/5 ring-destructive/15' : 'bg-primary/5 ring-primary/15')} size="sm"><CardContent className="flex items-center gap-3"><div className={cn('grid size-10 place-items-center rounded-full', isDestructive ? 'bg-destructive/12 text-destructive' : 'bg-primary/12 text-primary')}><Icon className="size-4" /></div><div><p className="text-sm text-muted-foreground">{label}</p><p className={cn('mt-0.5 text-2xl font-semibold leading-none', isDestructive && 'text-destructive')}>{value}</p></div></CardContent></Card>
+function StatCard({ icon: Icon, label, value, tone = 'primary' }: { icon: typeof FolderKanban; label: string; value: number; tone?: 'destructive' | 'primary' | 'warning' }) {
+  const badgeClass = tone === 'destructive' ? 'bg-destructive/10! text-destructive!' : tone === 'warning' ? 'bg-chart-4/12! text-chart-4!' : 'bg-chart-2/10! text-chart-2!'
+  const badgeText = tone === 'destructive' ? '待处理' : tone === 'warning' ? '跟进中' : '活跃'
+  return <DashboardCard className="col-span-12 py-6 md:col-span-4"><CardContent className="flex flex-row justify-between px-6"><div className="flex w-full flex-col items-start gap-4"><div className="flex w-full items-center justify-between"><div className="flex flex-col gap-1"><p className="text-sm font-normal text-foreground">{label}</p><div className="flex items-center gap-2"><h3 className="text-2xl font-semibold">{value}</h3><Badge className={badgeClass}>{badgeText}</Badge></div></div><div className="w-fit rounded-md border border-border p-2.5"><Icon size={16} /></div></div><Button className="h-auto cursor-pointer gap-1.5 rounded-md px-4 py-2" onClick={() => document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth' })} variant="outline">查看项目<ArrowRight height={18} width={18} /></Button></div></CardContent></DashboardCard>
 }
 
 function EmptyState({ action, actionLabel, description, disabled, icon: Icon, title }: { action: () => void; actionLabel: string; description: string; disabled: boolean; icon: typeof Bug; title: string }) {
@@ -584,8 +591,8 @@ function ManagementPanel({ action, actionLabel, children, description, disabled,
 
 function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChange, requirements }: { disabled: boolean; onDelete: (requirement: Requirement) => void; onDetails: (requirement: Requirement) => void; onEdit: (requirement: Requirement) => void; onStatusChange: (requirementId: number, status: RequirementStatus) => void; requirements: Requirement[] }) {
   const columns = useMemo(() => {
-    const columnHelper = createColumnHelper<DataTableFeatures, Requirement>()
-    return columnHelper.columns([
+    const columnHelper = createColumnHelper<Requirement>()
+    return [
     columnHelper.accessor('title', {
       header: '标题',
       cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
@@ -609,7 +616,7 @@ function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChan
       enableHiding: false,
       cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看需求详情：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑需求：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除需求：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
     }),
-    ])
+    ]
   }, [disabled, onDelete, onDetails, onEdit, onStatusChange])
 
   return <DataTable centered columns={columns} data={requirements} fillHeight={false} searchPlaceholder="搜索需求…" />
@@ -617,8 +624,8 @@ function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChan
 
 function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange }: { defects: Defect[]; disabled: boolean; linkedRequirement: (requirementId?: number) => Requirement | undefined; onDelete: (defect: Defect) => void; onDetails: (defect: Defect) => void; onEdit: (defect: Defect) => void; onStatusChange: (defectId: number, status: DefectStatus) => void }) {
   const columns = useMemo(() => {
-    const columnHelper = createColumnHelper<DataTableFeatures, Defect>()
-    return columnHelper.columns([
+    const columnHelper = createColumnHelper<Defect>()
+    return [
     columnHelper.accessor('title', {
       header: '标题',
       cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
@@ -650,7 +657,7 @@ function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetail
       enableHiding: false,
       cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看缺陷复现步骤：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑缺陷：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除缺陷：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
     }),
-    ])
+    ]
   }, [disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange])
 
   return <DataTable centered columns={columns} data={defects} fillHeight={false} searchPlaceholder="搜索缺陷…" />

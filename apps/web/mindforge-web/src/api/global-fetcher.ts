@@ -1,5 +1,5 @@
 import { getAccessToken } from '@/utils/auth';
-import { toast } from '@/components/ui/toast';
+import { toast } from 'sonner';
 
 type ApiErrorPayload = Record<string, unknown>;
 
@@ -17,12 +17,7 @@ function getResponseErrorMessage(value: unknown, fallback: string) {
 }
 
 function showRequestError(message: string) {
-  toast.add({
-    description: message,
-    priority: 'high',
-    title: '请求失败',
-    type: 'error',
-  });
+  toast.error('请求失败', { description: message });
 }
 
 /**

@@ -3,10 +3,6 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "src/context/shadcntheme/ThemeContext";
 
-type DocumentWithViewTransition = Document & {
-  startViewTransition?: (updateCallback: () => void) => ViewTransition;
-};
-
 const LightDark = () => {
   const { theme: activeMode, setTheme: setActiveMode } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
@@ -20,13 +16,14 @@ const LightDark = () => {
       setActiveMode(activeMode === "light" ? "dark" : "light");
     };
 
-    const documentWithTransition = document as DocumentWithViewTransition;
-    const transition = documentWithTransition.startViewTransition?.(toggleMode);
-
-    if (!transition) {
+    if (!(document as any).startViewTransition) {
       toggleMode();
       return;
     }
+
+    const transition = (document as any).startViewTransition(() => {
+      toggleMode();
+    });
 
     await transition.ready;
 
@@ -42,19 +39,32 @@ const LightDark = () => {
     );
   };
 
-  if (!isMounted) return null;
-
-  const ThemeIcon = activeMode === "light" ? Moon : Sun;
+  if (!isMounted) {
+    // Render nothing on the server to avoid hydration mismatch
+    return null;
+  }
 
   return (
     <div>
-      <Button
-        variant="ghost"
-        className="h-10 w-10 cursor-pointer rounded-full hover:bg-primary/5"
-        onClick={toggleTheme}
-      >
-        <ThemeIcon className="size-5" />
-      </Button>
+      {/* Theme Toggle */}
+      {activeMode === "light" ? (
+        <Button
+          variant="ghost"
+          className=" h-10 w-10  hover:bg-primary/5  rounded-full cursor-pointer"
+          onClick={toggleTheme}
+        >
+          <Moon className="size-5" />
+        </Button>
+      ) : (
+        // Dark Mode Button
+        <Button
+          variant="ghost"
+          className=" h-10 w-10  hover:bg-primary/5  rounded-full cursor-pointer"
+          onClick={toggleTheme}
+        >
+          <Sun className="size-5" />
+        </Button>
+      )}
     </div>
   );
 };

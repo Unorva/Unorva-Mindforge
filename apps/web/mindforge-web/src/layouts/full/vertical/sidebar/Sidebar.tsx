@@ -6,9 +6,12 @@ import FullLogo from '../../shared/logo/FullLogo';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
 } from 'src/components/ui/sidebar';
+import { NavSecondary } from './NavSecondary';
+import { NavUser } from './NavUser';
 import { Badge } from 'src/components/ui/badge';
 import sidebaritems from './sidebaritems';
 
@@ -38,6 +41,13 @@ const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
                     </SidebarGroup>
                 </SimpleBar>
             </SidebarContent>
+
+            <SidebarFooter className="p-4">
+                <div className="hide-menu flex flex-col gap-2">
+                    <NavSecondary />
+                    <NavUser />
+                </div>
+            </SidebarFooter>
 
         </Sidebar >
 
