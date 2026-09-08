@@ -64,87 +64,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable, type DataTableFeatures } from '@/components/data-table/data-table'
 import { cn } from '@/lib/utils'
+import {
+  archiveProject as archiveProjectRequest,
+  createDefect,
+  createProject as createProjectRequest,
+  createRequirement,
+  deleteDefect,
+  deleteRequirement,
+  getProjects,
+  updateDefect,
+  updateDefectStatus,
+  updateProject,
+  updateRequirement,
+  updateRequirementStatus,
+  type Defect,
+  type DefectStatus,
+  type Priority,
+  type Project,
+  type ProjectStatus,
+  type Requirement,
+  type RequirementStatus,
+  type Severity,
+} from '@/api/project-manager/project-manager'
 import { ProjectDatePicker } from './data-picker'
-
-type ProjectStatus = '规划中' | '进行中' | '已完成' | '已归档'
-type RequirementStatus = '待处理' | '进行中' | '已完成'
-type DefectStatus = '待修复' | '修复中' | '待验证' | '已关闭'
-type Priority = '低' | '中' | '高'
-type Severity = '轻微' | '一般' | '严重' | '阻断'
-
-type Requirement = {
-  id: string
-  title: string
-  description: string
-  priority: Priority
-  status: RequirementStatus
-  owner: string
-  dueDate: string
-}
-
-type Defect = {
-  id: string
-  title: string
-  description: string
-  reproductionSteps: string
-  severity: Severity
-  priority: Priority
-  status: DefectStatus
-  owner: string
-  dueDate: string
-  requirementId?: string
-}
-
-type Project = {
-  id: string
-  name: string
-  description: string
-  status: ProjectStatus
-  owner: string
-  startDate: string
-  endDate: string
-  requirements: Requirement[]
-  defects: Defect[]
-}
-
-const STORAGE_KEY = 'mindforge-project-management-preview'
-
-const initialProjects: Project[] = [
-  {
-    id: 'project-preview',
-    name: '示例：个人知识库升级',
-    description: '将零散笔记沉淀为可检索、可复盘的个人知识库。',
-    status: '进行中',
-    owner: '我',
-    startDate: '2026-09-01',
-    endDate: '2026-09-30',
-    requirements: [
-      {
-        id: 'requirement-preview',
-        title: '支持按标签筛选笔记',
-        description: '在笔记列表中提供多标签筛选和清空筛选条件的入口。',
-        priority: '高',
-        status: '进行中',
-        owner: '我',
-        dueDate: '2026-09-12',
-      },
-    ],
-    defects: [
-      {
-        id: 'defect-preview',
-        title: '筛选后返回列表状态丢失',
-        description: '进入笔记详情后返回，已选的标签筛选条件没有保留。',
-        reproductionSteps: '1. 选择任意标签筛选\n2. 进入一篇笔记详情\n3. 返回列表',
-        severity: '一般',
-        priority: '中',
-        status: '待修复',
-        owner: '我',
-        dueDate: '2026-09-10',
-        requirementId: 'requirement-preview',
-      },
-    ],
-  },
-]
 
 const projectStatuses: ProjectStatus[] = ['规划中', '进行中', '已完成', '已归档']
 const requirementStatuses: RequirementStatus[] = ['待处理', '进行中', '已完成']
@@ -180,19 +122,6 @@ const emptyDefectForm = () => ({
   dueDate: '',
   requirementId: '',
 })
-
-function createId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-function readProjects(): Project[] {
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) as Project[] : initialProjects
-  } catch {
-    return initialProjects
-  }
-}
 
 function statusClass(status: string) {
   if (status === '已完成' || status === '已关闭') return 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400'
@@ -241,26 +170,39 @@ function OptionSelect<T extends string>({
 export default function Projects() {
   const navigate = useNavigate()
   const { projectId } = useParams()
-  const [projects, setProjects] = useState<Project[]>(readProjects)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [requirementDialogOpen, setRequirementDialogOpen] = useState(false)
   const [defectDialogOpen, setDefectDialogOpen] = useState(false)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [editingRequirementId, setEditingRequirementId] = useState<string | null>(null)
-  const [editingDefectId, setEditingDefectId] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string; type: 'requirement' | 'defect' } | null>(null)
+  const [editingRequirementId, setEditingRequirementId] = useState<number | null>(null)
+  const [editingDefectId, setEditingDefectId] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type: 'requirement' | 'defect' } | null>(null)
   const [requirementDetailsTarget, setRequirementDetailsTarget] = useState<Pick<Requirement, 'description' | 'title'> | null>(null)
   const [reproductionStepsTarget, setReproductionStepsTarget] = useState<Pick<Defect, 'description' | 'reproductionSteps' | 'title'> | null>(null)
   const [projectForm, setProjectForm] = useState(emptyProjectForm)
   const [requirementForm, setRequirementForm] = useState(emptyRequirementForm)
   const [defectForm, setDefectForm] = useState(emptyDefectForm)
 
-  useEffect(() => {
-    // 第一版只在浏览器本地保存，便于先确认交互和信息结构，后续可平滑替换为接口调用。
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
-  }, [projects])
+  const loadProjects = async () => {
+    try {
+      const result = await getProjects()
+      if (result.success) {
+        setProjects(result.data)
+      }
+    } catch {
+      // 请求层已统一提示失败原因；这里仅结束加载状态，保留空列表供用户重试。
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const activeProject = projects.find((project) => project.id === projectId)
+  useEffect(() => {
+    void loadProjects()
+  }, [])
+
+  const activeProject = projects.find((project) => project.id === Number(projectId))
   const activeProjects = projects.filter((project) => project.status !== '已归档')
 
   const updateActiveProject = (updater: (project: Project) => Project) => {
@@ -268,70 +210,70 @@ export default function Projects() {
     setProjects((current) => current.map((project) => project.id === activeProject.id ? updater(project) : project))
   }
 
-  const createProject = (event: React.FormEvent<HTMLFormElement>) => {
+  const createProject = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!projectForm.name.trim()) return
-    const project: Project = {
-      id: createId('project'),
-      ...projectForm,
+    const result = await createProjectRequest({
       name: projectForm.name.trim(),
       description: projectForm.description.trim(),
-      owner: projectForm.owner.trim() || '我',
-      requirements: [],
-      defects: [],
-    }
-    setProjects((current) => [project, ...current])
+      status: projectForm.status,
+      startDate: projectForm.startDate || null,
+      endDate: projectForm.endDate || null,
+    })
+    if (!result.success) return
+    setProjects((current) => [result.data, ...current])
     setProjectDialogOpen(false)
     setProjectForm(emptyProjectForm())
-    navigate(`/apps/projects/${project.id}`)
+    navigate(`/apps/projects/${result.data.id}`)
   }
 
-  const saveRequirement = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveRequirement = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!requirementForm.title.trim()) return
+    if (!activeProject || !requirementForm.title.trim()) return
+    const params = {
+      title: requirementForm.title.trim(),
+      description: requirementForm.description.trim(),
+      priority: requirementForm.priority,
+      status: requirementForm.status,
+      dueDate: requirementForm.dueDate || null,
+    }
+    const result = editingRequirementId === null
+      ? await createRequirement(activeProject.id, params)
+      : await updateRequirement(activeProject.id, editingRequirementId, params)
+    if (!result.success) return
     updateActiveProject((project) => ({
       ...project,
-      requirements: editingRequirementId ? project.requirements.map((item) => item.id === editingRequirementId ? {
-        ...item,
-        ...requirementForm,
-        title: requirementForm.title.trim(),
-        description: requirementForm.description.trim(),
-        owner: requirementForm.owner.trim() || '我',
-      } : item) : [{
-        id: createId('requirement'),
-        ...requirementForm,
-        title: requirementForm.title.trim(),
-        description: requirementForm.description.trim(),
-        owner: requirementForm.owner.trim() || '我',
-      }, ...project.requirements],
+      requirements: editingRequirementId === null
+        ? [result.data, ...project.requirements]
+        : project.requirements.map((item) => item.id === editingRequirementId ? result.data : item),
     }))
     setRequirementDialogOpen(false)
     setEditingRequirementId(null)
     setRequirementForm(emptyRequirementForm())
   }
 
-  const saveDefect = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveDefect = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!defectForm.title.trim()) return
+    if (!activeProject || !defectForm.title.trim()) return
+    const params = {
+      title: defectForm.title.trim(),
+      description: defectForm.description.trim(),
+      reproductionSteps: defectForm.reproductionSteps.trim(),
+      severity: defectForm.severity,
+      priority: defectForm.priority,
+      status: defectForm.status,
+      dueDate: defectForm.dueDate || null,
+      requirementId: defectForm.requirementId ? Number(defectForm.requirementId) : null,
+    }
+    const result = editingDefectId === null
+      ? await createDefect(activeProject.id, params)
+      : await updateDefect(activeProject.id, editingDefectId, params)
+    if (!result.success) return
     updateActiveProject((project) => ({
       ...project,
-      defects: editingDefectId ? project.defects.map((item) => item.id === editingDefectId ? {
-        ...item,
-        ...defectForm,
-        title: defectForm.title.trim(),
-        description: defectForm.description.trim(),
-        reproductionSteps: defectForm.reproductionSteps.trim(),
-        owner: defectForm.owner.trim() || '我',
-        requirementId: defectForm.requirementId || undefined,
-      } : item) : [{
-        id: createId('defect'),
-        ...defectForm,
-        title: defectForm.title.trim(),
-        description: defectForm.description.trim(),
-        reproductionSteps: defectForm.reproductionSteps.trim(),
-        owner: defectForm.owner.trim() || '我',
-        requirementId: defectForm.requirementId || undefined,
-      }, ...project.defects],
+      defects: editingDefectId === null
+        ? [result.data, ...project.defects]
+        : project.defects.map((item) => item.id === editingDefectId ? result.data : item),
     }))
     setDefectDialogOpen(false)
     setEditingDefectId(null)
@@ -348,12 +290,16 @@ export default function Projects() {
   const editDefect = (defect: Defect) => {
     const { id, ...form } = defect
     setEditingDefectId(id)
-    setDefectForm({ ...form, requirementId: form.requirementId ?? '' })
+    setDefectForm({ ...form, requirementId: form.requirementId === undefined ? '' : String(form.requirementId) })
     setDefectDialogOpen(true)
   }
 
-  const deleteWorkItem = () => {
-    if (!deleteTarget) return
+  const deleteWorkItem = async () => {
+    if (!activeProject || !deleteTarget) return
+    const result = deleteTarget.type === 'requirement'
+      ? await deleteRequirement(activeProject.id, deleteTarget.id)
+      : await deleteDefect(activeProject.id, deleteTarget.id)
+    if (!result.success) return
     updateActiveProject((project) => deleteTarget.type === 'requirement' ? {
       ...project,
       requirements: project.requirements.filter((item) => item.id !== deleteTarget.id),
@@ -370,6 +316,10 @@ export default function Projects() {
     requirements: activeProjects.reduce((count, project) => count + project.requirements.length, 0),
     openDefects: activeProjects.reduce((count, project) => count + project.defects.filter((defect) => defect.status !== '已关闭').length, 0),
   }), [activeProjects])
+
+  if (loading) {
+    return <Empty className="min-h-72 border"><EmptyHeader><EmptyMedia variant="icon"><FolderKanban /></EmptyMedia><EmptyTitle>正在加载项目</EmptyTitle></EmptyHeader></Empty>
+  }
 
   if (projectId && !activeProject) {
     return (
@@ -441,11 +391,40 @@ export default function Projects() {
     )
   }
 
-  const linkedRequirement = (requirementId?: string) => activeProject.requirements.find((item) => item.id === requirementId)
-  const archiveProject = () => {
+  const linkedRequirement = (requirementId?: number) => activeProject.requirements.find((item) => item.id === requirementId)
+  const archiveProject = async () => {
+    const result = await archiveProjectRequest(activeProject.id)
+    if (!result.success) return
     updateActiveProject((project) => ({ ...project, status: '已归档' }))
     setArchiveDialogOpen(false)
     navigate('/apps/projects')
+  }
+
+  const saveProjectSettings = async (details: ProjectSettingsForm) => {
+    const result = await updateProject(activeProject.id, {
+      name: details.name,
+      description: details.description,
+      status: details.status,
+      startDate: details.startDate || null,
+      endDate: details.endDate || null,
+    })
+    if (result.success) {
+      updateActiveProject(() => result.data)
+    }
+  }
+
+  const changeRequirementStatus = async (requirementId: number, status: RequirementStatus) => {
+    const result = await updateRequirementStatus(activeProject.id, requirementId, status)
+    if (result.success) {
+      updateActiveProject((project) => ({ ...project, requirements: project.requirements.map((item) => item.id === requirementId ? { ...item, status } : item) }))
+    }
+  }
+
+  const changeDefectStatus = async (defectId: number, status: DefectStatus) => {
+    const result = await updateDefectStatus(activeProject.id, defectId, status)
+    if (result.success) {
+      updateActiveProject((project) => ({ ...project, defects: project.defects.map((item) => item.id === defectId ? { ...item, status } : item) }))
+    }
   }
 
   return (
@@ -488,7 +467,7 @@ export default function Projects() {
               disabled={activeProject.status === '已归档'}
               title="需求管理"
             >
-              <RequirementsTable disabled={activeProject.status === '已归档'} onDelete={(requirement) => setDeleteTarget({ id: requirement.id, title: requirement.title, type: 'requirement' })} onDetails={(requirement) => setRequirementDetailsTarget(requirement)} onEdit={editRequirement} requirements={activeProject.requirements} onStatusChange={(requirementId, status) => updateActiveProject((project) => ({ ...project, requirements: project.requirements.map((item) => item.id === requirementId ? { ...item, status } : item) }))} />
+              <RequirementsTable disabled={activeProject.status === '已归档'} onDelete={(requirement) => setDeleteTarget({ id: requirement.id, title: requirement.title, type: 'requirement' })} onDetails={(requirement) => setRequirementDetailsTarget(requirement)} onEdit={editRequirement} requirements={activeProject.requirements} onStatusChange={changeRequirementStatus} />
             </ManagementPanel>
           </TabsContent>
 
@@ -500,12 +479,12 @@ export default function Projects() {
               disabled={activeProject.status === '已归档'}
               title="缺陷管理"
             >
-              <DefectsTable defects={activeProject.defects} disabled={activeProject.status === '已归档'} linkedRequirement={linkedRequirement} onDelete={(defect) => setDeleteTarget({ id: defect.id, title: defect.title, type: 'defect' })} onDetails={(defect) => setReproductionStepsTarget(defect)} onEdit={editDefect} onStatusChange={(defectId, status) => updateActiveProject((project) => ({ ...project, defects: project.defects.map((item) => item.id === defectId ? { ...item, status } : item) }))} />
+              <DefectsTable defects={activeProject.defects} disabled={activeProject.status === '已归档'} linkedRequirement={linkedRequirement} onDelete={(defect) => setDeleteTarget({ id: defect.id, title: defect.title, type: 'defect' })} onDetails={(defect) => setReproductionStepsTarget(defect)} onEdit={editDefect} onStatusChange={changeDefectStatus} />
             </ManagementPanel>
           </TabsContent>
 
           <TabsContent className="h-full min-h-0 w-full overflow-y-auto" value="settings">
-            <ProjectSettings onArchive={() => setArchiveDialogOpen(true)} onSave={(details) => updateActiveProject((project) => ({ ...project, ...details }))} project={activeProject} />
+            <ProjectSettings onArchive={() => setArchiveDialogOpen(true)} onSave={saveProjectSettings} project={activeProject} />
           </TabsContent>
         </Tabs>
       </div>
@@ -567,7 +546,7 @@ function ProjectSettings({ onArchive, onSave, project }: { onArchive: () => void
         <Field><FieldLabel>项目简介</FieldLabel><Textarea className="min-h-28" onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="用一句话说明项目要解决什么问题" value={form.description} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field><FieldLabel>项目状态</FieldLabel><OptionSelect ariaLabel="项目状态" items={projectStatuses.filter((status) => status !== '已归档')} onValueChange={(status) => setForm({ ...form, status })} value={form.status} /></Field>
-          <Field><FieldLabel>负责人</FieldLabel><Input onChange={(event) => setForm({ ...form, owner: event.target.value })} value={form.owner} /></Field>
+          <Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field>
           <Field><FieldLabel>开始日期</FieldLabel><ProjectDatePicker onChange={(startDate) => setForm({ ...form, startDate })} value={form.startDate} /></Field>
           <Field><FieldLabel>结束日期</FieldLabel><ProjectDatePicker onChange={(endDate) => setForm({ ...form, endDate })} value={form.endDate} /></Field>
         </div>
@@ -582,7 +561,7 @@ function ArchiveProjectDialog({ onArchive, onOpenChange, open, projectName }: { 
   return <AlertDialog onOpenChange={onOpenChange} open={open}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认归档项目？</AlertDialogTitle><AlertDialogDescription>“{projectName}”将从项目列表中隐藏。该项目的需求与缺陷记录会继续保留在本地。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={onArchive} variant="destructive"><Archive />确认归档</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 }
 
-function DeleteWorkItemDialog({ onDelete, onOpenChange, target }: { onDelete: () => void; onOpenChange: (open: boolean) => void; target: { id: string; title: string; type: 'requirement' | 'defect' } | null }) {
+function DeleteWorkItemDialog({ onDelete, onOpenChange, target }: { onDelete: () => void; onOpenChange: (open: boolean) => void; target: { id: number; title: string; type: 'requirement' | 'defect' } | null }) {
   const itemType = target?.type === 'requirement' ? '需求' : '缺陷'
   const description = target?.type === 'requirement'
     ? `“${target.title}”将被删除；关联缺陷会保留，但会解除与该需求的关联。`
@@ -603,9 +582,10 @@ function ManagementPanel({ action, actionLabel, children, description, disabled,
   return <section className="flex h-full min-h-0 flex-col gap-4"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">{title}</h2><p className="mt-0.5 text-sm text-muted-foreground">{description}</p></div>{!disabled && <Button onClick={action} size="sm"><Plus />{actionLabel}</Button>}</div><div className="flex min-h-0 flex-1 flex-col">{children}</div></section>
 }
 
-function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChange, requirements }: { disabled: boolean; onDelete: (requirement: Requirement) => void; onDetails: (requirement: Requirement) => void; onEdit: (requirement: Requirement) => void; onStatusChange: (requirementId: string, status: RequirementStatus) => void; requirements: Requirement[] }) {
-  const columnHelper = createColumnHelper<DataTableFeatures, Requirement>()
-  const columns = useMemo(() => columnHelper.columns([
+function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChange, requirements }: { disabled: boolean; onDelete: (requirement: Requirement) => void; onDetails: (requirement: Requirement) => void; onEdit: (requirement: Requirement) => void; onStatusChange: (requirementId: number, status: RequirementStatus) => void; requirements: Requirement[] }) {
+  const columns = useMemo(() => {
+    const columnHelper = createColumnHelper<DataTableFeatures, Requirement>()
+    return columnHelper.columns([
     columnHelper.accessor('title', {
       header: '标题',
       cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
@@ -629,14 +609,16 @@ function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChan
       enableHiding: false,
       cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看需求详情：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑需求：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除需求：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
     }),
-  ]), [disabled, onDelete, onDetails, onEdit, onStatusChange])
+    ])
+  }, [disabled, onDelete, onDetails, onEdit, onStatusChange])
 
   return <DataTable centered columns={columns} data={requirements} fillHeight={false} searchPlaceholder="搜索需求…" />
 }
 
-function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange }: { defects: Defect[]; disabled: boolean; linkedRequirement: (requirementId?: string) => Requirement | undefined; onDelete: (defect: Defect) => void; onDetails: (defect: Defect) => void; onEdit: (defect: Defect) => void; onStatusChange: (defectId: string, status: DefectStatus) => void }) {
-  const columnHelper = createColumnHelper<DataTableFeatures, Defect>()
-  const columns = useMemo(() => columnHelper.columns([
+function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange }: { defects: Defect[]; disabled: boolean; linkedRequirement: (requirementId?: number) => Requirement | undefined; onDelete: (defect: Defect) => void; onDetails: (defect: Defect) => void; onEdit: (defect: Defect) => void; onStatusChange: (defectId: number, status: DefectStatus) => void }) {
+  const columns = useMemo(() => {
+    const columnHelper = createColumnHelper<DataTableFeatures, Defect>()
+    return columnHelper.columns([
     columnHelper.accessor('title', {
       header: '标题',
       cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
@@ -668,21 +650,22 @@ function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetail
       enableHiding: false,
       cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看缺陷复现步骤：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑缺陷：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除缺陷：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
     }),
-  ]), [disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange])
+    ])
+  }, [disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange])
 
   return <DataTable centered columns={columns} data={defects} fillHeight={false} searchPlaceholder="搜索缺陷…" />
 }
 
 function ProjectDialog({ form, onFormChange, onOpenChange, onSubmit, open }: { form: ReturnType<typeof emptyProjectForm>; onFormChange: (value: ReturnType<typeof emptyProjectForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean }) {
-  return <AlertDialog onOpenChange={onOpenChange} open={open}><AlertDialogContent className="max-w-lg"><AlertDialogHeader><AlertDialogTitle>新建项目</AlertDialogTitle><AlertDialogDescription>先定义项目目标和时间范围，需求与缺陷会归属在这个项目下。</AlertDialogDescription></AlertDialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>项目名称 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, name: event.target.value })} placeholder="例如：个人知识库升级" value={form.name} /></Field><Field><FieldLabel>项目简介</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="用一句话说明项目要解决什么问题" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>项目状态</FieldLabel><OptionSelect ariaLabel="项目状态" items={projectStatuses.filter((status) => status !== '已归档')} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input onChange={(event) => onFormChange({ ...form, owner: event.target.value })} value={form.owner} /></Field><Field><FieldLabel>开始日期</FieldLabel><ProjectDatePicker onChange={(startDate) => onFormChange({ ...form, startDate })} value={form.startDate} /></Field><Field><FieldLabel>结束日期</FieldLabel><ProjectDatePicker onChange={(endDate) => onFormChange({ ...form, endDate })} value={form.endDate} /></Field></div><AlertDialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.name.trim()} type="submit"><Plus />创建项目</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
+  return <AlertDialog onOpenChange={onOpenChange} open={open}><AlertDialogContent className="max-w-lg"><AlertDialogHeader><AlertDialogTitle>新建项目</AlertDialogTitle><AlertDialogDescription>先定义项目目标和时间范围，需求与缺陷会归属在这个项目下。</AlertDialogDescription></AlertDialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>项目名称 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, name: event.target.value })} placeholder="例如：个人知识库升级" value={form.name} /></Field><Field><FieldLabel>项目简介</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="用一句话说明项目要解决什么问题" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>项目状态</FieldLabel><OptionSelect ariaLabel="项目状态" items={projectStatuses.filter((status) => status !== '已归档')} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>开始日期</FieldLabel><ProjectDatePicker onChange={(startDate) => onFormChange({ ...form, startDate })} value={form.startDate} /></Field><Field><FieldLabel>结束日期</FieldLabel><ProjectDatePicker onChange={(endDate) => onFormChange({ ...form, endDate })} value={form.endDate} /></Field></div><AlertDialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.name.trim()} type="submit"><Plus />创建项目</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
 }
 
 function RequirementDialog({ editing, form, onFormChange, onOpenChange, onSubmit, open }: { editing: boolean; form: ReturnType<typeof emptyRequirementForm>; onFormChange: (value: ReturnType<typeof emptyRequirementForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean }) {
   const actionLabel = editing ? '保存修改' : '添加需求'
-  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑需求' : '添加需求'}</DialogTitle><DialogDescription>需求应描述可交付的结果，后续可以关联相关缺陷。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>需求标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="例如：支持按标签筛选笔记" value={form.title} /></Field><Field><FieldLabel>需求描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="描述目标、范围或验收标准" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="需求优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>状态</FieldLabel><OptionSelect ariaLabel="需求状态" items={requirementStatuses} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input onChange={(event) => onFormChange({ ...form, owner: event.target.value })} value={form.owner} /></Field><Field><FieldLabel>截止日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
+  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑需求' : '添加需求'}</DialogTitle><DialogDescription>需求应描述可交付的结果，后续可以关联相关缺陷。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>需求标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="例如：支持按标签筛选笔记" value={form.title} /></Field><Field><FieldLabel>需求描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="描述目标、范围或验收标准" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="需求优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>状态</FieldLabel><OptionSelect ariaLabel="需求状态" items={requirementStatuses} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>截止日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
 }
 
 function DefectDialog({ editing, form, onFormChange, onOpenChange, onSubmit, open, requirements }: { editing: boolean; form: ReturnType<typeof emptyDefectForm>; onFormChange: (value: ReturnType<typeof emptyDefectForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean; requirements: Requirement[] }) {
   const actionLabel = editing ? '保存修改' : '添加缺陷'
-  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑缺陷' : '添加缺陷'}</DialogTitle><DialogDescription>缺陷可以独立记录，也可以关联到已有需求。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>缺陷标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="简明描述遇到的问题" value={form.title} /></Field><Field><FieldLabel>问题描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="说明实际表现和预期表现" value={form.description} /></Field><Field><FieldLabel>复现步骤</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, reproductionSteps: event.target.value })} placeholder="例如：1. 打开… 2. 点击… 3. 观察…" value={form.reproductionSteps} /></Field><Field><FieldLabel>关联需求（可选）</FieldLabel><Select value={form.requirementId || 'unlinked'} onValueChange={(requirementId) => onFormChange({ ...form, requirementId: requirementId === 'unlinked' ? '' : requirementId || '' })}><SelectTrigger aria-label="关联需求" className="w-full cursor-pointer"><SelectValue /></SelectTrigger><SelectContent><SelectItem className="cursor-pointer" value="unlinked">不关联需求</SelectItem>{requirements.map((requirement) => <SelectItem className="cursor-pointer" key={requirement.id} value={requirement.id}>{requirement.title}</SelectItem>)}</SelectContent></Select></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>严重程度</FieldLabel><OptionSelect ariaLabel="缺陷严重程度" items={severities} onValueChange={(severity) => onFormChange({ ...form, severity })} value={form.severity} /></Field><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="缺陷优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>负责人</FieldLabel><Input onChange={(event) => onFormChange({ ...form, owner: event.target.value })} value={form.owner} /></Field><Field><FieldLabel>预计解决日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
+  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑缺陷' : '添加缺陷'}</DialogTitle><DialogDescription>缺陷可以独立记录，也可以关联到已有需求。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>缺陷标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="简明描述遇到的问题" value={form.title} /></Field><Field><FieldLabel>问题描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="说明实际表现和预期表现" value={form.description} /></Field><Field><FieldLabel>复现步骤</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, reproductionSteps: event.target.value })} placeholder="例如：1. 打开… 2. 点击… 3. 观察…" value={form.reproductionSteps} /></Field><Field><FieldLabel>关联需求（可选）</FieldLabel><Select value={form.requirementId || 'unlinked'} onValueChange={(requirementId) => onFormChange({ ...form, requirementId: requirementId === 'unlinked' ? '' : requirementId || '' })}><SelectTrigger aria-label="关联需求" className="w-full cursor-pointer"><SelectValue /></SelectTrigger><SelectContent><SelectItem className="cursor-pointer" value="unlinked">不关联需求</SelectItem>{requirements.map((requirement) => <SelectItem className="cursor-pointer" key={requirement.id} value={String(requirement.id)}>{requirement.title}</SelectItem>)}</SelectContent></Select></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>严重程度</FieldLabel><OptionSelect ariaLabel="缺陷严重程度" items={severities} onValueChange={(severity) => onFormChange({ ...form, severity })} value={form.severity} /></Field><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="缺陷优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>预计解决日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
 }
