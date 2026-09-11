@@ -27,13 +27,11 @@ const Notes = Loadable(lazy(() => import('../views/apps/notes')));
 const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
+const Finance = Loadable(lazy(() => import('../views/apps/finance')));
 const Test = Loadable(lazy(() => import('../views/apps/test')));
 
 const Tickets = Loadable(lazy(() => import('../views/apps/tickets')));
 const TicketCreate = Loadable(lazy(() => import('../views/apps/tickets/create')));
-
-// pages
-const UserProfilePage = Loadable(lazy(() => import('../views/pages/user-profile')));
 
 //icons
 const SolarIcon = Loadable(lazy(() => import('../views/icons/iconify')));
@@ -70,9 +68,9 @@ const Router = [
           { path: 'apps/daily-review', element: <DailyReview /> },
           { path: 'apps/projects', element: <Projects /> },
           { path: 'apps/projects/:projectId', element: <Projects /> },
+          { path: 'apps/finance', element: <Finance /> },
           { path: 'apps/tickets', element: <Tickets /> },
           { path: 'apps/tickets/create', element: <TicketCreate /> },
-          { path: 'pages/user-profile', element: <UserProfilePage /> },
           { path: 'icons/iconify', element: <SolarIcon /> },
           { path: 'apps/test', element: <Test /> },
           { path: '*', element: <Navigate to="/auth/404" /> },

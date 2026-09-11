@@ -14,7 +14,6 @@ export interface ChildItem {
   isActive?: boolean;
   external?: boolean;
   isPro?: boolean
-  action?: 'open-account-settings';
 }
 
 export interface MenuItem {
@@ -60,7 +59,6 @@ import {
   Unlink,
   UserPlus, Smile, House, NotebookText, Component,
   Table2,
-  CircleUserRound,
   Sparkles,
   Calendar,
   MessageCircle,
@@ -76,7 +74,8 @@ import {
   ShoppingCart,
   GraduationCap,
   FolderKanban,
-  HeartPulse
+  HeartPulse,
+  Wallet
 } from "lucide-react"
 
 const SidebarContent: MenuItem[] = [
@@ -89,17 +88,6 @@ const SidebarContent: MenuItem[] = [
         icon: House,
         url: "/",
       }
-    ],
-  },
-  {
-    heading: "Pages",
-    items: [
-      {
-        id: uniqueId(),
-        name: "User Profile",
-        icon: CircleUserRound,
-        url: "/pages/user-profile",
-      },
     ],
   },
   {
@@ -122,6 +110,12 @@ const SidebarContent: MenuItem[] = [
         name: "每日复盘",
         icon: ClipboardCheck,
         url: "/apps/daily-review",
+      },
+      {
+        id: uniqueId(),
+        name: "资金管理",
+        icon: Wallet,
+        url: "/apps/finance",
       },
       {
         id: uniqueId(),
@@ -956,12 +950,6 @@ const SidebarContent: MenuItem[] = [
   {
     heading: "PRO Pages",
     items: [
-      {
-        name: "Account Setting",
-        icon: Settings,
-        id: uniqueId(),
-        action: 'open-account-settings',
-      },
       {
         name: "FAQ",
         icon: HelpCircle,

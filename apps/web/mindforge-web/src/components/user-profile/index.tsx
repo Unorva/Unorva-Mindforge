@@ -1,10 +1,8 @@
-
-
-
 import { Icon } from '@iconify/react/dist/iconify.js'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -13,27 +11,24 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
-import BreadcrumbComp from 'src/layouts/full/shared/breadcrumb/BreadcrumbComp'
-import StyleDivider from '../shared/StyleDivider'
+import { Separator } from '@/components/ui/separator'
 import { Link } from 'react-router'
-import avatar from "@/assets/images/profile/avtar.webp"
+import avatar from '@/assets/images/profile/avtar.webp'
 
-const UserProfile = () => {
+interface ProfileDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+/**
+ * 个人资料弹窗：原侧边栏 Pages > User Profile 页面已迁移到此处，
+ * 由顶部头像菜单中的 Profile 项打开。
+ */
+const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
   const [openModal, setOpenModal] = useState(false)
   const [modalType, setModalType] = useState<'personal' | 'address' | null>(
     null
   )
-
-  const BCrumb = [
-    {
-      to: '/',
-      title: 'Home',
-    },
-    {
-      title: 'Userprofile',
-    },
-  ]
 
   const [personal, setPersonal] = useState({
     firstName: 'Mathew',
@@ -78,27 +73,38 @@ const UserProfile = () => {
 
   const socialLinks = [
     {
-      href: 'https://www.facebook.com/wrappixel',
+      href: personal.facebook,
       icon: 'streamline-logos:facebook-logo-2-solid',
     },
     {
-      href: 'https://x.com/shadcndashboard',
+      href: personal.twitter,
       icon: 'streamline-logos:x-twitter-logo-solid',
     },
-    { href: 'https://github.com/shadcndashboard', icon: 'ion:logo-github' },
+    { href: personal.github, icon: 'ion:logo-github' },
     {
-      href: 'https://dribbble.com/wrappixel',
+      href: personal.dribbble,
       icon: 'streamline-flex:dribble-logo-remix',
     },
   ]
 
   return (
-    <div className="flex flex-col p-px bg-border gap-px">
-      <BreadcrumbComp title="User Profile" items={BCrumb} />
-      <StyleDivider />
-      <div className='flex flex-col gap-px bg-border'>
-        <Card className='p-6 overflow-hidden'>
-          <div className='flex flex-col sm:flex-row items-center gap-6 rounded-xl relative w-full break-words'>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          className='max-h-[calc(100vh-2rem)] overflow-y-auto'
+          style={{
+            width: 'calc(100vw - 2rem)',
+            maxWidth: '56rem',
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className='text-lg'>User Profile</DialogTitle>
+            <DialogDescription>
+              View and edit your personal information and address details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className='flex flex-col sm:flex-row items-center gap-6 w-full break-words'>
             <div>
               <img
                 src={avatar}
@@ -136,12 +142,12 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
-        </Card>
 
-        <div className='grid grid-cols-1 xl:grid-cols-2 gap-px'>
-          <div className='space-y-6 bg-background md:p-6 p-4 relative w-full break-words'>
+          <Separator />
+
+          <div className='space-y-6 relative w-full break-words'>
             <h5 className='card-title'>Personal Information</h5>
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-7 2xl:gap-x-32'>
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-7'>
               <div>
                 <p className='text-xs text-gray-500'>First Name</p>
                 <p>{personal.firstName}</p>
@@ -175,9 +181,11 @@ const UserProfile = () => {
             </div>
           </div>
 
-          <div className='space-y-6 bg-background md:p-6 p-4 relative w-full break-words'>
+          <Separator />
+
+          <div className='space-y-6 relative w-full break-words'>
             <h5 className='card-title'>Address Details</h5>
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-7 2xl:gap-x-32'>
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-7'>
               <div>
                 <p className='text-xs text-gray-500'>Location</p>
                 <p>{address.location}</p>
@@ -210,11 +218,17 @@ const UserProfile = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className='max-w-2xl'>
+        <DialogContent
+          className='max-h-[calc(100vh-2rem)] overflow-y-auto'
+          style={{
+            width: 'calc(100vw - 2rem)',
+            maxWidth: '42rem',
+          }}
+        >
           <DialogHeader>
             <DialogTitle className='mb-4'>
               {modalType === 'personal'
@@ -417,8 +431,8 @@ const UserProfile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 
-export default UserProfile
+export default ProfileDialog

@@ -5,6 +5,7 @@ import BreadcrumbComp from '@/layouts/full/shared/breadcrumb/BreadcrumbComp'
 import StyleDivider from '@/components/shared/StyleDivider'
 
 type AppPageHeaderProps = {
+  extra?: ReactNode
   title: string
 }
 
@@ -16,8 +17,8 @@ function AppPage({ children, className }: { children: ReactNode; className?: str
   return <div className={cn('flex min-h-0 w-full flex-col gap-px bg-border p-px', className)}>{children}</div>
 }
 
-function AppPageHeader({ title }: AppPageHeaderProps) {
-  return <BreadcrumbComp title={title} />
+function AppPageHeader({ extra, title }: AppPageHeaderProps) {
+  return <BreadcrumbComp extra={extra} title={title} />
 }
 
 function AppPageDivider() {

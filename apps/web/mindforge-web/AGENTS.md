@@ -127,6 +127,11 @@ When adding a new feature that needs data, mirror the blog/notes/ticket pattern:
 
 ## Component & Styling Conventions
 
+- **Component library priority (MANDATORY)**: this project is built on the [shadcn-dashboard](https://github.com/shadcndashboard/shadcndashboard) framework. When building any frontend UI, ALWAYS prefer components in this order:
+  1. Components already in this repo: `src/components/ui/` (shadcn-style primitives) and the dashboard's built-in blocks/widgets under `src/components/` (see the component catalog at https://shadcndashboard.dev/components).
+  2. Official shadcn/ui components from https://ui.shadcn.com/ — add them via the shadcn CLI or copy the primitive into `src/components/ui/` following the existing pattern (Base UI + `cva` + `cn()`).
+  3. Only hand-roll custom UI when neither source above provides a suitable component.
+  Never introduce other third-party UI component libraries (Ant Design, MUI, Chakra, etc.) without explicit user approval.
 - **Icons**: check which icon package the file you're editing already imports before adding icons — `lucide-react` and `@iconify/react` (`import { Icon } from '@iconify/react'`) are the two in use.
 - **UI primitives**: `src/components/ui/` holds the shadcn-style primitives (Base UI wrapped with `cva` + `cn()`). Extend these via composition in feature components rather than editing the primitives directly, unless the change is meant to apply globally.
 - **Styling**: Tailwind v4 utility classes; use `cn()` from `src/lib/utils.ts` for conditional/merged class names — never string-concatenate classes.

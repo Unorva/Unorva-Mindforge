@@ -22,10 +22,27 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { logout } from '@/api/system/auth/auth';
 import { clearAccessToken } from '@/utils/auth';
+import ProfileDialog from '@/components/user-profile';
+import AccountSettingsDialog from '@/components/account-settings';
 
 export default function ProfileSheet() {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+
+  /**
+   * Profile / Account Settings 均为弹窗展示：先收起侧边抽屉，再打开对应 Dialog。
+   */
+  const handleMenuAction = (action: 'open-profile' | 'open-account-settings') => {
+    setSheetOpen(false);
+    if (action === 'open-profile') {
+      setProfileDialogOpen(true);
+    } else {
+      setAccountSettingsOpen(true);
+    }
+  };
 
   /**
    * 通知服务端当前 Token 失效，并在任何情况下清理本地会话，避免浏览器继续保留登录态。
@@ -50,7 +67,8 @@ export default function ProfileSheet() {
   };
 
   return (
-    <Sheet>
+    <>
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       {/* Trigger Button */}
       <SheetTrigger className="cursor-pointer hover:bg-primary/5 flex items-center justify-center rounded-full h-10 w-10">
         <Avatar className="h-8 w-8">
@@ -100,30 +118,52 @@ export default function ProfileSheet() {
           <ul className="flex flex-col gap-2 p-6">
             {profileDD.map((item) => (
               <li key={item.title} className="group">
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "flex gap-3 py-2 px-3 rounded-md group-hover:bg-primary/5 text-muted-foreground"
-                  )}
-                >
-                  <item.avatar
-                    width={20}
-                    height={20}
-                    className="group-hover:text-primary"
-                  />
-
-                  <div className="flex gap-3 items-center">
-                    <h6 className="text-sm group-hover:text-primary">
-                      {item.title}
-                    </h6>
-
-                    {item.badge && (
-                      <span className="h-5 w-6 text-sm flex justify-center items-center text-primary rounded-sm bg-primary/5">
-                        4
-                      </span>
+                {item.action ? (
+                  <button
+                    type="button"
+                    onClick={() => handleMenuAction(item.action!)}
+                    className={cn(
+                      "w-full cursor-pointer flex gap-3 py-2 px-3 rounded-md group-hover:bg-primary/5 text-muted-foreground"
                     )}
-                  </div>
-                </Link>
+                  >
+                    <item.avatar
+                      width={20}
+                      height={20}
+                      className="group-hover:text-primary"
+                    />
+
+                    <div className="flex gap-3 items-center">
+                      <h6 className="text-sm group-hover:text-primary">
+                        {item.title}
+                      </h6>
+                    </div>
+                  </button>
+                ) : (
+                  <Link
+                    to={item.href ?? '/'}
+                    className={cn(
+                      "flex gap-3 py-2 px-3 rounded-md group-hover:bg-primary/5 text-muted-foreground"
+                    )}
+                  >
+                    <item.avatar
+                      width={20}
+                      height={20}
+                      className="group-hover:text-primary"
+                    />
+
+                    <div className="flex gap-3 items-center">
+                      <h6 className="text-sm group-hover:text-primary">
+                        {item.title}
+                      </h6>
+
+                      {item.badge && (
+                        <span className="h-5 w-6 text-sm flex justify-center items-center text-primary rounded-sm bg-primary/5">
+                          4
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -162,5 +202,12 @@ export default function ProfileSheet() {
         </SheetFooter>
       </SheetContent>
     </Sheet>
+
+    {/* 个人资料弹窗（原 Pages > User Profile 页面） */}
+    <ProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
+
+    {/* 账户设置弹窗（AI 配置 / 应用配置 / 邮箱绑定 / 通知 / 偏好 / 安全） */}
+    <AccountSettingsDialog open={accountSettingsOpen} onOpenChange={setAccountSettingsOpen} />
+    </>
   );
 }

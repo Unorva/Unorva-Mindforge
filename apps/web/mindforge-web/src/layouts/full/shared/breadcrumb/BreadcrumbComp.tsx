@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router";
 
@@ -11,9 +12,10 @@ interface BreadCrumbType {
   subtitle?: string;
   items?: BreadcrumbItem[];
   title: string;
+  extra?: ReactNode;
 }
 
-const BreadcrumbComp = ({ title }: BreadCrumbType) => {
+const BreadcrumbComp = ({ extra, title }: BreadCrumbType) => {
   return (
     <>
       <Card
@@ -21,6 +23,8 @@ const BreadcrumbComp = ({ title }: BreadCrumbType) => {
       >
         <div className="flex items-center justify-between gap-6 relative">
           <h4 className="font-semibold text-xl text-forground">{title}</h4>
+          <div className="flex items-center gap-4">
+          {extra}
           <ol
             className="flex items-center whitespace-nowrap"
             aria-label="Breadcrumb"
@@ -40,6 +44,7 @@ const BreadcrumbComp = ({ title }: BreadCrumbType) => {
               {title}
             </li>
           </ol>
+          </div>
         </div>
       </Card>
     </>

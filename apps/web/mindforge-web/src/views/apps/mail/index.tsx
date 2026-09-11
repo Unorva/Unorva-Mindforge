@@ -249,7 +249,7 @@ export default function MailApp() {
               <div className="space-y-3 border-b p-3">
                 <label className="relative block">
                   <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input aria-label="搜索邮件" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="搜索邮件…" value={query} />
+                  <Input aria-label="搜索邮件" className="pl-9!" onChange={(event) => setQuery(event.target.value)} placeholder="搜索邮件…" value={query} />
                 </label>
                 <div className="flex items-center gap-3 px-1 text-xs text-muted-foreground">
                   <Checkbox
