@@ -1,49 +1,57 @@
 
 
 import { useState, useMemo } from "react";
-import { Component, Search as SearchIcon } from 'lucide-react';
+import { Component, Search as SearchIcon, type LucideIcon } from 'lucide-react';
 
 import SimpleBar from "simplebar-react";
-import SidebarContent from "../../vertical/sidebar/sidebaritems";
+import SidebarContent, { type ChildItem, type MenuItem } from "../../vertical/sidebar/sidebaritems";
 
 
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router";
 
+type SearchResult = {
+  icon?: LucideIcon;
+  name: string;
+  path: string;
+  url: string;
+};
+
+const searchItems = (
+  items: Array<MenuItem | ChildItem>,
+  query: string,
+  parentPath = ""
+): SearchResult[] => {
+  const results: SearchResult[] = [];
+
+  items.forEach((item) => {
+    const currentPath = parentPath
+      ? `${parentPath} → ${item.name ?? ""}`
+      : item.name ?? "";
+
+    if (
+      item.name &&
+      item.url &&
+      item.name.toLowerCase().includes(query.toLowerCase())
+    ) {
+      results.push({
+        name: item.name,
+        url: item.url,
+        path: currentPath,
+        icon: item.icon,
+      });
+    }
+
+    if (item.items) {
+      results.push(...searchItems(item.items, query, currentPath));
+    }
+  });
+
+  return results;
+};
+
 function Search() {
   const [query, setQuery] = useState("");
-
-  // 🔍 Recursive search through menu
-  const searchItems = (items: any[], q: string, parentPath = "") => {
-    let results: any[] = [];
-
-    items.forEach((item) => {
-      const currentPath = parentPath
-        ? `${parentPath} → ${item.name}`
-        : item.name;
-
-      // If match found
-      if (
-        item.name &&
-        item.url &&
-        item.name.toLowerCase().includes(q.toLowerCase())
-      ) {
-        results.push({
-          name: item.name,
-          url: item.url,
-          path: currentPath,
-          icon: item.icon,
-        });
-      }
-
-      // Search deeper children
-      if (item.items) {
-        results = [...results, ...searchItems(item.items, q, currentPath)];
-      }
-    });
-
-    return results;
-  };
 
   // Memoize filtered results
   const results = useMemo(() => {
@@ -66,11 +74,11 @@ function Search() {
         />
       </div>
       <div
-        className={`absolute w-full bg-card rounded-md top-11 z-10 start-0 shadow-md border border-border ${Boolean(query) ? "block" : "hidden"
+        className={`absolute w-full bg-card rounded-md top-11 z-10 start-0 shadow-md border border-border ${query ? "block" : "hidden"
           }`}
       >
         <SimpleBar className="h-72 p-4 custom-scroll">
-          {Boolean(results.length) ? (
+          {results.length > 0 ? (
             results.map((item, i) => (
               <Link
                 key={i}

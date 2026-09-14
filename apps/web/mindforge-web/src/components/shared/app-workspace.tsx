@@ -6,19 +6,24 @@ import StyleDivider from '@/components/shared/StyleDivider'
 
 type AppPageHeaderProps = {
   extra?: ReactNode
+  items?: Array<{
+    title: string
+    to?: string
+  }>
+  showHome?: boolean
   title: string
 }
 
 /**
- * 与 Notes、Tickets 保持同一层级：顶部是标准面包屑标题卡，
+ * 与各应用页保持同一层级：顶部是标准面包屑标题卡，
  * 下方再放各业务自己的卡片或工作区，避免为业务页另起一套视觉语言。
  */
 function AppPage({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn('flex min-h-0 w-full flex-col gap-px bg-border p-px', className)}>{children}</div>
 }
 
-function AppPageHeader({ extra, title }: AppPageHeaderProps) {
-  return <BreadcrumbComp extra={extra} title={title} />
+function AppPageHeader({ extra, items, showHome, title }: AppPageHeaderProps) {
+  return <BreadcrumbComp extra={extra} items={items} showHome={showHome} title={title} />
 }
 
 function AppPageDivider() {

@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import FullLogo from 'src/layouts/full/shared/logo/FullLogo';
 import SocialButtons from '../../authforms/social-buttons';
 import { useState, type SubmitEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { login } from '@/api/system/auth/auth';
 import { saveAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
@@ -123,12 +123,6 @@ const BoxedLogin = () => {
                     记住这个设备
                   </Label>
                 </div>
-                <Link
-                  to="/auth/auth2/forgot-password"
-                  className="text-sm font-medium hover:underline underline-offset-4 transition-all"
-                >
-                  忘记密码?
-                </Link>
               </div>
             </div>
             <Button
@@ -140,16 +134,6 @@ const BoxedLogin = () => {
               {submitting ? '登录中...' : '登录'}
             </Button>
           </form>
-          {/* Footer */}
-          <div className="flex gap-2 text-base font-medium mt-4 items-center justify-center">
-            <p className="text-muted-foreground">还没有账号 ?</p>
-            <Link
-              to={'/auth/auth2/register'}
-              className="text-primary/80 hover:text-primary text-sm font-medium"
-            >
-              创建账户
-            </Link>
-          </div>
         </Card>
       </div>
     </>

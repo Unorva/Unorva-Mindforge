@@ -47,7 +47,6 @@ export interface NotificationSettings {
   inAppNotifications: boolean;
   dailyReviewReminder: boolean;
   projectUpdates: boolean;
-  ticketUpdates: boolean;
   aiWeeklyReport: boolean;
 }
 

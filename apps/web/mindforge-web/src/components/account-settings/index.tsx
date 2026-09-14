@@ -18,7 +18,6 @@ import {
   Plus,
   ShieldCheck,
   Star,
-  Ticket,
   type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -83,7 +82,6 @@ const APP_ICONS: Record<string, LucideIcon> = {
   'daily-review': ClipboardCheck,
   notes: NotebookText,
   blog: BookOpen,
-  tickets: Ticket,
 };
 
 function OptionSelect<T extends string>({
@@ -775,17 +773,6 @@ function AccountSettingsContent() {
                   checked={notificationsDraft.projectUpdates}
                   onCheckedChange={(projectUpdates) =>
                     setNotificationsDraft({ ...notificationsDraft, projectUpdates })
-                  }
-                />
-              </SettingRow>
-              <SettingRow
-                title="工单动态"
-                description="工单创建、分派与关闭时提醒。"
-              >
-                <Switch
-                  checked={notificationsDraft.ticketUpdates}
-                  onCheckedChange={(ticketUpdates) =>
-                    setNotificationsDraft({ ...notificationsDraft, ticketUpdates })
                   }
                 />
               </SettingRow>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 import {
   Archive,
@@ -46,14 +46,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import {
@@ -97,6 +89,7 @@ const requirementStatuses: RequirementStatus[] = ['待处理', '进行中', '已
 const defectStatuses: DefectStatus[] = ['待修复', '修复中', '待验证', '已关闭']
 const priorities: Priority[] = ['低', '中', '高']
 const severities: Severity[] = ['轻微', '一般', '严重', '阻断']
+
 const emptyProjectForm = () => ({
   name: '',
   description: '',
@@ -341,6 +334,7 @@ export default function Projects() {
       <>
         <AppPage className="gap-5 bg-transparent p-0">
           <AppPageHeader
+            showHome={false}
             title="项目管理"
           />
           <section aria-label="项目概览" className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -433,27 +427,20 @@ export default function Projects() {
   return (
     <>
       <AppPage className="gap-5 bg-transparent p-0">
-        <Card>
-          <CardContent className="p-5 sm:p-6">
-            <Breadcrumb className="mb-3">
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink render={<Link to="/apps/projects" />}>项目列表</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{activeProject.name}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-semibold tracking-tight">{activeProject.name}</h1><Pill className={statusClass(activeProject.status)}>{activeProject.status}</Pill></div>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{activeProject.description || '暂无项目简介'}</p>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground"><span>负责人：{activeProject.owner}</span><span>开始：{activeProject.startDate || '未设置'}</span><span>结束：{activeProject.endDate || '未设置'}</span></div>
-          </CardContent>
-        </Card>
+        <AppPageHeader
+          items={[
+            { title: '项目管理', to: '/apps/projects' },
+          ]}
+          showHome={false}
+          title={activeProject.name}
+        />
 
-        <Tabs className="grid min-h-[calc(100dvh-19rem)] grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]" defaultValue="requirements" orientation="vertical">
-          <Card className="h-fit p-2 lg:sticky lg:top-4">
+        <Tabs
+          className="grid min-h-[calc(100dvh-19rem)] grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]"
+          defaultValue="requirements"
+          orientation="vertical"
+        >
+          <Card className="h-full p-2 lg:sticky lg:top-4">
             <CardContent className="p-0">
               <TabsList aria-label="项目工作项" className="flex h-auto! w-full flex-col! items-stretch! gap-1 bg-transparent p-0">
                 <TabsTrigger aria-label="需求管理" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="requirements"><ListTodo /><span className="sr-only sm:not-sr-only">需求管理</span><span className="ml-auto hidden text-xs text-muted-foreground sm:inline">{activeProject.requirements.length}</span></TabsTrigger>
@@ -463,7 +450,7 @@ export default function Projects() {
             </CardContent>
           </Card>
 
-          <Card className="min-h-[calc(100dvh-19rem)] p-5 sm:p-6">
+          <Card className="h-full min-h-[calc(100dvh-19rem)] p-5 sm:p-6">
           <TabsContent className="h-full min-h-0 w-full" value="requirements">
             <ManagementPanel
               action={() => { setEditingRequirementId(null); setRequirementForm(emptyRequirementForm()); setRequirementDialogOpen(true) }}

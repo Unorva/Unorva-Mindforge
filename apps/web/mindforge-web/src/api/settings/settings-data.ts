@@ -64,13 +64,6 @@ let SettingsData: AccountSettingsData = {
       enabled: false,
       options: { syncFrequency: '手动', notify: false, aiAssist: false },
     },
-    {
-      id: 'tickets',
-      name: 'Tickets',
-      description: '工单系统，支持自动分派与优先级建议。',
-      enabled: false,
-      options: { syncFrequency: '每小时', notify: true, aiAssist: false },
-    },
   ],
   emails: [
     {
@@ -103,7 +96,6 @@ let SettingsData: AccountSettingsData = {
     inAppNotifications: true,
     dailyReviewReminder: true,
     projectUpdates: true,
-    ticketUpdates: false,
     aiWeeklyReport: false,
   },
   security: {

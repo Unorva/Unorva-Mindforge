@@ -53,7 +53,7 @@ const BlogDetailData = () => {
       comment: replyTxt,
       replies: [],
     };
-    addComment(Number(post.id), newComment);
+    addComment(post.id, newComment);
     setReplyTxt("");
   };
 
@@ -64,7 +64,7 @@ const BlogDetailData = () => {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [setLoading]);
 
   return (
     <>

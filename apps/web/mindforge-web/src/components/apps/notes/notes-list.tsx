@@ -18,7 +18,7 @@ import { notesType } from "src/types/apps/notes";
 const Notelist = () => {
   const { notes, selectNote, deleteNote } = useContext(NotesContext);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [activeNoteId, setActiveNoteId] = useState<any | null>(null);
+  const [activeNoteId, setActiveNoteId] = useState<number | null>(null);
 
   useEffect(() => {
     if (notes.length > 0) {

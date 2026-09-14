@@ -278,7 +278,7 @@ export const Bloghandlers = [
   http.get('/api/data/blog/BlogPosts', () => {
     try {
       return HttpResponse.json({ status: 200, data: BlogPost, msg: 'success' });
-    } catch (error) {
+    } catch {
       return HttpResponse.json({ status: 400, msg: 'something went wrong' });
     }
   }),
@@ -286,7 +286,7 @@ export const Bloghandlers = [
   // Mock api endpoint to add post info
   http.post('/api/data/blog/post/add', async ({ request }) => {
     try {
-      const { postId, comment } = (await request.json()) as { postId: number; comment: any };
+      const { postId, comment } = (await request.json()) as { postId: string | number; comment: BlogType };
       const postIndex = BlogPost.findIndex((x) => x.id === postId);
       const post = BlogPost[postIndex];
       const cComments = post.comments || [];

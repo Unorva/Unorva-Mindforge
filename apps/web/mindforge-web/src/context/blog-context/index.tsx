@@ -14,9 +14,9 @@ export interface BlogContextProps {
   setSortBy: Dispatch<SetStateAction<string>>;
   setSelectedPost: Dispatch<SetStateAction<BlogPostType | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
-  addComment: (postId: number, newComment: BlogType) => void;
+  addComment: (postId: string | number, newComment: BlogType) => void;
 
-  error: null;
+  error: unknown;
 }
 
 // Create context with default values
@@ -39,7 +39,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [sortBy, setSortBy] = useState<string>('newest');
   const [selectedPost, setSelectedPost] = useState<BlogPostType | null>(null);
   const [isLoading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<unknown>(null);
 
   // Fetch Post data from the API
   const {
@@ -61,7 +61,7 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [postsData, postsError, isPostsLoading]);
 
   // Adds a new comment to a specific post by updating the state.
-  const addComment = (postId: number, newComment: BlogType) => {
+  const addComment = (postId: string | number, newComment: BlogType) => {
     setPosts((prevPosts) =>
       prevPosts.map((post) =>
         post.id === postId ? { ...post, comments: [newComment, ...(post.comments || [])] } : post,

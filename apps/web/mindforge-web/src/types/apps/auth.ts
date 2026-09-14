@@ -13,12 +13,3 @@ export interface LoginParams {
   password: string;
   remember: boolean;
 }
-
-/**
- * 注册参数
- */
-export interface RegisterParams {
-  nickname: string;
-  email: string;
-  password: string;
-}

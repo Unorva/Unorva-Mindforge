@@ -30,7 +30,7 @@ const BlogFeaturedCard = ({ post, index }: Btype) => {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [setLoading]);
 
   return (
     <>

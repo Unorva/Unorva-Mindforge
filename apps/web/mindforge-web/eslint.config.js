@@ -24,4 +24,12 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/context/**/*.{ts,tsx}'],
+    rules: {
+      // shadcn primitives intentionally export variants/helpers alongside components,
+      // and context modules intentionally colocate providers, contexts, and hooks.
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 );

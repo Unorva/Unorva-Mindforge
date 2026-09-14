@@ -13,7 +13,7 @@ import { mutate } from "swr";
 
 interface colorsType {
   lineColor: string;
-  disp: string | any;
+  disp: string;
   id: number;
 }
 
@@ -27,7 +27,7 @@ const NotesApp = () => {
   const pathname = location.pathname;
 
   // Reset Notes on browser refresh
-  const handleResetTickets = async () => {
+  const handleResetNotes = async () => {
     await mutate("/api/notes");
   };
 
@@ -36,7 +36,7 @@ const NotesApp = () => {
     if (isPageRefreshed === "true") {
       console.log("page refreshed");
       sessionStorage.removeItem("isPageRefreshed");
-      handleResetTickets();
+      handleResetNotes();
     }
   }, [pathname]);
 

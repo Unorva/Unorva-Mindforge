@@ -68,7 +68,7 @@ function MetricTooltip({ active, label, metric, payload }: { active?: boolean; l
 
 export function MetricChartCard({ className, height = 220, metric }: { className?: string; height?: number; metric: HealthMetric }) {
   const Icon = metricIcons[metric.id] ?? categoryIcons[metric.category]
-  const seriesKeys = metric.seriesKeys ?? []
+  const seriesKeys = useMemo(() => metric.seriesKeys ?? [], [metric.seriesKeys])
 
   const data = useMemo(
     () => metric.series.map((point) => ({ date: point.date, label: point.label, value: point.value, ...(point.extra ?? {}) })),

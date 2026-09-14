@@ -13,9 +13,19 @@ interface BreadCrumbType {
   items?: BreadcrumbItem[];
   title: string;
   extra?: ReactNode;
+  showHome?: boolean;
 }
 
-const BreadcrumbComp = ({ extra, title }: BreadCrumbType) => {
+const BreadcrumbComp = ({ extra, items = [], showHome = true, title }: BreadCrumbType) => {
+  const navigationItems = items
+    .filter((item, index) => !(showHome && index === 0 && item.to === "/"))
+    .filter((item, index, list) => !(index === list.length - 1 && item.title === title));
+  const breadcrumbs: BreadcrumbItem[] = [
+    ...(showHome ? [{ to: "/", title: "Home" }] : []),
+    ...navigationItems,
+    { title },
+  ];
+
   return (
     <>
       <Card
@@ -29,20 +39,27 @@ const BreadcrumbComp = ({ extra, title }: BreadCrumbType) => {
             className="flex items-center whitespace-nowrap"
             aria-label="Breadcrumb"
           >
-            <li className="flex items-center">
-              <Link className="text-forground text-sm  leading-none" to="/">
-                Home
-              </Link>
-            </li>
-            <li className="mx-2">
-              <div className="p-0.5 text-forground">/</div>
-            </li>
-            <li
-              className="flex items-center text-sm text-forground leading-none opacity-80"
-              aria-current="page"
-            >
-              {title}
-            </li>
+            {breadcrumbs.map((item, index) => {
+              const isCurrentPage = index === breadcrumbs.length - 1;
+
+              return (
+                <li className="flex items-center" key={`${item.title}-${index}`}>
+                  {index > 0 && <div className="mx-2 p-0.5 text-forground">/</div>}
+                  {item.to && !isCurrentPage ? (
+                    <Link className="text-forground text-sm leading-none" to={item.to}>
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <span
+                      aria-current={isCurrentPage ? "page" : undefined}
+                      className="text-forground text-sm leading-none opacity-80"
+                    >
+                      {item.title}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ol>
           </div>
         </div>
