@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import '../src/css/globals.css';
 import App from './App.tsx';
 import Spinner from './views/spinner/Spinner.tsx';
-import { Toaster } from './components/ui/sonner';
+import { Toaster } from './components/ui/toast';
+import { TooltipProvider } from './components/ui/tooltip';
 import { ThemeProvider } from './context/shadcntheme/ThemeContext.tsx';
 
 async function deferRender() {
@@ -16,10 +17,12 @@ async function deferRender() {
 deferRender().then(() => {
   createRoot(document.getElementById('root')!).render(
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <Toaster />
-      <Suspense fallback={<Spinner />}>
-        <App />
-      </Suspense>
+      <TooltipProvider>
+        <Toaster />
+        <Suspense fallback={<Spinner />}>
+          <App />
+        </Suspense>
+      </TooltipProvider>
     </ThemeProvider>,
   );
 });

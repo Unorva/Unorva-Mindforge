@@ -71,10 +71,11 @@ const AnimatedTableBody = ({ children, className }: AnimatedTableBodyProps) => {
 interface AnimatedTableRowProps {
   children: ReactNode;
   className?: string;
+  'data-state'?: string;
   index: number;
 }
 
-const AnimatedTableRow = ({ children, className, index }: AnimatedTableRowProps) => {
+const AnimatedTableRow = ({ children, className, index, ...props }: AnimatedTableRowProps) => {
   const ref = useRef(null);
   const isInView = useInView(ref, {
     once: true,
@@ -93,6 +94,7 @@ const AnimatedTableRow = ({ children, className, index }: AnimatedTableRowProps)
         delay: index * 0.25,
       }}
       className={className}
+      {...props}
     >
       {children}
     </motion.tr>

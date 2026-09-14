@@ -3,6 +3,7 @@ import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CloudUpload } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { Input } from "@/components/ui/input";
 
 const mainVariant = {
   initial: { x: 0, y: 0 },
@@ -50,7 +51,7 @@ export const FileUploadStruc: React.FC<FileUploadProps> = ({ onChange }) => {
         whileHover="animate"
         className="p-6 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden"
       >
-        <input
+        <Input
           ref={fileInputRef}
           id="file-upload-handle"
           type="file"

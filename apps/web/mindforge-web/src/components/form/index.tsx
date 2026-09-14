@@ -325,11 +325,13 @@ const Page = () => {
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
                   />
-                  <button
+                  <Button
+                    type='button'
                     onClick={handleCopy}
-                    className='px-3 py-1 text-sm rounded-md border border-ld bg-primary/10 dark:bg-primary/10 text-primary hover:bg-gray-200'>
+                    variant='outline'
+                    className='text-primary'>
                     {copied ? 'Copied' : 'Copy'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

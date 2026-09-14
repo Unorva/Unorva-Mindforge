@@ -25,6 +25,13 @@ function scoreLabel(score: number) {
   return '需改善'
 }
 
+function scoreProgressClass(score: number) {
+  if (score >= 80) return '[&_[data-slot=progress-indicator]]:bg-emerald-500'
+  if (score >= 65) return '[&_[data-slot=progress-indicator]]:bg-lime-500'
+  if (score >= 50) return '[&_[data-slot=progress-indicator]]:bg-amber-500'
+  return '[&_[data-slot=progress-indicator]]:bg-red-500'
+}
+
 export function HealthScoreCard({ breakdown, className, score, trend }: { breakdown: ScoreBreakdown[]; className?: string; score: number; trend: number }) {
   const color = scoreColor(score)
   return (
@@ -58,9 +65,11 @@ export function HealthScoreCard({ breakdown, className, score, trend }: { breakd
                 <span className="font-mono tabular-nums" style={{ color: scoreColor(item.score) }}>{item.score}</span>
               </div>
               <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{item.detail}</p>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full transition-all duration-700" style={{ backgroundColor: scoreColor(item.score), width: `${item.score}%` }} />
-              </div>
+              <Progress
+                aria-label={`${item.name}评分 ${item.score}`}
+                className={cn('mt-1.5 gap-0', scoreProgressClass(item.score))}
+                value={item.score}
+              />
             </li>
           ))}
         </ul>

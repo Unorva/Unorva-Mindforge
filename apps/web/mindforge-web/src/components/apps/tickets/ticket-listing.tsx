@@ -24,8 +24,8 @@ import {
   AnimatedTableBody,
   AnimatedTableRow,
 } from "@/components/animated-components/animated-table";
-import InputPlaceholderAnimate from "@/components/animated-components/animatedinput-placeholder";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 import { SearchIcon } from "lucide-react";
 import { TicketType } from "src/types/apps/ticket";
 
@@ -116,14 +116,10 @@ const TicketListing = () => {
               <SearchIcon size={16}
                 className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
-              <InputPlaceholderAnimate
+              <Input
                 value={ticketSearch}
-                onChange={setTicketSearch}
-                placeholders={[
-                  "Search ticket...",
-                  "Find ticket...",
-                  "Look up ticket...",
-                ]}
+                onChange={(event) => setTicketSearch(event.target.value)}
+                placeholder="Search ticket..."
                 className="pl-9!"
               />
             </div>

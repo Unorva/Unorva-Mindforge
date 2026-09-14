@@ -4,9 +4,8 @@ import { ChartPie, TrendingUp } from 'lucide-react'
 
 import type { CategorySlice, MonthlyPoint } from '@/api/finance/finance'
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
-import { CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DashboardCard } from '@/components/shared/dashboard-card'
 import { formatCompactMoney, formatMoney, formatMonthTick } from './format'
 
 type TooltipItem = {
@@ -55,7 +54,7 @@ export function IncomeExpenseTrend({ trend }: { trend: MonthlyPoint[] }) {
   const data = range === '近6个月' ? trend.slice(-6) : trend
 
   return (
-    <DashboardCard className="flex flex-col gap-0!">
+    <Card className="flex h-full flex-col gap-0!">
       <CardHeader className="border-b border-border">
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="text-muted-foreground" size={16} />
@@ -85,7 +84,7 @@ export function IncomeExpenseTrend({ trend }: { trend: MonthlyPoint[] }) {
           </BarChart>
         </ChartContainer>
       </CardContent>
-    </DashboardCard>
+    </Card>
   )
 }
 
@@ -109,7 +108,7 @@ export function CategoryBreakdown({ slices }: { slices: CategorySlice[] }) {
   ) as ChartConfig
 
   return (
-    <DashboardCard className="flex flex-col gap-0!">
+    <Card className="flex h-full flex-col gap-0!">
       <CardHeader className="border-b border-border">
         <CardTitle className="flex items-center gap-2">
           <ChartPie className="text-muted-foreground" size={16} />
@@ -134,6 +133,6 @@ export function CategoryBreakdown({ slices }: { slices: CategorySlice[] }) {
           </div>
         ) : <p className="py-10 text-center text-sm text-muted-foreground">本月还没有支出记录。</p>}
       </CardContent>
-    </DashboardCard>
+    </Card>
   )
 }

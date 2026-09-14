@@ -52,14 +52,17 @@ export default function NavItem({
 
         {/* Badge */}
         {item.badge && (
-          <span
-            className={`ms-auto  hide-menu text-xs rounded-full px-2 py-0.5 ${item.badgeType === "filled"
-              ? "bg-primary text-white dark:text-black"
-              : "border border-primary text-primary"
-              }`}
+          <Badge
+            className={cn(
+              "ms-auto hide-menu",
+              item.badgeType === "filled"
+                ? "bg-primary text-white dark:text-black"
+                : "border-primary text-primary",
+            )}
+            variant={item.badgeType === "filled" ? "default" : "outline"}
           >
             {item.badgeContent}
-          </span>
+          </Badge>
         )}
 
         {/* Pro Badge */}
@@ -71,7 +74,7 @@ export default function NavItem({
 
         {/* Chevron only if it has children */}
         {hasChildren && (
-          <ChevronRight className="ms-auto h-4 w-4 transition-transform duration-200 group-open/nav:rotate-90 hide-menu" />
+          <ChevronRight className="ms-auto h-4 w-4 transition-transform duration-200 group-data-open/nav:rotate-90 hide-menu" />
         )}
       </span>
     </motion.div >

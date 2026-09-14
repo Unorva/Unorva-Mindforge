@@ -1,23 +1,12 @@
 import BlogPost from "src/components/apps/blog/blog-post";
-import BreadcrumbComp from "src/layouts/full/shared/breadcrumb/BreadcrumbComp";
-import StyleAwareWrapper from "src/components/shared/StyleAwareWrapper";
-import StyleDivider from "src/components/shared/StyleDivider";
-
-const BCrumb = [
-  { to: "/", title: "Home" },
-  { title: "Blog app" },
-];
+import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
 
 const Blog = () => {
   return (
-    <StyleAwareWrapper
-      lyraClassName="flex flex-col p-px gap-px bg-border"
-      defaultClassName="flex flex-col gap-4"
-    >
-      <BreadcrumbComp title="Blog app" items={BCrumb} />
-      <StyleDivider />
-      <BlogPost />
-    </StyleAwareWrapper>
+    <AppPage className="gap-5 bg-transparent p-0">
+      <AppPageHeader title="Blog app" />
+      <section className="[&>div]:gap-5"><BlogPost /></section>
+    </AppPage>
   );
 };
 export default Blog;

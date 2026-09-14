@@ -5,6 +5,7 @@ import { NotesHandlers } from 'src/api/notes/notedata';
 import { TicketHandlers } from 'src/api/ticket/ticket-data';
 import { HealthHandlers } from 'src/api/health/health-data';
 import { FinanceHandlers } from 'src/api/finance/finance-data';
+import { SettingsHandlers } from 'src/api/settings/settings-data';
 
 
 export const mockHandlers = [
@@ -13,4 +14,5 @@ export const mockHandlers = [
   ...TicketHandlers,
   ...HealthHandlers,
   ...FinanceHandlers,
+  ...SettingsHandlers,
 ];

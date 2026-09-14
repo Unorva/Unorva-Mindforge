@@ -17,16 +17,19 @@ import {
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Search, Settings2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { AnimatedTableBody, AnimatedTableRow, AnimatedTableWrapper } from '@/components/animated-components/animated-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type DataTableProps<TData extends RowData> = {
   centered?: boolean
   // 同一张业务表会同时包含字符串、日期、枚举和操作列；v8 需以宽泛值类型承接异构列。
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: ColumnDef<TData, any>[]
   data: TData[]
   fillHeight?: boolean
@@ -81,17 +84,69 @@ export function DataTable<TData extends RowData>({ centered = false, columns, da
           </DropdownMenuGroup></DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className={cn('overflow-hidden rounded-xl border', fillHeight && 'min-h-0 flex-1 overflow-auto')}>
-        <div className="overflow-x-auto">
-          <table className={cn('min-w-full', centered && '[&_th]:text-center [&_td]:text-center')}>
-            <thead>{table.getHeaderGroups().map((headerGroup) => <tr key={headerGroup.id}>{headerGroup.headers.map((header) => <th className="border-b px-4 py-2 text-left" key={header.id}>{header.isPlaceholder ? null : <div className={header.column.getCanSort() ? 'cursor-pointer select-none' : undefined} onClick={header.column.getToggleSortingHandler()}><div className={cn('flex items-center gap-1 text-sm font-semibold', centered && 'justify-center')}>{flexRender(header.column.columnDef.header, header.getContext())}{header.column.getCanSort() && (header.column.getIsSorted() === 'asc' ? <ArrowUp size={14} /> : header.column.getIsSorted() === 'desc' ? <ArrowDown size={14} /> : <ChevronsUpDown size={14} />)}</div></div>}</th>)}</tr>)}</thead>
-            <tbody>{table.getRowModel().rows.length ? table.getRowModel().rows.map((row) => <tr className="border-b last:border-b-0" data-state={row.getIsSelected() && 'selected'} key={row.id}>{row.getVisibleCells().map((cell) => <td className="px-4 py-2" key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td className="h-24 text-center" colSpan={table.getVisibleLeafColumns().length}>暂无匹配记录。</td></tr>}</tbody>
-          </table>
-        </div>
-      </div>
+      <AnimatedTableWrapper className={cn('overflow-hidden rounded-xl border', fillHeight && 'min-h-0 flex-1 overflow-auto')}>
+        <Table className={cn('min-w-full', centered && '[&_th]:text-center [&_td]:text-center')}>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  const headerContent = (
+                    <span className={cn('flex items-center gap-1 text-sm font-semibold', centered && 'justify-center')}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getCanSort() && (
+                        header.column.getIsSorted() === 'asc'
+                          ? <ArrowUp size={14} />
+                          : header.column.getIsSorted() === 'desc'
+                            ? <ArrowDown size={14} />
+                            : <ChevronsUpDown size={14} />
+                      )}
+                    </span>
+                  )
+
+                  return (
+                    <TableHead className="px-4 py-2" key={header.id}>
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <Button
+                          className={cn('-ml-2 h-auto px-2 py-1', centered && 'mx-auto')}
+                          onClick={header.column.getToggleSortingHandler()}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          {headerContent}
+                        </Button>
+                      ) : headerContent}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <AnimatedTableBody>
+            {table.getRowModel().rows.length ? table.getRowModel().rows.map((row, index) => (
+              <AnimatedTableRow
+                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                data-state={row.getIsSelected() ? 'selected' : undefined}
+                index={index}
+                key={row.id}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell className="px-4 py-2" key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </AnimatedTableRow>
+            )) : (
+              <AnimatedTableRow index={0}>
+                <TableCell className="h-24 text-center" colSpan={table.getVisibleLeafColumns().length}>暂无匹配记录。</TableCell>
+              </AnimatedTableRow>
+            )}
+          </AnimatedTableBody>
+        </Table>
+      </AnimatedTableWrapper>
       {table.getPageCount() > 0 && <div className="mt-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2"><p className="text-sm text-muted-foreground">每页显示</p><Select onValueChange={(value) => table.setPageSize(Number(value))} value={String(table.getState().pagination.pageSize)}><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent>{pageSizes.map((pageSize) => <SelectItem key={pageSize} value={String(pageSize)}>{pageSize}</SelectItem>)}</SelectContent></Select><p className="text-sm text-muted-foreground">条</p></div>
-        <div className="flex items-center gap-3"><p className="text-sm font-normal text-muted-foreground">{table.getRowModel().rows.length ? `${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-${Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} / ${table.getFilteredRowModel().rows.length}` : '0 / 0'}</p><div className="flex items-center gap-2"><ChevronLeft className={cn('cursor-pointer text-muted-foreground hover:text-primary', !table.getCanPreviousPage() && 'pointer-events-none opacity-50')} onClick={() => table.previousPage()} size={20} /><span className="flex size-8 items-center justify-center rounded-md text-sm font-normal text-primary">{table.getState().pagination.pageIndex + 1}</span><ChevronRight className={cn('cursor-pointer text-muted-foreground hover:text-primary', !table.getCanNextPage() && 'pointer-events-none opacity-50')} onClick={() => table.nextPage()} size={20} /></div></div>
+        <div className="flex items-center gap-3"><p className="text-sm font-normal text-muted-foreground">{table.getRowModel().rows.length ? `${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-${Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} / ${table.getFilteredRowModel().rows.length}` : '0 / 0'}</p><div className="flex items-center gap-1"><Button aria-label="上一页" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()} size="icon-sm" type="button" variant="ghost"><ChevronLeft /></Button><Button aria-current="page" size="icon" type="button" variant="outline">{table.getState().pagination.pageIndex + 1}</Button><Button aria-label="下一页" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()} size="icon-sm" type="button" variant="ghost"><ChevronRight /></Button></div></div>
       </div>}
     </div>
   )

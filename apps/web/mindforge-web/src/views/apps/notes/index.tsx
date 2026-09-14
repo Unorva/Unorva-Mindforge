@@ -1,23 +1,12 @@
 import NotesApp from "src/components/apps/notes";
-import BreadcrumbComp from "src/layouts/full/shared/breadcrumb/BreadcrumbComp";
-import StyleAwareWrapper from "src/components/shared/StyleAwareWrapper";
-import StyleDivider from "src/components/shared/StyleDivider";
-
-const BCrumb = [
-  { to: "/", title: "Home" },
-  { title: "Notes" },
-];
+import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
 
 const Notes = () => {
   return (
-    <StyleAwareWrapper
-      lyraClassName="flex flex-col p-px gap-px bg-border"
-      defaultClassName="flex flex-col gap-4"
-    >
-      <BreadcrumbComp title="Notes app" items={BCrumb} />
-      <StyleDivider />
+    <AppPage className="gap-5 bg-transparent p-0">
+      <AppPageHeader title="Notes app" />
       <NotesApp />
-    </StyleAwareWrapper>
+    </AppPage>
   );
 };
 

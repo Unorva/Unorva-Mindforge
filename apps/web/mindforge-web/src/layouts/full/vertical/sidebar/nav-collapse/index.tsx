@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import NavItem from "../nav-items/index";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MenuItem, ChildItem } from "../sidebaritems";
 
 interface NavCollapseProps {
@@ -72,14 +73,14 @@ export default function NavCollapse({ menu, className }: NavCollapseProps) {
 
             // 👉 With children → collapsible
             return (
-              <details
+              <Collapsible
                 key={index}
                 className="group/nav"
-                open={active || item.isActive}
+                defaultOpen={active || item.isActive}
               >
-                <summary
+                <CollapsibleTrigger
                   className={cn(
-                    "cursor-pointer rounded-md flex items-center transition-all duration-200 ease-in-out",
+                    "flex w-full cursor-pointer items-center rounded-md text-left transition-all duration-200 ease-in-out",
 
                   )}
                 >
@@ -89,9 +90,9 @@ export default function NavCollapse({ menu, className }: NavCollapseProps) {
                     className={className}
                     isActive={active}
                   />
-                </summary>
+                </CollapsibleTrigger>
 
-                <div className="pl-3  ml-5  border-l border-border">
+                <CollapsibleContent className="ml-5 border-l border-border pl-3">
                   {item.items?.map((sub: ChildItem, index) =>
                     sub.items ? (
                       <NavCollapse
@@ -114,8 +115,8 @@ export default function NavCollapse({ menu, className }: NavCollapseProps) {
                       </Link>
                     )
                   )}
-                </div>
-              </details>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div >

@@ -36,11 +36,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnimatedTableBody, AnimatedTableRow, AnimatedTableWrapper } from "@/components/animated-components/animated-table";
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { SearchIcon } from "lucide-react";
 import { BlogContext } from "src/context/blog-context";
 import { BlogPostType } from "src/types/apps/blog";
 import { useNavigate } from "react-router";
-import PlaceholdersInput from "src/components/animated-components/animatedinput-placeholder";
 
 const ManageBlogTable = () => {
   const { posts } = useContext(BlogContext);
@@ -252,8 +254,11 @@ const ManageBlogTable = () => {
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
+    // TanStack 在跨列搜索时由 columnId 决定返回值类型，运行时再统一转为字符串比较。
     globalFilterFn: (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       row: { getValue: (arg0: any) => any },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       columnId: any,
       filterValue: string
     ) => {
@@ -312,18 +317,15 @@ const ManageBlogTable = () => {
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              <PlaceholdersInput
+              <Input
+                autoFocus
                 value={globalFilter}
-                onChange={setGlobalFilter}
+                onChange={(event) => setGlobalFilter(event.target.value)}
                 className="pl-3"
                 onBlur={() => {
                   if (!globalFilter) setShowSearch(false);
                 }}
-                placeholders={[
-                  "Search blogs...",
-                  "Find top blogs...",
-                  "Look up blogs...",
-                ]}
+                placeholder="Search blogs..."
               />
             )}
             {/* Category Filter */}
@@ -361,27 +363,26 @@ const ManageBlogTable = () => {
       </CardHeader>
       <div>
         <CardContent>
-          <div className="border rounded-xl  overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
+          <AnimatedTableWrapper className="overflow-hidden rounded-xl border">
+              <Table className="min-w-full">
+                <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
+                    <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
-                        <th
+                        <TableHead
                           key={header.id}
-                          className="px-4 py-2 border-b  text-left  "
+                          className="px-4 py-2"
                         >
                           {header.isPlaceholder ? null : (
-                            <div
-                              className={
-                                header.column.getCanSort()
-                                  ? "cursor-pointer select-none"
-                                  : ""
-                              }
+                            header.column.getCanSort() ? (
+                            <Button
+                              className="-ml-2 h-auto px-2 py-1"
                               onClick={header.column.getToggleSortingHandler()}
+                              size="sm"
+                              type="button"
+                              variant="ghost"
                             >
-                              <div className="flex items-center gap-1 text-sm font-semibold">
+                              <span className="flex items-center gap-1 text-sm font-semibold">
                                 {flexRender(
                                   header.column.columnDef.header,
                                   header.getContext()
@@ -399,18 +400,19 @@ const ManageBlogTable = () => {
                                     )}
                                   </>
                                 )}
-                              </div>
-                            </div>
+                              </span>
+                            </Button>
+                            ) : flexRender(header.column.columnDef.header, header.getContext())
                           )}
-                        </th>
+                        </TableHead>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))}
-                </thead>
-                <tbody>
+                </TableHeader>
+                <AnimatedTableBody>
                   {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center py-4">
+                    <AnimatedTableRow index={0}>
+                      <TableCell colSpan={columns.length} className="py-4 text-center">
                         <div className="flex flex-col items-center">
                           <img
                             src="/images/svgs/no-data.webp"
@@ -421,26 +423,30 @@ const ManageBlogTable = () => {
                           />
                         </div>
                         No data found!
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </AnimatedTableRow>
                   ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="border-b last:border-b-0 ">
+                    table.getRowModel().rows.map((row, index) => (
+                      <AnimatedTableRow
+                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        data-state={row.getIsSelected() ? "selected" : undefined}
+                        index={index}
+                        key={row.id}
+                      >
                         {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-2">
+                          <TableCell key={cell.id} className="px-4 py-2">
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext()
                             )}
-                          </td>
+                          </TableCell>
                         ))}
-                      </tr>
+                      </AnimatedTableRow>
                     ))
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </AnimatedTableBody>
+              </Table>
+          </AnimatedTableWrapper>
 
           {/* Pagination Controls */}
           {table.getPageCount() > 0 ? (
@@ -484,29 +490,29 @@ const ManageBlogTable = () => {
                 </div>
                 {/* Custom Pagination Controls */}
                 <div className="flex items-center gap-2">
-                  <ChevronLeft
-                    size={20}
-                    className={`text-muted-foreground hover:text-primary cursor-pointer ${table.getState().pagination.pageIndex === 0
-                      ? "opacity-50 cursor-not-allowed!"
-                      : ""
-                      }`}
+                  <Button
+                    aria-label="Previous page"
+                    disabled={!table.getCanPreviousPage()}
                     onClick={() => table.previousPage()}
-                  />
-                  <span className="w-8 h-8 text-primary flex items-center justify-center rounded-md  text-sm font-normal">
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  <Button aria-current="page" size="icon" type="button" variant="outline">
                     {table.getState().pagination.pageIndex + 1}
-                  </span>
-                  <ChevronRight
-                    size={20}
-                    className={`text-muted-foreground hover:text-primary cursor-pointer ${table.getState().pagination.pageIndex + 1 ===
-                      table.getPageCount()
-                      ? "opacity-50 cursor-not-allowed!"
-                      : ""
-                      }`}
-                    onClick={() =>
-                      table.getState().pagination.pageIndex + 1 <
-                      table.getPageCount() && table.nextPage()
-                    }
-                  />
+                  </Button>
+                  <Button
+                    aria-label="Next page"
+                    disabled={!table.getCanNextPage()}
+                    onClick={() => table.nextPage()}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronRight />
+                  </Button>
                 </div>
               </div>
             </div>

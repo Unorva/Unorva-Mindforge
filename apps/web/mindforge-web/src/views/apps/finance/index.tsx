@@ -30,9 +30,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Progress } from '@/components/ui/progress'
 import { DataTable } from '@/components/data-table/data-table'
-import { AppPage, AppPageDivider, AppPageHeader } from '@/components/shared/app-workspace'
-import { DashboardCard } from '@/components/shared/dashboard-card'
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
 import { CategoryBreakdown, IncomeExpenseTrend } from './charts'
 import { formatDelta, formatMoney } from './format'
@@ -45,7 +45,7 @@ const accountIcons: Record<AccountType, LucideIcon> = {
 }
 
 function Pill({ children, className }: { children: ReactNode; className: string }) {
-  return <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium', className)}>{children}</span>
+  return <Badge className={cn('rounded-md', className)} variant="secondary">{children}</Badge>
 }
 
 function typeClass(type: TransactionType) {
@@ -68,7 +68,7 @@ function DeltaText({ positiveIsGood, suffix, value }: { positiveIsGood: boolean;
 
 function FinanceStatCard({ footer, icon: Icon, label, value }: { footer?: ReactNode; icon: LucideIcon; label: string; value: string }) {
   return (
-    <DashboardCard className="col-span-12 py-6 md:col-span-6 xl:col-span-3">
+    <Card className="h-full">
       <CardContent className="px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -79,13 +79,13 @@ function FinanceStatCard({ footer, icon: Icon, label, value }: { footer?: ReactN
           <div className="w-fit rounded-md border border-border p-2.5"><Icon size={16} /></div>
         </div>
       </CardContent>
-    </DashboardCard>
+    </Card>
   )
 }
 
 function AccountsPanel({ accounts }: { accounts: Account[] }) {
   return (
-    <DashboardCard className="flex flex-col gap-0!">
+    <Card className="flex h-full flex-col gap-0!">
       <CardHeader className="border-b border-border">
         <CardTitle className="flex items-center gap-2">
           <Wallet className="text-muted-foreground" size={16} />
@@ -107,13 +107,13 @@ function AccountsPanel({ accounts }: { accounts: Account[] }) {
           )
         })}
       </CardContent>
-    </DashboardCard>
+    </Card>
   )
 }
 
 function BudgetPanel({ budgets }: { budgets: BudgetItem[] }) {
   return (
-    <DashboardCard className="flex flex-col gap-0!">
+    <Card className="flex h-full flex-col gap-0!">
       <CardHeader className="border-b border-border">
         <CardTitle className="flex items-center gap-2">
           <Receipt className="text-muted-foreground" size={16} />
@@ -129,14 +129,23 @@ function BudgetPanel({ budgets }: { budgets: BudgetItem[] }) {
                 <span className="font-medium">{item.category}</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{formatMoney(item.spent, 0)} / {formatMoney(item.budget, 0)} · {percent}%</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div className={cn('h-full rounded-full', percent >= 100 ? 'bg-destructive' : percent >= 80 ? 'bg-chart-4' : 'bg-primary')} style={{ width: `${Math.min(percent, 100)}%` }} />
-              </div>
+              <Progress
+                aria-label={`${item.category}预算已使用 ${percent}%`}
+                className={cn(
+                  'gap-0 [&_[data-slot=progress-track]]:h-1.5',
+                  percent >= 100
+                    ? '[&_[data-slot=progress-indicator]]:bg-destructive'
+                    : percent >= 80
+                      ? '[&_[data-slot=progress-indicator]]:bg-chart-4'
+                      : '[&_[data-slot=progress-indicator]]:bg-primary',
+                )}
+                value={Math.min(percent, 100)}
+              />
             </div>
           )
         })}
       </CardContent>
-    </DashboardCard>
+    </Card>
   )
 }
 
@@ -212,19 +221,17 @@ export default function Finance() {
   }
 
   return (
-    <AppPage>
+    <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
         extra={
-          <span className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+          <span className="hidden items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground sm:flex">
             <Smartphone size={13} />
             手机端最近同步：{summary.lastSyncAt}
           </span>
         }
         title="资金管理"
       />
-      <AppPageDivider />
-      <Card className="min-h-[calc(100dvh-15rem)] gap-0! p-0">
-        <section className="grid grid-cols-12 gap-px border-b bg-border">
+        <section aria-label="资金概览" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <FinanceStatCard
             footer={<Badge className="bg-primary/10! text-primary!">{summary.accounts.length} 个账户</Badge>}
             icon={Landmark}
@@ -255,7 +262,7 @@ export default function Finance() {
           />
         </section>
 
-        <section className="grid grid-cols-12 gap-px border-b bg-border">
+        <section className="grid grid-cols-12 gap-5">
           <div className="col-span-12 xl:col-span-7">
             <IncomeExpenseTrend trend={summary.monthlyTrend} />
           </div>
@@ -264,7 +271,7 @@ export default function Finance() {
           </div>
         </section>
 
-        <section className="grid grid-cols-12 gap-px border-b bg-border">
+        <section className="grid grid-cols-12 gap-5">
           <div className="col-span-12 lg:col-span-5">
             <AccountsPanel accounts={summary.accounts} />
           </div>
@@ -273,7 +280,8 @@ export default function Finance() {
           </div>
         </section>
 
-        <section className="bg-background p-6">
+        <Card>
+        <CardContent className="p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="flex items-center gap-2 font-semibold">
@@ -285,8 +293,8 @@ export default function Finance() {
             <Badge className="bg-primary/10! text-primary!">共 {transactions.length} 笔</Badge>
           </div>
           <DataTable centered columns={columns} data={transactions} fillHeight={false} searchPlaceholder="搜索交易…" />
-        </section>
-      </Card>
+        </CardContent>
+        </Card>
     </AppPage>
   )
 }

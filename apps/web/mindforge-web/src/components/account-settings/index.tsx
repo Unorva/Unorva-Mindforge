@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   Bell,
   Blocks,
@@ -34,7 +34,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -172,6 +171,7 @@ function AccountSettingsContent() {
   const {
     settings,
     loading,
+    error,
     saveAiSettings,
     saveApps,
     bindEmail,
@@ -206,6 +206,15 @@ function AccountSettingsContent() {
     setSecurityDraft(settings.security);
   }, [settings]);
 
+  if (error) {
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="font-medium">账户设置加载失败</p>
+        <p className="max-w-md text-sm text-muted-foreground">请关闭弹窗后重新打开；如果问题持续，请检查本地模拟服务是否正常启动。</p>
+      </div>
+    );
+  }
+
   if (loading || !settings || !aiDraft || !appsDraft || !notificationsDraft || !securityDraft) {
     return (
       <div className="flex min-h-64 items-center justify-center">
@@ -218,7 +227,7 @@ function AccountSettingsContent() {
     setSavingSection(section);
     try {
       await request();
-      toast.success(message);
+      toast.add({ type: 'success', title: message });
     } catch {
       // 请求失败时 global-fetcher 已统一弹出错误提示
     } finally {
@@ -229,17 +238,17 @@ function AccountSettingsContent() {
   const handleBindEmail = async () => {
     const email = newEmail.trim();
     if (!EMAIL_PATTERN.test(email)) {
-      toast.error('邮箱格式不正确');
+      toast.add({ type: 'error', title: '邮箱格式不正确' });
       return;
     }
     if (settings.emails.some((item) => item.email.toLowerCase() === email.toLowerCase())) {
-      toast.error('该邮箱已绑定');
+      toast.add({ type: 'error', title: '该邮箱已绑定' });
       return;
     }
     setSavingSection('emails');
     try {
       await bindEmail(email, newEmailProvider);
-      toast.success('邮箱绑定成功', { description: '验证邮件已发送（模拟）' });
+      toast.add({ type: 'success', title: '邮箱绑定成功', description: '验证邮件已发送（模拟）' });
       setNewEmail('');
     } catch {
       // 错误提示由 global-fetcher 统一处理
@@ -250,18 +259,18 @@ function AccountSettingsContent() {
 
   const handleChangePassword = () => {
     if (!passwordForm.current || !passwordForm.next || !passwordForm.confirm) {
-      toast.error('请填写完整的密码信息');
+      toast.add({ type: 'error', title: '请填写完整的密码信息' });
       return;
     }
     if (passwordForm.next.length < 8) {
-      toast.error('新密码至少需要 8 位');
+      toast.add({ type: 'error', title: '新密码至少需要 8 位' });
       return;
     }
     if (passwordForm.next !== passwordForm.confirm) {
-      toast.error('两次输入的新密码不一致');
+      toast.add({ type: 'error', title: '两次输入的新密码不一致' });
       return;
     }
-    toast.success('密码修改成功（模拟）');
+    toast.add({ type: 'success', title: '密码修改成功（模拟）' });
     setPasswordForm({ current: '', next: '', confirm: '' });
   };
 
@@ -270,47 +279,46 @@ function AccountSettingsContent() {
       ...securityDraft,
       activeSessions: securityDraft.activeSessions.filter((session) => session.id !== id),
     });
-    toast.success('该设备已下线（模拟）', { description: '点击保存后生效' });
+    toast.add({ type: 'success', title: '该设备已下线（模拟）', description: '点击保存后生效' });
   };
 
   return (
     <Tabs
       defaultValue="ai"
       orientation="vertical"
-      className="flex min-h-0 flex-row gap-0 overflow-hidden"
+      className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[11rem_minmax(0,1fr)] md:grid-cols-[13rem_minmax(0,1fr)]"
     >
         <TabsList
-          variant="line"
-          className="h-auto w-52 shrink-0 flex-col items-stretch justify-start rounded-none border-r bg-muted/30 p-3"
+          className="h-auto! w-full shrink-0 flex-col! items-stretch! justify-start! gap-1 overflow-y-auto rounded-none border-r bg-muted/30 p-2"
         >
-          <TabsTrigger value="ai" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="AI 配置" value="ai" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Bot />
-            AI 配置
+            <span className="sr-only sm:not-sr-only">AI 配置</span>
           </TabsTrigger>
-          <TabsTrigger value="apps" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="应用配置" value="apps" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Blocks />
-            应用配置
+            <span className="sr-only sm:not-sr-only">应用配置</span>
           </TabsTrigger>
-          <TabsTrigger value="emails" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="邮箱绑定" value="emails" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Mail />
-            邮箱绑定
+            <span className="sr-only sm:not-sr-only">邮箱绑定</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="通知设置" value="notifications" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Bell />
-            通知设置
+            <span className="sr-only sm:not-sr-only">通知设置</span>
           </TabsTrigger>
-          <TabsTrigger value="preferences" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="外观偏好" value="preferences" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Palette />
-            外观偏好
+            <span className="sr-only sm:not-sr-only">外观偏好</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="justify-start gap-2 px-3 py-2">
+          <TabsTrigger aria-label="安全设置" value="security" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <ShieldCheck />
-            安全设置
+            <span className="sr-only sm:not-sr-only">安全设置</span>
           </TabsTrigger>
         </TabsList>
 
         {/* AI 配置 */}
-        <TabsContent value="ai" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="ai" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="AI 配置"
             description="配置工作区默认使用的模型服务商、生成参数与 AI 能力开关（当前为模拟数据）。"
@@ -484,7 +492,7 @@ function AccountSettingsContent() {
         </TabsContent>
 
         {/* 应用配置 */}
-        <TabsContent value="apps" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="apps" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="应用配置"
             description="启用或关闭各个 APP，并按需配置同步频率、通知与 AI 辅助（当前为模拟数据）。"
@@ -593,7 +601,7 @@ function AccountSettingsContent() {
         </TabsContent>
 
         {/* 邮箱绑定 */}
-        <TabsContent value="emails" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="emails" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="邮箱绑定"
             description="绑定多个邮箱账号，用于邮件中心聚合与系统通知（当前为模拟数据）。"
@@ -718,7 +726,7 @@ function AccountSettingsContent() {
         </TabsContent>
 
         {/* 通知设置 */}
-        <TabsContent value="notifications" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="notifications" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="通知设置"
             description="控制系统通知的接收渠道与各类事件的提醒开关（当前为模拟数据）。"
@@ -808,7 +816,7 @@ function AccountSettingsContent() {
         </TabsContent>
 
         {/* 外观偏好 */}
-        <TabsContent value="preferences" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="preferences" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="外观偏好"
             description="这些偏好仅影响当前浏览器中的使用体验。"
@@ -842,7 +850,7 @@ function AccountSettingsContent() {
                 <Switch
                   checked={false}
                   onCheckedChange={() =>
-                    toast.info('紧凑模式即将上线', {
+                    toast.add({ type: 'info', title: '紧凑模式即将上线',
                       description: '当前版本暂未开放该偏好。',
                     })
                   }
@@ -853,7 +861,7 @@ function AccountSettingsContent() {
         </TabsContent>
 
         {/* 安全设置 */}
-        <TabsContent value="security" className="m-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-6">
+        <TabsContent value="security" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
           <SectionIntro
             title="安全设置"
             description="管理账号安全策略、登录会话与密码（当前为模拟数据）。"
@@ -1018,26 +1026,28 @@ interface AccountSettingsDialogProps {
  * 账户设置弹窗：由顶部头像菜单中的 Account Settings 打开，
  * 自带 SettingsProvider，数据全部来自 MSW 模拟接口。
  */
-const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDialogProps) => (
-  <SettingsProvider>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 h-[min(56rem,calc(100vh-2rem))]"
-        style={{
-          width: 'calc(100vw - 2rem)',
-          maxWidth: '64rem',
-        }}
-      >
-        <DialogHeader className="border-b px-6 py-5 pr-14">
-          <DialogTitle className="text-lg">账户设置</DialogTitle>
-          <DialogDescription>
+const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDialogProps) => {
+  if (!open) return null;
+
+  return (
+    <SettingsProvider>
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent
+          className="grid-rows-1 gap-0 overflow-hidden p-0 h-[min(56rem,calc(100vh-2rem))]"
+          style={{
+            width: 'calc(100vw - 2rem)',
+            maxWidth: '64rem',
+          }}
+        >
+          <DialogTitle className="sr-only">账户设置</DialogTitle>
+          <DialogDescription className="sr-only">
             管理 AI 配置、应用集成、邮箱绑定与账号安全等系统设置（当前为模拟数据）。
           </DialogDescription>
-        </DialogHeader>
-        <AccountSettingsContent />
-      </DialogContent>
-    </Dialog>
-  </SettingsProvider>
-);
+          <AccountSettingsContent />
+        </DialogContent>
+      </Dialog>
+    </SettingsProvider>
+  );
+};
 
 export default AccountSettingsDialog;

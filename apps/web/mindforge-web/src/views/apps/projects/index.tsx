@@ -65,10 +65,8 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import InputPlaceholderAnimate from '@/components/animated-components/animatedinput-placeholder'
 import { DataTable } from '@/components/data-table/data-table'
-import { AppPage, AppPageDivider, AppPageHeader } from '@/components/shared/app-workspace'
-import { DashboardCard } from '@/components/shared/dashboard-card'
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
 import {
   archiveProject as archiveProjectRequest,
@@ -143,7 +141,7 @@ function priorityClass(priority: Priority | Severity) {
 }
 
 function Pill({ children, className }: { children: React.ReactNode; className: string }) {
-  return <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium', className)}>{children}</span>
+  return <Badge className={cn('rounded-md', className)} variant="secondary">{children}</Badge>
 }
 
 function OptionSelect<T extends string>({
@@ -341,27 +339,31 @@ export default function Projects() {
   if (!activeProject) {
     return (
       <>
-        <AppPage>
+        <AppPage className="gap-5 bg-transparent p-0">
           <AppPageHeader
             title="项目管理"
           />
-          <AppPageDivider />
-          <Card className="min-h-[calc(100dvh-15rem)] gap-0! p-0">
-
-          <section className="grid grid-cols-12 gap-px border-b bg-border">
+          <section aria-label="项目概览" className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <StatCard icon={FolderKanban} label="进行中的项目" value={projectStats.projects} />
             <StatCard icon={ListTodo} label="全部需求" tone="warning" value={projectStats.requirements} />
             <StatCard icon={CircleAlert} label="待关闭缺陷" value={projectStats.openDefects} tone="destructive" />
           </section>
-          <AppPageDivider />
 
           {activeProjects.length ? (
-            <section id="project-list">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-y px-6 py-4">
-                <Button onClick={() => setProjectDialogOpen(true)}><Plus />新建项目</Button>
-                <div className="relative min-w-0 flex-1 sm:w-60 sm:flex-none"><Search className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" /><InputPlaceholderAnimate className="pl-9!" onChange={setProjectSearch} placeholders={["搜索项目…", "查找项目…", "按负责人搜索…"]} value={projectSearch} /></div>
-              </div>
-              <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+            <section className="space-y-4" id="project-list">
+              <Card className="p-0">
+                <CardContent className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="font-semibold">我的项目</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">集中查看项目进度、需求和待处理缺陷。</p>
+                  </div>
+                  <div className="flex w-full flex-col-reverse gap-3 sm:w-auto sm:flex-row">
+                    <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none"><Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9!" onChange={(event) => setProjectSearch(event.target.value)} placeholder="搜索项目…" value={projectSearch} /></div>
+                    <Button onClick={() => setProjectDialogOpen(true)}><Plus />新建项目</Button>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {visibleProjects.map((project) => {
                   const openDefects = project.defects.filter((defect) => defect.status !== '已关闭').length
                   return (
@@ -371,22 +373,21 @@ export default function Projects() {
                       onClick={() => navigate(`/apps/projects/${project.id}`)}
                       type="button"
                     >
-                      <Card className="h-full border border-border/70 bg-card shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
-                        <CardHeader>
-                          <div className="flex items-start justify-between gap-3"><div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary"><FolderKanban className="size-4" /></div><Pill className={statusClass(project.status)}>{project.status}</Pill></div>
-                          <CardTitle className="mt-2 line-clamp-1">{project.name}</CardTitle>
+                      <Card className="h-full transition-transform duration-200 group-hover:-translate-y-0.5">
+                        <CardHeader className="pb-4">
+                          <div className="flex items-start justify-between gap-3"><div className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary"><FolderKanban className="size-4" /></div><Pill className={statusClass(project.status)}>{project.status}</Pill></div>
+                          <CardTitle className="mt-3 line-clamp-1">{project.name}</CardTitle>
                           <CardDescription className="line-clamp-2 min-h-10">{project.description || '暂无项目简介'}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4"><div className="grid grid-cols-2 gap-3 border-y py-3 text-sm"><div><p className="text-muted-foreground">需求</p><p className="mt-1 font-medium">{project.requirements.length} 条</p></div><div><p className="text-muted-foreground">待处理缺陷</p><p className="mt-1 font-medium">{openDefects} 个</p></div></div><div className="flex items-center justify-between text-xs text-muted-foreground"><span>负责人：{project.owner}</span><span>{project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}</span></div></CardContent>
+                        <CardContent className="space-y-4"><div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/45 p-3 text-sm"><div><p className="text-xs text-muted-foreground">需求</p><p className="mt-1 font-semibold">{project.requirements.length} 条</p></div><div><p className="text-xs text-muted-foreground">待处理缺陷</p><p className="mt-1 font-semibold">{openDefects} 个</p></div></div><div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><span className="truncate">负责人：{project.owner}</span><span className="shrink-0">{project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}</span></div></CardContent>
                       </Card>
                     </button>
                   )
                 })}
               </div>
-              {visibleProjects.length === 0 && <p className="px-6 py-10 text-center text-sm text-muted-foreground">没有找到匹配的项目。</p>}
+              {visibleProjects.length === 0 && <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">没有找到匹配的项目。</CardContent></Card>}
             </section>
-          ) : <div className="p-6"><EmptyState icon={FolderKanban} title="还没有项目" description="新建一个项目，开始梳理需求和待解决的问题。" action={() => setProjectDialogOpen(true)} actionLabel="新建项目" disabled={false} /></div>}
-          </Card>
+          ) : <Card className="p-6"><EmptyState icon={FolderKanban} title="还没有项目" description="新建一个项目，开始梳理需求和待解决的问题。" action={() => setProjectDialogOpen(true)} actionLabel="新建项目" disabled={false} /></Card>}
         </AppPage>
         <ProjectDialog form={projectForm} onFormChange={setProjectForm} onOpenChange={setProjectDialogOpen} onSubmit={createProject} open={projectDialogOpen} />
       </>
@@ -431,10 +432,9 @@ export default function Projects() {
 
   return (
     <>
-      <AppPage>
-      <div className="space-y-4">
-        <section className="border-b pb-5">
-          <div className="min-w-0">
+      <AppPage className="gap-5 bg-transparent p-0">
+        <Card>
+          <CardContent className="p-5 sm:p-6">
             <Breadcrumb className="mb-3">
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -449,21 +449,22 @@ export default function Projects() {
             <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-semibold tracking-tight">{activeProject.name}</h1><Pill className={statusClass(activeProject.status)}>{activeProject.status}</Pill></div>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{activeProject.description || '暂无项目简介'}</p>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground"><span>负责人：{activeProject.owner}</span><span>开始：{activeProject.startDate || '未设置'}</span><span>结束：{activeProject.endDate || '未设置'}</span></div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <Card className="min-h-[calc(100dvh-15rem)] p-6">
-        <Tabs className="h-full min-h-0 flex-col gap-6 lg:flex-row" defaultValue="requirements" orientation="vertical">
-          <aside className="shrink-0 lg:w-44">
-            <p className="mb-2 px-2 text-xs font-medium text-muted-foreground">项目工作台</p>
-            <TabsList aria-label="项目工作项" className="flex h-auto w-full flex-col items-stretch gap-1">
-              <TabsTrigger className="h-9 w-full flex-none justify-start px-3" value="requirements"><ListTodo />需求管理 <span className="ml-auto text-xs text-muted-foreground">{activeProject.requirements.length}</span></TabsTrigger>
-              <TabsTrigger className="h-9 w-full flex-none justify-start px-3" value="defects"><Bug />缺陷管理 <span className="ml-auto text-xs text-muted-foreground">{activeProject.defects.length}</span></TabsTrigger>
-              <TabsTrigger className="h-9 w-full flex-none justify-start px-3" value="settings"><Settings />项目设置</TabsTrigger>
-            </TabsList>
-          </aside>
+        <Tabs className="grid min-h-[calc(100dvh-19rem)] grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]" defaultValue="requirements" orientation="vertical">
+          <Card className="h-fit p-2 lg:sticky lg:top-4">
+            <CardContent className="p-0">
+              <TabsList aria-label="项目工作项" className="flex h-auto! w-full flex-col! items-stretch! gap-1 bg-transparent p-0">
+                <TabsTrigger aria-label="需求管理" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="requirements"><ListTodo /><span className="sr-only sm:not-sr-only">需求管理</span><span className="ml-auto hidden text-xs text-muted-foreground sm:inline">{activeProject.requirements.length}</span></TabsTrigger>
+                <TabsTrigger aria-label="缺陷管理" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="defects"><Bug /><span className="sr-only sm:not-sr-only">缺陷管理</span><span className="ml-auto hidden text-xs text-muted-foreground sm:inline">{activeProject.defects.length}</span></TabsTrigger>
+                <TabsTrigger aria-label="项目设置" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="settings"><Settings /><span className="sr-only sm:not-sr-only">项目设置</span></TabsTrigger>
+              </TabsList>
+            </CardContent>
+          </Card>
 
-          <TabsContent className="h-full min-h-0 w-full overflow-y-auto" value="requirements">
+          <Card className="min-h-[calc(100dvh-19rem)] p-5 sm:p-6">
+          <TabsContent className="h-full min-h-0 w-full" value="requirements">
             <ManagementPanel
               action={() => { setEditingRequirementId(null); setRequirementForm(emptyRequirementForm()); setRequirementDialogOpen(true) }}
               actionLabel="添加需求"
@@ -475,7 +476,7 @@ export default function Projects() {
             </ManagementPanel>
           </TabsContent>
 
-          <TabsContent className="h-full min-h-0 w-full overflow-y-auto" value="defects">
+          <TabsContent className="h-full min-h-0 w-full" value="defects">
             <ManagementPanel
               action={() => { setEditingDefectId(null); setDefectForm(emptyDefectForm()); setDefectDialogOpen(true) }}
               actionLabel="添加缺陷"
@@ -487,12 +488,11 @@ export default function Projects() {
             </ManagementPanel>
           </TabsContent>
 
-          <TabsContent className="h-full min-h-0 w-full overflow-y-auto" value="settings">
+          <TabsContent className="h-full min-h-0 w-full" value="settings">
             <ProjectSettings onArchive={() => setArchiveDialogOpen(true)} onSave={saveProjectSettings} project={activeProject} />
           </TabsContent>
+          </Card>
         </Tabs>
-        </Card>
-      </div>
       </AppPage>
       <RequirementDialog editing={editingRequirementId !== null} form={requirementForm} onFormChange={setRequirementForm} onOpenChange={setRequirementDialogOpen} onSubmit={saveRequirement} open={requirementDialogOpen} />
       <DefectDialog editing={editingDefectId !== null} form={defectForm} onFormChange={setDefectForm} onOpenChange={setDefectDialogOpen} onSubmit={saveDefect} open={defectDialogOpen} requirements={activeProject.requirements} />
@@ -507,7 +507,7 @@ export default function Projects() {
 function StatCard({ icon: Icon, label, value, tone = 'primary' }: { icon: typeof FolderKanban; label: string; value: number; tone?: 'destructive' | 'primary' | 'warning' }) {
   const badgeClass = tone === 'destructive' ? 'bg-destructive/10! text-destructive!' : tone === 'warning' ? 'bg-chart-4/12! text-chart-4!' : 'bg-chart-2/10! text-chart-2!'
   const badgeText = tone === 'destructive' ? '待处理' : tone === 'warning' ? '跟进中' : '活跃'
-  return <DashboardCard className="col-span-12 py-6 md:col-span-4"><CardContent className="flex flex-row justify-between px-6"><div className="flex w-full flex-col items-start gap-4"><div className="flex w-full items-center justify-between"><div className="flex flex-col gap-1"><p className="text-sm font-normal text-foreground">{label}</p><div className="flex items-center gap-2"><h3 className="text-2xl font-semibold">{value}</h3><Badge className={badgeClass}>{badgeText}</Badge></div></div><div className="w-fit rounded-md border border-border p-2.5"><Icon size={16} /></div></div><Button className="h-auto cursor-pointer gap-1.5 rounded-md px-4 py-2" onClick={() => document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth' })} variant="outline">查看项目<ArrowRight height={18} width={18} /></Button></div></CardContent></DashboardCard>
+  return <Card><CardContent className="flex h-full flex-col gap-5 p-5 sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-sm text-muted-foreground">{label}</p><div className="mt-2 flex items-center gap-2"><h3 className="text-3xl font-semibold tracking-tight">{value}</h3><Badge className={badgeClass}>{badgeText}</Badge></div></div><div className="grid size-10 place-items-center rounded-lg bg-muted text-foreground"><Icon size={18} /></div></div><Button className="mt-auto h-auto w-fit cursor-pointer gap-1.5 px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground" onClick={() => document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth' })} variant="ghost">查看项目<ArrowRight height={16} width={16} /></Button></CardContent></Card>
 }
 
 function EmptyState({ action, actionLabel, description, disabled, icon: Icon, title }: { action: () => void; actionLabel: string; description: string; disabled: boolean; icon: typeof Bug; title: string }) {

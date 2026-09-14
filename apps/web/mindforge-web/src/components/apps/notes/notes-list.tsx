@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { NotesContext } from "@/context/notes-context/index";
 import AnimatedItem from "../../animated-components/list-animation";
-import PlaceholdersInput from "@/components/animated-components/animatedinput-placeholder";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SearchIcon } from "lucide-react";
 import { notesType } from "src/types/apps/notes";
 
@@ -73,15 +73,11 @@ const Notelist = () => {
 
           <SearchIcon size={16} className="absolute left-2 top-1/2 -translate-y-1/2  text-muted-foreground" />
 
-          <PlaceholdersInput
+          <Input
             value={searchTerm}
             className="pl-9!"
-            onChange={setSearchTerm}
-            placeholders={[
-              "Search Notes...",
-              "Find Your Notes...",
-              "Look up Notes...",
-            ]}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search notes..."
           />
         </div>
         <h6 className="text-base mt-6">All Notes</h6>

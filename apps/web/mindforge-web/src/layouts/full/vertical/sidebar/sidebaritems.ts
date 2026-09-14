@@ -119,12 +119,6 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: "测试页面",
-        icon: Settings,
-        url: "/apps/test",
-      },
-      {
-        id: uniqueId(),
         name: "Notes",
         icon: NotebookText,
         url: "/apps/notes",

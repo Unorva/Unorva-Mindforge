@@ -4,57 +4,31 @@ import PostDate from "@/components/apps/blog/blogadd/post-date";
 import { Button } from "@/components/ui/button";
 import Media from "@/components/apps/blog/blogadd/medias";
 import Status from "@/components/apps/blog/blogadd/blog-status";
-import BreadcrumbComp from "src/layouts/full/shared/breadcrumb/BreadcrumbComp";
-import StyleAwareWrapper from "src/components/shared/StyleAwareWrapper";
-import StyleDivider from "src/components/shared/StyleDivider";
-
-const BCrumb = [
-  { to: "/", title: "Home" },
-  { title: "Blog Create" },
-];
+import { Card, CardContent } from "@/components/ui/card";
+import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
 
 const BlogCreate = () => {
   return (
-    <StyleAwareWrapper
-      lyraClassName="flex flex-col p-px gap-px bg-border"
-      defaultClassName="flex flex-col gap-4"
-    >
-      <BreadcrumbComp title="Blog Create" items={BCrumb} />
-      <StyleDivider />
-      <StyleAwareWrapper
-        lyraClassName="grid grid-cols-12 gap-px bg-border"
-        defaultClassName="grid grid-cols-12 gap-[30px]"
-      >
-        <div className="lg:col-span-8 col-span-12">
-          <StyleAwareWrapper
-            lyraClassName="flex flex-col gap-px bg-border"
-            defaultClassName="flex flex-col gap-[30px]"
-          >
+    <AppPage className="gap-5 bg-transparent p-0">
+      <AppPageHeader title="Blog Create" />
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 flex flex-col gap-5 lg:col-span-8">
             <GeneralDetail />
             <Media />
-          </StyleAwareWrapper>
         </div>
-        <div className="lg:col-span-4 col-span-12">
-          <StyleAwareWrapper
-            lyraClassName="flex flex-col gap-px bg-border h-full"
-            defaultClassName="flex flex-col gap-[30px]"
-          >
+        <div className="col-span-12 flex h-full flex-col gap-5 lg:col-span-4">
             <Status />
             <CategoryTags />
             <PostDate />
-          </StyleAwareWrapper>
         </div>
-        <StyleAwareWrapper
-          lyraClassName="bg-background col-span-12 p-4"
-          defaultClassName="lg:col-span-8 col-span-12"
-        >
-          <div className="flex gap-3">
+        <Card className="col-span-12 lg:col-span-8">
+          <CardContent className="flex flex-wrap gap-3 p-4">
             <Button className="sm:mb-0 mb-3 w-fit">Add Blog</Button>
             <Button variant={"destructive"}>Cancel</Button>
-          </div>
-        </StyleAwareWrapper>
-      </StyleAwareWrapper>
-    </StyleAwareWrapper>
+          </CardContent>
+        </Card>
+      </div>
+    </AppPage>
   );
 };
 

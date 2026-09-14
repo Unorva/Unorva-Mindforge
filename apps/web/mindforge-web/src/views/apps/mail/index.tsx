@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { motion, type Variants } from 'framer-motion'
 import {
   Archive,
   ChevronLeft,
@@ -17,11 +18,14 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Item, ItemContent, ItemGroup } from '@/components/ui/item'
+import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { AppPage, AppPageDivider, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
+import { AppPage, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
 
 type MailCategory = '项目协作' | '系统通知' | '产品更新'
@@ -144,6 +148,28 @@ const categoryClasses: Record<MailCategory, string> = {
   产品更新: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
 }
 
+const mailListVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.98 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: 'easeOut',
+      staggerChildren: 0.25,
+    },
+  },
+}
+
+const mailItemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
+}
+
 function MailFolders({ activeFolder, onSelect }: { activeFolder: string; onSelect: (folder: string) => void }) {
   return (
     <div className="flex h-full w-full flex-col gap-6 p-4">
@@ -154,29 +180,30 @@ function MailFolders({ activeFolder, onSelect }: { activeFolder: string; onSelec
 
       <nav className="space-y-1" aria-label="邮件文件夹">
         {folders.map(({ label, icon: Icon, count }) => (
-          <button
+          <Button
             className={cn(
-              'flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors',
+              'h-9 w-full justify-start gap-3 px-3',
               activeFolder === label ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
             )}
             key={label}
             onClick={() => onSelect(label)}
             type="button"
+            variant="ghost"
           >
             <Icon className="size-4" />
             <span className="flex-1 text-left">{label}</span>
             {count ? <span className="text-xs tabular-nums">{count}</span> : null}
-          </button>
+          </Button>
         ))}
       </nav>
 
-      <div className="mt-auto rounded-xl border bg-muted/35 p-3 text-xs leading-5 text-muted-foreground">
-        <p className="font-medium text-foreground">邮箱空间</p>
-        <p className="mt-1">已使用 1.8 GB / 5 GB</p>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-[36%] rounded-full bg-primary" />
-        </div>
-      </div>
+      <Card className="mt-auto gap-2 rounded-xl bg-muted/35 p-3 text-xs leading-5 text-muted-foreground shadow-none">
+        <CardContent className="p-0">
+          <p className="font-medium text-foreground">邮箱空间</p>
+          <p className="mt-1">已使用 1.8 GB / 5 GB</p>
+          <Progress aria-label="邮箱空间已使用 36%" className="mt-2 gap-0 [&_[data-slot=progress-track]]:h-1.5" value={36} />
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -214,12 +241,12 @@ export default function MailApp() {
   }
 
   return (
-    <AppPage>
+    <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
         title="邮件中心"
       />
-      <AppPageDivider />
-      <AppWorkspace className="flex min-h-[calc(100dvh-15rem)] flex-col">
+      <Card className="overflow-hidden p-0">
+      <AppWorkspace className="flex min-h-[calc(100dvh-15rem)] flex-col rounded-none bg-card">
         <div className="flex items-center justify-between border-b p-3 lg:hidden">
           <Button aria-label="打开邮件文件夹" onClick={() => setFoldersOpen(true)} size="icon" variant="outline">
             <Menu />
@@ -247,10 +274,10 @@ export default function MailApp() {
           >
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="space-y-3 border-b p-3">
-                <label className="relative block">
+                <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input aria-label="搜索邮件" className="pl-9!" onChange={(event) => setQuery(event.target.value)} placeholder="搜索邮件…" value={query} />
-                </label>
+                </div>
                 <div className="flex items-center gap-3 px-1 text-xs text-muted-foreground">
                   <Checkbox
                     aria-label="选择全部可见邮件"
@@ -263,18 +290,25 @@ export default function MailApp() {
 
               <ScrollArea className="min-h-0 flex-1">
                 {visibleMails.length ? (
-                  visibleMails.map((mail) => (
-                    <article
+                  <motion.div
+                    animate="show"
+                    initial="hidden"
+                    variants={mailListVariants}
+                  >
+                  <ItemGroup className="gap-0 overflow-hidden">
+                    {visibleMails.map((mail) => (
+                    <motion.div key={mail.id} role="listitem" variants={mailItemVariants}>
+                    <Item
                       className={cn(
-                        'group flex cursor-pointer gap-3 border-b px-3 py-3 transition-colors hover:bg-muted/60',
+                        'cursor-pointer flex-nowrap gap-3 rounded-none border-x-0 border-t-0 px-3 py-3 hover:bg-muted/60',
                         selectedMail.id === mail.id && 'bg-muted',
                         mail.unread && 'bg-primary/[0.035]',
                       )}
-                      key={mail.id}
                       onClick={() => {
                         setSelectedId(mail.id)
                         setMobileDetailOpen(true)
                       }}
+                      render={<article />}
                     >
                       <div className="pt-1" onClick={(event) => event.stopPropagation()}>
                         <Checkbox
@@ -283,7 +317,7 @@ export default function MailApp() {
                           onCheckedChange={(checked) => toggleSelected(mail.id, checked)}
                         />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <ItemContent className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className={cn('min-w-0 flex-1 truncate text-sm', mail.unread && 'font-semibold')}>{mail.sender}</p>
                           <time className="shrink-0 text-xs text-muted-foreground">{mail.time}</time>
@@ -294,21 +328,26 @@ export default function MailApp() {
                           <Badge className={cn('border-0 text-[11px]', categoryClasses[mail.category])} variant="outline">
                             {mail.category}
                           </Badge>
-                          <button
+                          <Button
                             aria-label={mail.starred ? '取消星标' : '添加星标'}
                             className="ml-auto text-muted-foreground hover:text-amber-500"
                             onClick={(event) => {
                               event.stopPropagation()
                               toggleStar(mail.id)
                             }}
+                            size="icon-sm"
                             type="button"
+                            variant="ghost"
                           >
                             <Star className={cn('size-4', mail.starred && 'fill-amber-400 text-amber-400')} />
-                          </button>
+                          </Button>
                         </div>
-                      </div>
-                    </article>
-                  ))
+                      </ItemContent>
+                    </Item>
+                    </motion.div>
+                    ))}
+                  </ItemGroup>
+                  </motion.div>
                 ) : (
                   <div className="flex h-full min-h-72 flex-col items-center justify-center px-6 text-center">
                     <Search className="size-7 text-muted-foreground" />
@@ -354,11 +393,11 @@ export default function MailApp() {
                   {selectedMail.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
                 </div>
 
-                <div className="mt-8 flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <Item className="mt-8 flex-nowrap bg-muted/30 text-xs text-muted-foreground" size="sm" variant="outline">
                   <Paperclip className="size-4" />
                   <span className="flex-1 truncate">本周迭代安排.pdf</span>
                   <span>1.2 MB</span>
-                </div>
+                </Item>
 
                 <div className="mt-8 flex flex-wrap gap-2">
                   <Button size="sm"><ChevronLeft className="rotate-180" />回复</Button>
@@ -397,11 +436,11 @@ export default function MailApp() {
                 <div className="mt-6 space-y-4 text-sm leading-7 text-foreground/85">
                   {selectedMail.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
                 </div>
-                <div className="mt-7 flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <Item className="mt-7 flex-nowrap bg-muted/30 text-xs text-muted-foreground" size="sm" variant="outline">
                   <Paperclip className="size-4" />
                   <span className="flex-1 truncate">本周迭代安排.pdf</span>
                   <span>1.2 MB</span>
-                </div>
+                </Item>
                 <div className="mt-6 flex gap-2">
                   <Button size="sm"><ChevronLeft className="rotate-180" />回复</Button>
                   <Button size="sm" variant="outline">转发</Button>
@@ -411,6 +450,7 @@ export default function MailApp() {
           </section>
         </div>
       </AppWorkspace>
+      </Card>
     </AppPage>
   )
 }

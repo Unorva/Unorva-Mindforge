@@ -2,7 +2,7 @@ import { CartesianGrid, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, Radar
 import { CalendarDays, Info, Lightbulb, Sparkles, Stethoscope, TriangleAlert, TrendingUp } from 'lucide-react'
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
 import { DashboardCard } from '@/components/shared/dashboard-card'
 import { cn } from '@/lib/utils'
@@ -34,7 +34,7 @@ export function ScoreRadarCard({ breakdown, className }: { breakdown: ScoreBreak
             <PolarGrid stroke="var(--border)" />
             <PolarAngleAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
             <PolarRadiusAxis axisLine={false} domain={[0, 100]} tick={false} />
-            <ChartTooltip content={<ChartTooltip hideLabel indicator="dot" />} />
+            <ChartTooltip content={<ChartTooltipContent hideLabel indicator="dot" />} />
             <Radar animationDuration={700} dataKey="score" fill="var(--color-score)" fillOpacity={0.22} stroke="var(--color-score)" strokeWidth={1.6} />
           </RadarChart>
         </ChartContainer>

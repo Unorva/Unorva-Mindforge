@@ -7,7 +7,7 @@ import FullLogo from 'src/layouts/full/shared/logo/FullLogo';
 import SocialButtons from '../../authforms/social-buttons';
 import { useState, type SubmitEvent } from 'react';
 import { register } from '@/api/system/auth/auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const BoxedRegister = () => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ const BoxedRegister = () => {
     }
 
     if (password !== confirmPassword) {
-      toast.error('注册失败', { description: '两次输入的密码不一致。' });
+      toast.add({ type: 'error', title: '注册失败', description: '两次输入的密码不一致。' });
       return;
     }
 
@@ -46,7 +46,7 @@ const BoxedRegister = () => {
         return;
       }
 
-      toast.success('操作成功', { description: '注册成功，请登录。' });
+      toast.add({ type: 'success', title: '操作成功', description: '注册成功，请登录。' });
       // 注册后不保留注册页的历史记录，避免返回后重复提交。
       navigate('/auth/auth2/login', { replace: true });
     } catch {

@@ -9,6 +9,7 @@ import {
 } from "src/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "src/components/ui/avatar";
 import { Button } from "src/components/ui/button";
+import { Badge } from "src/components/ui/badge";
 import { Icon } from "@iconify/react";
 
 import { cn } from "src/lib/utils";
@@ -19,7 +20,7 @@ import { Link, useNavigate } from "react-router";
 import avatar from '@/assets/images/profile/avtar.webp';
 import Buynow from '@/assets/images/backgrounds/sidebarbuynow.svg';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { logout } from '@/api/system/auth/auth';
 import { clearAccessToken } from '@/utils/auth';
 import ProfileDialog from '@/components/user-profile';
@@ -56,7 +57,7 @@ export default function ProfileSheet() {
       setLoggingOut(true);
       const result = await logout();
       if (result.success) {
-        toast.success('操作成功', { description: '已退出登录' });
+        toast.add({ type: 'success', title: '操作成功', description: '已退出登录' });
       }
     } catch {
       // 网络异常会由全局请求封装提示；仍应退出本机，避免令牌继续保留在浏览器中。
@@ -119,11 +120,12 @@ export default function ProfileSheet() {
             {profileDD.map((item) => (
               <li key={item.title} className="group">
                 {item.action ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => handleMenuAction(item.action!)}
+                    variant="ghost"
                     className={cn(
-                      "w-full cursor-pointer flex gap-3 py-2 px-3 rounded-md group-hover:bg-primary/5 text-muted-foreground"
+                      "h-auto w-full cursor-pointer justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5"
                     )}
                   >
                     <item.avatar
@@ -137,12 +139,13 @@ export default function ProfileSheet() {
                         {item.title}
                       </h6>
                     </div>
-                  </button>
+                  </Button>
                 ) : (
-                  <Link
-                    to={item.href ?? '/'}
+                  <Button
+                    render={<Link to={item.href ?? '/'} />}
+                    variant="ghost"
                     className={cn(
-                      "flex gap-3 py-2 px-3 rounded-md group-hover:bg-primary/5 text-muted-foreground"
+                      "h-auto w-full justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5"
                     )}
                   >
                     <item.avatar
@@ -157,12 +160,12 @@ export default function ProfileSheet() {
                       </h6>
 
                       {item.badge && (
-                        <span className="h-5 w-6 text-sm flex justify-center items-center text-primary rounded-sm bg-primary/5">
+                        <Badge className="h-5 min-w-6 bg-primary/5 text-primary" variant="secondary">
                           4
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                  </Link>
+                  </Button>
                 )}
               </li>
             ))}

@@ -24,7 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { AppPage, AppPageDivider, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
+import { AppPage, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
 
 function dateKey(date: Date) {
   const year = date.getFullYear()
@@ -228,7 +228,9 @@ export default function DailyReviewPage() {
         throw new Error(result.message || '加载复盘日历失败。')
       }
       setCompletedDateKeys(result.data ?? [])
-    } catch {}
+    } catch {
+      // 日历加载失败时保留当前已完成日期，主复盘内容仍可独立使用。
+    }
   }, [])
 
   useEffect(() => {
@@ -300,14 +302,13 @@ export default function DailyReviewPage() {
   )
 
   return (
-    <AppPage>
+    <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
         title="每日复盘"
       />
-      <AppPageDivider />
-      <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] xl:grid-cols-[280px_minmax(0,1fr)]">
-      <aside className="space-y-3 border-b p-4 xl:border-r xl:border-b-0">
-        <Card className="shadow-none">
+      <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] gap-5 overflow-visible bg-transparent xl:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="space-y-5">
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">日历</CardTitle>
             <CardDescription>绿色表示已写，红色表示未写</CardDescription>
@@ -356,7 +357,7 @@ export default function DailyReviewPage() {
         </AlertDialog>
       </aside>
 
-      <main className="min-h-0 min-w-0 p-4">
+      <main className="min-h-0 min-w-0">
         <Tabs
           // 预览正文较短时也占满右侧网格列，避免切换标签时标题和 Tabs 左移。
           className="h-full w-full gap-0"
@@ -364,7 +365,7 @@ export default function DailyReviewPage() {
           value={activeTab}
         >
         {/* 显示页正文较短时也保留与编辑器接近的工作区高度，避免卡片随内容收缩。 */}
-        <Card className="h-full min-h-0 w-full border shadow-none">
+        <Card className="h-full min-h-0 w-full">
           <CardHeader className="border-b">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>

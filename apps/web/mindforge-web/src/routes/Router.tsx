@@ -28,7 +28,6 @@ const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Finance = Loadable(lazy(() => import('../views/apps/finance')));
-const Test = Loadable(lazy(() => import('../views/apps/test')));
 
 const Tickets = Loadable(lazy(() => import('../views/apps/tickets')));
 const TicketCreate = Loadable(lazy(() => import('../views/apps/tickets/create')));
@@ -72,7 +71,6 @@ const Router = [
           { path: 'apps/tickets', element: <Tickets /> },
           { path: 'apps/tickets/create', element: <TicketCreate /> },
           { path: 'icons/iconify', element: <SolarIcon /> },
-          { path: 'apps/test', element: <Test /> },
           { path: '*', element: <Navigate to="/auth/404" /> },
         ],
       },
