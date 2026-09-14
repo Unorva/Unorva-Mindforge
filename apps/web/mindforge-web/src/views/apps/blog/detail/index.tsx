@@ -6,7 +6,7 @@ const BlogDetail = () => {
   return (
     <BlogProvider>
       <AppPage className="gap-5 bg-transparent p-0">
-        <AppPageHeader title="Blog Detail" />
+        <AppPageHeader title="博客详情" />
         <BlogDetailData />
       </AppPage>
     </BlogProvider>

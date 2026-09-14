@@ -29,7 +29,7 @@ const MyEditor = () => {
       BulletList,
       ListItem,
     ],
-    content: "<p>Start typing...</p>",
+    content: "<p>开始写作……</p>",
     onUpdate: ({ editor }) => {
       setEditorContent(editor.getHTML());
     },
@@ -51,13 +51,13 @@ const MyEditor = () => {
   const handleOrderedList = () =>
     editor?.chain().focus().toggleOrderedList().run();
   const handleLink = () => {
-    const url = prompt("Enter a URL");
+    const url = prompt("请输入链接地址");
     if (url) {
       editor?.chain().focus().setLink({ href: url }).run();
     }
   };
   const handleImage = () => {
-    const url = prompt("Enter image URL");
+    const url = prompt("请输入图片地址");
     if (url) {
       editor?.chain().focus().setImage({ src: url }).run();
     }
@@ -90,7 +90,7 @@ const MyEditor = () => {
 
       {/* Displaying the raw HTML content for testing */}
       <div className="output">
-        <h3>Output</h3>
+        <h3>内容预览</h3>
         <div dangerouslySetInnerHTML={{ __html: editorContent }} />
       </div>
     </div>

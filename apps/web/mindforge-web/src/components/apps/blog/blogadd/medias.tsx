@@ -8,7 +8,7 @@ const Media = () => {
        <Card>
         <CardHeader>
           <CardTitle>
-            <h5>Cover Image</h5>
+            <h5>封面图片</h5>
           </CardTitle>
         </CardHeader>
         <CardContent>

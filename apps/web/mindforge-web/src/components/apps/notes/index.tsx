@@ -111,7 +111,7 @@ const NotesApp = () => {
                   >
                     <Menu size={18} />
                   </Button>
-                  <h6 className="text-base"> Edit Note</h6>
+                  <h6 className="text-base">编辑笔记</h6>
                 </div>
                 <AddNotes colors={colorvariation} />
               </div>

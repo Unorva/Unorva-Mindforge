@@ -11,22 +11,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const statuses = ["Draft", "Schedule", "Publish", "Inactive"];
+const statuses = ["草稿", "定时发布", "已发布", "未启用"];
 const Status = () => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(
-    "Publish"
+    "已发布"
   );
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <div className="flex justify-between items-center">
-            <h5>Blog Status</h5>
-            {selectedStatus === "Publish" ? (
+            <h5>博客状态</h5>
+            {selectedStatus === "已发布" ? (
               <span className="h-3 w-3 p-0 bg-chart-2 rounded-full" />
-            ) : selectedStatus === "Schedule" ? (
+            ) : selectedStatus === "定时发布" ? (
               <span className="h-3 w-3 p-0 rounded-full" />
-            ) : selectedStatus === "Draft" ? (
+            ) : selectedStatus === "草稿" ? (
               <span className="h-3 w-3 p-0 rounded-full" />
             ) : (
               <span className="h-3 w-3 p-0 bg-chart-4 rounded-full" />
@@ -41,7 +41,7 @@ const Status = () => {
             onValueChange={(value) => {
               setSelectedStatus(value);
             }}
-            defaultValue={"Select status"}
+            defaultValue={"请选择状态"}
 
           >
             <SelectTrigger className="select-md w-full" id="status">
@@ -49,7 +49,7 @@ const Status = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Status</SelectLabel>
+                <SelectLabel>状态</SelectLabel>
                 {statuses.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -59,7 +59,7 @@ const Status = () => {
             </SelectContent>
           </Select>
           <small className="text-xs text-muted-foreground">
-            Set the blog status.
+            设置博客的发布状态。
           </small>
         </div>
       </CardContent>

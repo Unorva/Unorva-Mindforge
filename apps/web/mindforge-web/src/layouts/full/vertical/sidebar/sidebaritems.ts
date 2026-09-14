@@ -1,6 +1,7 @@
 import { uniqueId } from "lodash";
 import {
   BookOpen,
+  ChartColumnStacked,
   ClipboardCheck,
   FolderKanban,
   House,
@@ -81,41 +82,52 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: "Notes",
+        name: "笔记",
         icon: NotebookText,
         url: "/apps/notes",
       },
       {
         id: uniqueId(),
-        name: "Blogs",
+        name: "博客",
         icon: BookOpen,
         items: [
           {
             id: uniqueId(),
-            name: "Blog Listing",
+            name: "博客列表",
             url: "/apps/blog/post",
           },
           {
             id: uniqueId(),
-            name: "Blog Detail",
-            url: "/apps/blog/detail/streaming-video-way-before-it-was-cool-go-dark-tomorrow",
+            name: "博客详情",
+            url: "/apps/blog/detail/流媒体视频还没流行就将在明天停服",
           },
           {
             id: uniqueId(),
-            name: "Blog Edit",
+            name: "编辑博客",
             url: "/apps/blog/edit",
           },
           {
             id: uniqueId(),
-            name: "Blog Create",
+            name: "新建博客",
             url: "/apps/blog/create",
           },
           {
             id: uniqueId(),
-            name: "Manage Blog",
+            name: "管理博客",
             url: "/apps/blog/manage-blog",
           },
         ],
+      },
+    ],
+  },
+  {
+    heading: "开发",
+    items: [
+      {
+        id: uniqueId(),
+        name: "图表组件测试",
+        icon: ChartColumnStacked,
+        url: "/components/segmented-bar-chart",
       },
     ],
   },

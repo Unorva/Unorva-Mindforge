@@ -2,6 +2,7 @@
 
 import { Circle, Eye, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useContext } from "react";
@@ -19,8 +20,9 @@ const BlogFeaturedCard = ({ post, index }: Btype) => {
   const linkTo = title
     ? title
       .toLowerCase()
-      .replace(/ /g, "-")
-      .replace(/[^\w-]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\p{L}\p{N}-]+/gu, "")
     : "";
   const mainPost = index === 0;
   const { setLoading }: BlogContextProps = useContext(BlogContext);
@@ -45,7 +47,7 @@ const BlogFeaturedCard = ({ post, index }: Btype) => {
             <div className="absolute inset-0">
               <img
                 src={coverImg || ""}
-                alt={title || "blog image"}
+                alt={title || "博客封面"}
                 className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.09]"
                 width={786}
                 height={400}
@@ -81,7 +83,7 @@ const BlogFeaturedCard = ({ post, index }: Btype) => {
                         <Circle size={7} />
                         <small>
                           {createdAt
-                            ? format(new Date(createdAt), "E, MMM d")
+                            ? format(new Date(createdAt), "M月d日 EEE", { locale: zhCN })
                             : ""}
                         </small>
                       </div>

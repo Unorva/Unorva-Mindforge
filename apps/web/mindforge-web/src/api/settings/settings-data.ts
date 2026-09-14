@@ -52,14 +52,14 @@ let SettingsData: AccountSettingsData = {
     },
     {
       id: 'notes',
-      name: 'Notes',
+      name: '笔记',
       description: '笔记与知识库，支持全文检索和 AI 问答。',
       enabled: true,
       options: { syncFrequency: '实时', notify: false, aiAssist: false },
     },
     {
       id: 'blog',
-      name: 'Blogs',
+      name: '博客',
       description: '博客内容管理，AI 可辅助生成草稿与配图建议。',
       enabled: false,
       options: { syncFrequency: '手动', notify: false, aiAssist: false },

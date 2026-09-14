@@ -22,6 +22,8 @@ import userImg5 from '@/assets/images/profile/user-5.png';
 import userImg6 from '@/assets/images/profile/user-6.png';
 
 const chance = new Chance();
+const blogSummary =
+  '在信息不断涌入的时代，清晰的整理方式能帮助我们保留重要想法、减少干扰，并把零散内容转化为可以持续复用的知识。';
 
 const BlogComment: BlogType[] = [
   {
@@ -32,7 +34,7 @@ const BlogComment: BlogType[] = [
       name: chance.name(),
     },
     time: chance.date(),
-    comment: chance.paragraph({ sentences: 2 }),
+    comment: '这篇文章很有启发，尤其是关于保持专注的部分。',
     replies: [],
   },
   {
@@ -43,7 +45,7 @@ const BlogComment: BlogType[] = [
       name: chance.name(),
     },
     time: chance.date(),
-    comment: chance.paragraph({ sentences: 2 }),
+    comment: '内容整理得很清晰，我准备按照文中的方法试一试。',
     replies: [
       {
         id: uniqueId('#comm_'),
@@ -53,7 +55,7 @@ const BlogComment: BlogType[] = [
           name: chance.name(),
         },
         time: chance.date(),
-        comment: chance.paragraph({ sentences: 2 }),
+        comment: '感谢分享，期待看到后续的实践总结。',
       },
     ],
   },
@@ -65,7 +67,7 @@ const BlogComment: BlogType[] = [
       name: chance.name(),
     },
     time: chance.date(),
-    comment: chance.paragraph({ sentences: 2 }),
+    comment: '很实用的建议，已经收藏了。',
     replies: [],
   },
 ]
@@ -73,13 +75,13 @@ const BlogComment: BlogType[] = [
 const BlogPost: BlogPostType[] = [
   {
     id: uniqueId(),
-    title: 'Garmins Instinct Crossover is a rugged hybrid smartwatch',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '佳明 Instinct Crossover：坚固耐用的混合智能手表',
+    content: blogSummary,
     coverImg: blogImg2,
     createdAt: sub(new Date(), { days: 8, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Gadget',
+    category: '数码',
     featured: false,
     author: {
       id: uniqueId(),
@@ -91,13 +93,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'After Twitter Staff Cuts, Survivors Face Radio Silence',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '推特裁员之后：留下的员工面临沉默期',
+    content: blogSummary,
     coverImg: blogImg1,
     createdAt: sub(new Date(), { days: 7, hours: 3, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Lifestyle',
+    category: '生活方式',
     featured: false,
     author: {
       id: uniqueId(),
@@ -110,13 +112,13 @@ const BlogPost: BlogPostType[] = [
   {
     id: uniqueId(),
     title:
-      'Apple is apparently working on a new streamlined accessibility for iOS',
-    content: chance.paragraph({ sentences: 2 }),
+      '苹果正在为 iOS 打造更简洁的辅助功能',
+    content: blogSummary,
     coverImg: blogImg3,
     createdAt: sub(new Date(), { days: 5, hours: 2, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Design',
+    category: '设计',
     featured: false,
     author: {
       id: uniqueId(),
@@ -128,13 +130,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'Why Figma is selling to Adobe for $20 billion',
-    content: chance.paragraph({ sentences: 2 }),
+    title: 'Figma 为何以 200 亿美元出售给 Adobe',
+    content: blogSummary,
     coverImg: blogImg4,
     createdAt: sub(new Date(), { days: 7, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Design',
+    category: '设计',
     featured: false,
     author: {
       id: uniqueId(),
@@ -146,13 +148,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'Streaming video way before it was cool, go dark tomorrow',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '流媒体视频还没流行就将在明天停服',
+    content: blogSummary,
     coverImg: blogImg5,
     createdAt: sub(new Date(), { days: 4, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Lifestyle',
+    category: '生活方式',
     featured: false,
     author: {
       id: uniqueId(),
@@ -164,13 +166,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'As yen tumbles, gadget-loving Japan goes for secondhand iPhones ',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '日元走低，日本消费者开始青睐二手 iPhone',
+    content: blogSummary,
     coverImg: blogImg6,
     createdAt: sub(new Date(), { days: 2, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Gadget',
+    category: '数码',
     featured: false,
     author: {
       id: uniqueId(),
@@ -183,13 +185,13 @@ const BlogPost: BlogPostType[] = [
   {
     id: uniqueId(),
     title:
-      'Intel loses bid to revive antitrust case against patent foe Fortress',
-    content: chance.paragraph({ sentences: 2 }),
+      '英特尔重启针对 Fortress 反垄断诉讼的请求被驳回',
+    content: blogSummary,
     coverImg: blogImg9,
     createdAt: sub(new Date(), { days: 3, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Social',
+    category: '社交',
     featured: false,
     author: {
       id: uniqueId(),
@@ -201,13 +203,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'COVID outbreak deepens as more lockdowns loom in China',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '如何在公共健康事件中保持理性与从容',
+    content: blogSummary,
     coverImg: blogImg8,
     createdAt: sub(new Date(), { days: 4, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Health',
+    category: '健康',
     featured: false,
     author: {
       id: uniqueId(),
@@ -219,13 +221,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'Early Black Friday Amazon deals: cheap TVs, headphones, laptops',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '黑色星期五提前购：电视、耳机与笔记本精选',
+    content: blogSummary,
     coverImg: blogImg9,
     createdAt: sub(new Date(), { days: 5, hours: 3, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Gadget',
+    category: '数码',
     featured: true,
     author: {
       id: uniqueId(),
@@ -237,13 +239,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'Presented by Max Rushden with Barry Glendenning, Philippe Auclair',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '运动与健康：建立能够长期坚持的生活节奏',
+    content: blogSummary,
     coverImg: blogImg1,
     createdAt: sub(new Date(), { days: 0, hours: 1, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Health',
+    category: '健康',
     featured: true,
     author: {
       id: uniqueId(),
@@ -255,13 +257,13 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title: 'Garmins Instinct Crossover Solar is a rugged hybrid smartwatch',
-    content: chance.paragraph({ sentences: 2 }),
+    title: '佳明 Instinct Crossover Solar：更耐用的太阳能智能手表',
+    content: blogSummary,
     coverImg: blogImg12,
     createdAt: sub(new Date(), { days: 8, hours: 6, minutes: 20 }),
     view: random(9999),
     share: random(9999),
-    category: 'Lifestyle',
+    category: '生活方式',
     featured: false,
     author: {
       id: uniqueId(),

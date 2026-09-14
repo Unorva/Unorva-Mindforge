@@ -5,6 +5,7 @@ import { useState } from "react";
 
 // ShadCN UI Date Picker components
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,7 +26,7 @@ const PostDate = () => {
     <Card className="h-full">
       <CardHeader>
         <CardTitle>
-          <h5>Publish Date</h5>
+          <h5>发布日期</h5>
         </CardTitle>
       </CardHeader>
 
@@ -33,7 +34,7 @@ const PostDate = () => {
         <div>
           <div className="mb-2">
             <Label htmlFor="publishDate">
-              Select publish date
+              选择发布日期
               <span className="text-destructive">*</span>
             </Label>
           </div>
@@ -49,9 +50,9 @@ const PostDate = () => {
                 >
                   <CalendarIcon />
                   {publishDate ? (
-                    format(publishDate, "PPP")
+                    format(publishDate, "PPP", { locale: zhCN })
                   ) : (
-                    <span>Pick a date</span>
+                    <span>选择日期</span>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -60,13 +61,14 @@ const PostDate = () => {
                   mode="single"
                   selected={publishDate}
                   onSelect={setPublishDate}
+                  locale={zhCN}
 
                 />
               </PopoverContent>
             </Popover>
           </div>
           <small className="text-xs text-muted-foreground">
-            Choose the date when this blog post should be published.
+            选择这篇博客的发布日期。
           </small>
         </div>
       </CardContent>

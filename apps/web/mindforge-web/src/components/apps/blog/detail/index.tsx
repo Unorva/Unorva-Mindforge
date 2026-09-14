@@ -3,6 +3,7 @@ import React, { useEffect, useContext } from "react";
 
 import { Circle, Eye, MessageSquare, Quote } from "lucide-react";
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { uniqueId } from "lodash";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "react-router";
@@ -30,13 +31,14 @@ const BlogDetailData = () => {
   const location = useLocation();
   const pathName = location.pathname;
 
-  const getTitle = pathName.split("/").pop();
+  const getTitle = decodeURIComponent(pathName.split("/").pop() || "");
   const post = posts.find(
     (p) =>
       (p.title || "")
         .toLowerCase()
-        .replace(/ /g, "-")
-        .replace(/[^\w-]+/g, "") === getTitle
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\p{L}\p{N}-]+/gu, "") === getTitle
   );
   const [replyTxt, setReplyTxt] = React.useState("");
 
@@ -48,7 +50,7 @@ const BlogDetailData = () => {
         id: uniqueId("#USER_"),
         avatar: post.author?.avatar || "",
         name: post.author?.name || "",
-        time: "Now",
+        time: "刚刚",
       },
       comment: replyTxt,
       replies: [],
@@ -75,7 +77,7 @@ const BlogDetailData = () => {
               <div className="overflow-hidden h-[450px]">
                 <img
                   src={post?.coverImg || ""}
-                  alt="shadcn-admin"
+                  alt={post?.title || "博客封面"}
                   className="w-full h-full object-cover object-center"
                 />
               </div>
@@ -84,7 +86,7 @@ const BlogDetailData = () => {
 
                 className="absolute bottom-8 end-6 bg-muted text-muted-foreground"
               >
-                2 min Read
+                阅读约 2 分钟
               </Badge>
             </div>
             <div className="flex justify-between items-center -mt-7 px-6">
@@ -128,7 +130,7 @@ const BlogDetailData = () => {
                     <Circle size={7} />
                     <small>
                       {post && post.createdAt
-                        ? format(new Date(post.createdAt), "E, MMM d")
+                        ? format(new Date(post.createdAt), "M月d日 EEE", { locale: zhCN })
                         : ""}
                     </small>
                   </div>
@@ -138,63 +140,47 @@ const BlogDetailData = () => {
             <Separator className="my-8" />
             <div className="px-6 pb-6">
               <h2 className="md:text-3xl text-2xl pb-5">
-                Title of the paragraph
+                开始一段更专注的阅读
               </h2>
               <p>
-                But you cannot figure out what it is or what it can do. MTA web
-                directory is the simplest way in which one can bid on a link, or
-                a few links if they wish to do so. The link directory on MTA
-                displays all of the links it currently has, and does so in
-                alphabetical order, which makes it much easier for someone to
-                find what they are looking for if it is something specific and
-                they do not want to go through all the other sites and links as
-                well. It allows you to start your bid at the bottom and slowly
-                work your way to the top of the list
+                面对持续涌入的信息，我们真正需要的往往不是更多内容，而是一套能够帮助自己判断、整理和行动的方法。先明确问题，再收集与问题直接相关的材料，能够显著减少无效浏览带来的注意力消耗。
               </p>
               <br></br>
               <p>
-                Gigure out what it is or what it can do. MTA web directory is
-                the simplest way in which one can bid on a link, or a few links
-                if they wish to do so. The link directory on MTA displays all of
-                the links it currently has, and does so in alphabetical order,
-                which makes it much easier for someone to find what they are
-                looking for if it is something specific and they do not want to
-                go through all the other sites and links as well. It allows you
-                to start your bid at the bottom and slowly work your way to the
-                top of the
+                一个简单的做法是：阅读时只记录关键事实、自己的理解以及下一步行动。这样既保留了思考过程，也让笔记在未来真正可检索、可复用，并逐渐形成属于自己的知识体系。
               </p>
               <br></br>
               <p>
-                <b>This is strong text.</b>
+                <b>重要内容可以使用粗体突出显示。</b>
               </p>
-              <i>This is italic text.</i>
+              <i>补充说明可以使用斜体呈现。</i>
 
               <Separator className="my-8" />
-              <h3 className="text-xl mb-3">Unorder list</h3>
+              <h3 className="text-xl mb-3">无序列表</h3>
               <ul className="list-disc pl-6">
-                <li>Gigure out what it is or</li>
-                <li>The links it currently</li>
-                <li>It allows you to start your bid</li>
-                <li>Gigure out what it is or</li>
-                <li>The links it currently</li>
-                <li>It allows you to start your bid</li>
+                <li>明确当前要解决的问题</li>
+                <li>收集与问题相关的信息</li>
+                <li>记录自己的判断和依据</li>
+                <li>删除重复或无关的内容</li>
+                <li>补充可检索的标签</li>
+                <li>确定下一步行动</li>
               </ul>
               <Separator className="my-8" />
-              <h3 className="text-xl mb-3">Order list</h3>
+              <h3 className="text-xl mb-3">有序列表</h3>
               <ol className="list-decimal pl-6">
-                <li>Gigure out what it is or</li>
-                <li>The links it currently</li>
-                <li>It allows you to start your bid</li>
-                <li>Gigure out what it is or</li>
-                <li>The links it currently</li>
-                <li>It allows you to start your bid</li>
+                <li>先写下核心结论</li>
+                <li>补充事实与上下文</li>
+                <li>检查信息是否可靠</li>
+                <li>整理成清晰结构</li>
+                <li>关联已有笔记</li>
+                <li>安排后续复盘</li>
               </ol>
               <Separator className="my-8" />
-              <h3 className="text-xl mb-3">Quotes</h3>
+              <h3 className="text-xl mb-3">引用</h3>
               <div className="pt-5 pb-4 px-4 rounded-md border-s-2 border-primary flex gap-1 items-start bg-primary/5">
                 <Quote size={20} className="-mt-1" />
                 <h2 className="text-base font-bold">
-                  Life is short, Smile while you still have teeth!
+                  生活很短，趁还能微笑时尽情微笑。
                 </h2>
               </div>
             </div>
@@ -203,12 +189,13 @@ const BlogDetailData = () => {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>
-                <h5 className="text-xl mb-2">Post Comments</h5>
+                <h5 className="text-xl mb-2">发表评论</h5>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 rows={4}
+                placeholder="写下你的评论……"
                 value={replyTxt}
                 onChange={(e) => setReplyTxt(e.target.value)}
               ></Textarea>
@@ -217,11 +204,11 @@ const BlogDetailData = () => {
                 className="w-fit mt-3 rounded-md "
                 onClick={onSubmit}
               >
-                Post Comment
+                发表评论
               </Button>
               <div className="mt-6">
                 <div className="flex gap-3 items-center">
-                  <h5 className="text-xl ">Comments</h5>
+                  <h5 className="text-xl ">评论</h5>
                   <div className="h-8 w-8 rounded-full flex items-center justify-center text-primary bg-primary/5 font-bold">
                     {post?.comments?.length || 0}
                   </div>
@@ -236,7 +223,7 @@ const BlogDetailData = () => {
           </Card>
         </>
       ) : (
-        <p className="text-xl text-center py-6 font-bold">No Post Found</p>
+        <p className="text-xl text-center py-6 font-bold">未找到博客文章</p>
       )}
     </>
   );

@@ -49,11 +49,19 @@ export function DataTable<TData extends RowData>({ centered = false, columns, da
 
   const selectionColumn = useMemo(() => createColumnHelper<TData>().display({
     id: 'select',
-    header: ({ table }) => <Checkbox aria-label="选择当前页全部记录" checked={table.getIsAllPageRowsSelected()} indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()} onCheckedChange={(value) => table.toggleAllPageRowsSelected(value === true)} />,
-    cell: ({ row }) => <Checkbox aria-label="选择当前记录" checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(value === true)} />,
+    header: ({ table }) => (
+      <span className={cn('flex items-center', centered && 'justify-center')}>
+        <Checkbox aria-label="选择当前页全部记录" checked={table.getIsAllPageRowsSelected()} indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()} onCheckedChange={(value) => table.toggleAllPageRowsSelected(value === true)} />
+      </span>
+    ),
+    cell: ({ row }) => (
+      <span className={cn('flex items-center', centered && 'justify-center')}>
+        <Checkbox aria-label="选择当前记录" checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(value === true)} />
+      </span>
+    ),
     enableHiding: false,
     enableSorting: false,
-  }), [])
+  }), [centered])
 
   const table = useReactTable({
     columns: [selectionColumn, ...columns],
@@ -104,7 +112,7 @@ export function DataTable<TData extends RowData>({ centered = false, columns, da
                   )
 
                   return (
-                    <TableHead className="px-4 py-2" key={header.id}>
+                    <TableHead className={cn('px-4 py-2', header.column.id === 'select' && 'pr-4!')} key={header.id}>
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <Button
                           className={cn('-ml-2 h-auto px-2 py-1', centered && 'mx-auto')}
@@ -131,7 +139,7 @@ export function DataTable<TData extends RowData>({ centered = false, columns, da
                 key={row.id}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell className="px-4 py-2" key={cell.id}>
+                  <TableCell className={cn('px-4 py-2', cell.column.id === 'select' && 'pr-4!')} key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

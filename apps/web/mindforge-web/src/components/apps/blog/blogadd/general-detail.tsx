@@ -13,29 +13,29 @@ const GeneralDetail = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h5>Blog Details</h5>
+            <h5>博客详情</h5>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
             <div className="mb-2 block">
               <Label htmlFor="prednm">
-                Blog Title
+                博客标题
                 <span className="text-destructive ">*</span>
               </Label>
             </div>
-            <Input id="prednm" type="text" placeholder="Blog Title" />
+            <Input id="prednm" type="text" placeholder="请输入博客标题" />
             <small className="text-xs text-muted-foreground">
-              A blog title is required and recommended to be unique.
+              博客标题为必填项，建议使用唯一标题。
             </small>
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="desc">Content</Label>
+              <Label htmlFor="desc">正文内容</Label>
             </div>
             <TiptapEdit />
             <small className="text-xs  text-muted-foreground">
-              Set a Content to the blog for better visibility.
+              完善正文内容，让博客更易于阅读和发现。
             </small>
           </div>
         </CardContent>

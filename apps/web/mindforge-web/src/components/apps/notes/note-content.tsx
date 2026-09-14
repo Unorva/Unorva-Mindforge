@@ -69,7 +69,7 @@ const NoteContent = () => {
           <div className="w-full">
             <Textarea
               id="outlined-multiline-static"
-              placeholder="Edit Note"
+              placeholder="编辑笔记"
               rows={5}
               value={isEditing ? updatedTitle : initialTitle}
               onChange={handleTitleChange}
@@ -77,7 +77,7 @@ const NoteContent = () => {
               onBlur={handleBlur}
             />
             <br />
-            <h6 className="text-base mb-3">Change Note Color</h6>
+            <h6 className="text-base mb-3">更改笔记颜色</h6>
 
             <div className="flex gap-2 items-center">
               {colorvariation.map((color1) => (
@@ -94,7 +94,7 @@ const NoteContent = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center w-full py-6 text-2xl ">Select a Note</div>
+          <div className="text-center w-full py-6 text-2xl ">请选择一篇笔记</div>
         )}
       </div>
     </>

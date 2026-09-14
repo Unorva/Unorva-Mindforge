@@ -75,3 +75,57 @@
 - Targeted ESLint and production build: passed.
 
 final result: passed
+
+---
+
+# 分段多组柱状图组件视觉核验
+
+## Comparison target
+
+- Source visual truth: `C:\Users\yanshijie\AppData\Local\Temp\codex-clipboard-d7c840db-eb4c-46bf-8701-a1ac0d6ae068.png`，1068 × 374 px。
+- Browser-rendered implementation: `C:\Users\yanshijie\Desktop\Unorva\Unorva Mindforge\apps\web\mindforge-web\segmented-bar-chart-implementation.png`，1020 × 369 px。
+- Combined comparison evidence: `C:\Users\yanshijie\Desktop\Unorva\Unorva Mindforge\apps\web\mindforge-web\segmented-bar-chart-comparison.png`。
+- Route: `http://127.0.0.1:4173/preview/segmented-bar-chart`。
+- Viewport: 1068 × 768 CSS px for the component capture; density 1. Source and implementation were compared at native density without resampling.
+- State: light theme, monthly dataset, all five series visible.
+
+## Full-view comparison evidence
+
+The final comparison aligns the source and implementation at nearly identical component dimensions. The implementation reproduces the centered plot, seven category groups, five adjacent grayscale series, discrete horizontal segmentation, dashed horizontal grid, bottom legend, and compact header. The implementation intentionally uses the application's Card radius and border tokens.
+
+The source's repeated `0k` Y-axis labels were treated as a formatting defect rather than copied; the implementation shows meaningful `0`, `1k`, `2k`, `3k`, and `4k` ticks. The three documentation-site action icons were excluded because they are page chrome rather than part of the chart. The paid `Pro` badge is replaced by `自研` to accurately identify this implementation.
+
+## Focused comparison evidence
+
+No separate crop was required: the saved implementation image is already an isolated component capture, and its title, axes, segment gaps, legend swatches, and labels are readable at native size.
+
+## Required fidelity surfaces
+
+- Fonts and typography: passed. Geist is inherited from the project and closely matches the neutral sans-serif hierarchy in the reference; title, tick, and legend weights remain legible.
+- Spacing and layout rhythm: passed. The plot is capped at 680px and centered; the final 369px component height is within 5px of the 374px source.
+- Colors and visual tokens: passed. Five ordered grayscale colors use foreground/background token mixing and adapt to light/dark themes.
+- Image quality and asset fidelity: passed. The target contains no raster imagery; chart marks are rendered as crisp Recharts SVG geometry and no placeholder assets were introduced.
+- Copy and content: passed. All seven categories and five legend labels are present; intentional `Pro` → `自研` and axis-label corrections are documented above.
+
+## Findings and comparison history
+
+- [P2, fixed] First desktop capture was 447px tall with a 720px plot and an extra description line. The test configuration now uses a 240px chart and 680px plot, removes the description, and produces a 1020 × 369px component capture.
+- [P2, fixed] First 390 × 844 mobile capture compressed the page title into a vertical column because the breadcrumb, badge, and title competed for one row. The secondary badge now hides below `sm` and the breadcrumb is reduced to the current page.
+- No actionable P0/P1/P2 findings remain.
+
+## Interaction and responsive verification
+
+- Legend toggle tested: `Group 5` changed from pressed/visible to unpressed/hidden and back.
+- Dataset selector tested: monthly → weekly → monthly updated all seven category labels and bars.
+- Tooltip verified with all five series and formatted values.
+- 390 × 844 viewport verified: page header remains readable, legend wraps, and the chart uses intentional horizontal scrolling to preserve bar width.
+- Browser console errors and warnings: none.
+
+## Implementation checklist
+
+- Reusable configurable component: complete.
+- Protected in-app route and sidebar entry: complete.
+- Direct no-login preview route: complete.
+- Desktop and mobile browser verification: complete.
+
+final result: passed

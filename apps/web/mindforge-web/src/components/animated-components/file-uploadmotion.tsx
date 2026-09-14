@@ -60,10 +60,10 @@ export const FileUploadStruc: React.FC<FileUploadProps> = ({ onChange }) => {
         />
         <div className="flex flex-col items-center justify-center">
           <p className="relative z-20 font-bold text-dark dark:text-neutral-300 text-xl">
-            Upload file
+            上传文件
           </p>
           <p className="relative z-20 font-normal text-neutral-400 dark:text-neutral-400 text-base mt-2">
-            Drag or drop your files here or click to upload
+            将文件拖放到此处，或点击上传
           </p>
           <div className="relative w-full mt-10 max-w-xl mx-auto">
             {files.length > 0 ? (
@@ -138,7 +138,7 @@ const FileItem: React.FC<FileItemProps> = ({
         layout
         className="text-sm"
       >
-        modified {formatDate(file.lastModified)}
+        修改于 {formatDate(file.lastModified)}
       </motion.p>
     </div>
   </motion.div>
@@ -168,7 +168,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ isDragActive }) => (
           animate={{ opacity: 1 }}
           className="text-neutral-600 flex flex-col items-center"
         >
-          Drop it
+          松开以上传
           <CloudUpload className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
         </motion.p>
       ) : (

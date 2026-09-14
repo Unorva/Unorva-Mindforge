@@ -28,6 +28,7 @@ const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Finance = Loadable(lazy(() => import('../views/apps/finance')));
+const SegmentedBarChartTest = Loadable(lazy(() => import('../views/components/segmented-bar-chart')));
 
 // authentication
 
@@ -54,6 +55,7 @@ const Router = [
           { path: 'apps/projects', element: <Projects /> },
           { path: 'apps/projects/:projectId', element: <Projects /> },
           { path: 'apps/finance', element: <Finance /> },
+          { path: 'components/segmented-bar-chart', element: <SegmentedBarChartTest /> },
           { path: '*', element: <Navigate to="/auth/404" /> },
         ],
       },
@@ -63,6 +65,16 @@ const Router = [
     path: '/',
     element: <BlankLayout />,
     children: [
+      {
+        path: '/preview/segmented-bar-chart',
+        element: (
+          <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
+            <div className="mx-auto max-w-[1120px]">
+              <SegmentedBarChartTest />
+            </div>
+          </div>
+        ),
+      },
       { path: '/auth/auth2/login', element: <Login2 /> },
       { path: '404', element: <Error /> },
       { path: '/auth/404', element: <Error /> },

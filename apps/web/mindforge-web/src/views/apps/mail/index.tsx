@@ -18,11 +18,10 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Item, ItemContent, ItemGroup } from '@/components/ui/item'
-import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { AppPage, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
@@ -196,14 +195,6 @@ function MailFolders({ activeFolder, onSelect }: { activeFolder: string; onSelec
           </Button>
         ))}
       </nav>
-
-      <Card className="mt-auto gap-2 rounded-xl bg-muted/35 p-3 text-xs leading-5 text-muted-foreground shadow-none">
-        <CardContent className="p-0">
-          <p className="font-medium text-foreground">邮箱空间</p>
-          <p className="mt-1">已使用 1.8 GB / 5 GB</p>
-          <Progress aria-label="邮箱空间已使用 36%" className="mt-2 gap-0 [&_[data-slot=progress-track]]:h-1.5" value={36} />
-        </CardContent>
-      </Card>
     </div>
   )
 }

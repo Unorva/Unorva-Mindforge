@@ -1,5 +1,6 @@
 
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { Circle, Eye, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router";
@@ -23,8 +24,9 @@ const BlogCard = ({ post }: Btype) => {
   const linkTo = title
     ? title
       .toLowerCase()
-      .replace(/ /g, "-")
-      .replace(/[^\w-]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\p{L}\p{N}-]+/gu, "")
     : "";
   return (
     <>
@@ -35,7 +37,7 @@ const BlogCard = ({ post }: Btype) => {
               <div className="overflow-hidden! h-[240px]">
                 <img
                   src={coverImg || ""}
-                  alt="shadcn-admin"
+                  alt={title || "博客封面"}
                   className="w-full h-full object-cover object-center transition-transform duration-200 group-hover:scale-[1.09] overflow-hidden!"
                 />
               </div>
@@ -43,7 +45,7 @@ const BlogCard = ({ post }: Btype) => {
 
                 className="absolute bottom-8 end-6 bg-muted text-muted-foreground"
               >
-                2 min Read
+                阅读约 2 分钟
               </Badge>
             </div>
           </Link>
@@ -87,7 +89,7 @@ const BlogCard = ({ post }: Btype) => {
                 <div className="ms-auto flex gap-2 items-center  text-sm">
                   <Circle size={7} />
                   <small>
-                    {createdAt ? format(new Date(createdAt), "E, MMM d") : ""}
+                    {createdAt ? format(new Date(createdAt), "M月d日 EEE", { locale: zhCN }) : ""}
                   </small>
                 </div>
               </div>

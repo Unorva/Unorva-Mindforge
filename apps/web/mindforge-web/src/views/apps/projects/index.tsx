@@ -4,9 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import {
   Archive,
   ArrowLeft,
-  ArrowRight,
   Bug,
-  CircleAlert,
   FileText,
   FolderKanban,
   ListTodo,
@@ -58,6 +56,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/data-table/data-table'
+import {
+  SegmentedMultipleBarChart,
+  type SegmentedBarChartDatum,
+  type SegmentedBarChartSeries,
+} from '@/components/charts/segmented-multiple-bar-chart'
 import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
 import {
@@ -89,6 +92,25 @@ const requirementStatuses: RequirementStatus[] = ['待处理', '进行中', '已
 const defectStatuses: DefectStatus[] = ['待修复', '修复中', '待验证', '已关闭']
 const priorities: Priority[] = ['低', '中', '高']
 const severities: Severity[] = ['轻微', '一般', '严重', '阻断']
+
+const projectStatusSeries: SegmentedBarChartSeries[] = [
+  { key: 'planning', label: '规划中', color: 'var(--muted-foreground)' },
+  { key: 'inProgress', label: '进行中', color: 'var(--foreground)' },
+  { key: 'completed', label: '已完成', color: 'var(--border)' },
+]
+
+const requirementStatusSeries: SegmentedBarChartSeries[] = [
+  { key: 'pending', label: '待处理', color: 'var(--foreground)' },
+  { key: 'inProgress', label: '进行中', color: 'var(--muted-foreground)' },
+  { key: 'completed', label: '已完成', color: 'var(--border)' },
+]
+
+const defectStatusSeries: SegmentedBarChartSeries[] = [
+  { key: 'pending', label: '待修复', color: 'var(--foreground)' },
+  { key: 'fixing', label: '修复中', color: 'color-mix(in srgb, var(--foreground) 72%, var(--background))' },
+  { key: 'verifying', label: '待验证', color: 'var(--muted-foreground)' },
+  { key: 'closed', label: '已关闭', color: 'var(--border)' },
+]
 
 const emptyProjectForm = () => ({
   name: '',
@@ -201,7 +223,7 @@ export default function Projects() {
   }, [])
 
   const activeProject = projects.find((project) => project.id === Number(projectId))
-  const activeProjects = projects.filter((project) => project.status !== '已归档')
+  const activeProjects = useMemo(() => projects.filter((project) => project.status !== '已归档'), [projects])
   const visibleProjects = activeProjects.filter((project) => `${project.name} ${project.description} ${project.owner}`.toLocaleLowerCase().includes(projectSearch.toLocaleLowerCase()))
 
   const updateActiveProject = (updater: (project: Project) => Project) => {
@@ -316,6 +338,33 @@ export default function Projects() {
     openDefects: activeProjects.reduce((count, project) => count + project.defects.filter((defect) => defect.status !== '已关闭').length, 0),
   }), [activeProjects])
 
+  const overviewCharts = useMemo(() => {
+    const requirements = activeProjects.flatMap((project) => project.requirements)
+    const defects = activeProjects.flatMap((project) => project.defects)
+
+    return {
+      projects: [{
+        category: '项目',
+        planning: activeProjects.filter((project) => project.status === '规划中').length,
+        inProgress: activeProjects.filter((project) => project.status === '进行中').length,
+        completed: activeProjects.filter((project) => project.status === '已完成').length,
+      }] satisfies SegmentedBarChartDatum[],
+      requirements: [{
+        category: '需求',
+        pending: requirements.filter((requirement) => requirement.status === '待处理').length,
+        inProgress: requirements.filter((requirement) => requirement.status === '进行中').length,
+        completed: requirements.filter((requirement) => requirement.status === '已完成').length,
+      }] satisfies SegmentedBarChartDatum[],
+      defects: [{
+        category: '缺陷',
+        pending: defects.filter((defect) => defect.status === '待修复').length,
+        fixing: defects.filter((defect) => defect.status === '修复中').length,
+        verifying: defects.filter((defect) => defect.status === '待验证').length,
+        closed: defects.filter((defect) => defect.status === '已关闭').length,
+      }] satisfies SegmentedBarChartDatum[],
+    }
+  }, [activeProjects])
+
   if (loading) {
     return <Empty className="min-h-72 border"><EmptyHeader><EmptyMedia variant="icon"><FolderKanban /></EmptyMedia><EmptyTitle>正在加载项目</EmptyTitle></EmptyHeader></Empty>
   }
@@ -338,9 +387,24 @@ export default function Projects() {
             title="项目管理"
           />
           <section aria-label="项目概览" className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <StatCard icon={FolderKanban} label="进行中的项目" value={projectStats.projects} />
-            <StatCard icon={ListTodo} label="全部需求" tone="warning" value={projectStats.requirements} />
-            <StatCard icon={CircleAlert} label="待关闭缺陷" value={projectStats.openDefects} tone="destructive" />
+            <StatCard
+              chartData={overviewCharts.projects}
+              chartSeries={projectStatusSeries}
+              label="项目总数"
+              value={projectStats.projects}
+            />
+            <StatCard
+              chartData={overviewCharts.requirements}
+              chartSeries={requirementStatusSeries}
+              label="全部需求"
+              value={projectStats.requirements}
+            />
+            <StatCard
+              chartData={overviewCharts.defects}
+              chartSeries={defectStatusSeries}
+              label="待关闭缺陷"
+              value={projectStats.openDefects}
+            />
           </section>
 
           {activeProjects.length ? (
@@ -491,10 +555,40 @@ export default function Projects() {
   )
 }
 
-function StatCard({ icon: Icon, label, value, tone = 'primary' }: { icon: typeof FolderKanban; label: string; value: number; tone?: 'destructive' | 'primary' | 'warning' }) {
-  const badgeClass = tone === 'destructive' ? 'bg-destructive/10! text-destructive!' : tone === 'warning' ? 'bg-chart-4/12! text-chart-4!' : 'bg-chart-2/10! text-chart-2!'
-  const badgeText = tone === 'destructive' ? '待处理' : tone === 'warning' ? '跟进中' : '活跃'
-  return <Card><CardContent className="flex h-full flex-col gap-5 p-5 sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-sm text-muted-foreground">{label}</p><div className="mt-2 flex items-center gap-2"><h3 className="text-3xl font-semibold tracking-tight">{value}</h3><Badge className={badgeClass}>{badgeText}</Badge></div></div><div className="grid size-10 place-items-center rounded-lg bg-muted text-foreground"><Icon size={18} /></div></div><Button className="mt-auto h-auto w-fit cursor-pointer gap-1.5 px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground" onClick={() => document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth' })} variant="ghost">查看项目<ArrowRight height={16} width={16} /></Button></CardContent></Card>
+function StatCard({
+  chartData,
+  chartSeries,
+  label,
+  value,
+}: {
+  chartData: SegmentedBarChartDatum[]
+  chartSeries: SegmentedBarChartSeries[]
+  label: string
+  value: number
+}) {
+  return (
+    <Card className="h-full">
+      <CardContent className="flex h-full items-center justify-between gap-4 p-5 sm:p-6">
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <h3 className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{value}</h3>
+        </div>
+        <SegmentedMultipleBarChart
+          animationDuration={520}
+          className="w-28"
+          compact
+          data={chartData}
+          height={72}
+          maxChartWidth={112}
+          minChartWidth={112}
+          segmentGap={1.5}
+          segmentStep={1}
+          series={chartSeries}
+          valueFormatter={(chartValue) => `${Math.round(chartValue)} 个`}
+        />
+      </CardContent>
+    </Card>
+  )
 }
 
 function EmptyState({ action, actionLabel, description, disabled, icon: Icon, title }: { action: () => void; actionLabel: string; description: string; disabled: boolean; icon: typeof Bug; title: string }) {

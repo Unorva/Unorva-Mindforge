@@ -26,20 +26,20 @@ const CategoryTags = () => {
 
   const [Cats, setCats] = useState<string[]>([]);
   const [catOptions] = useState<string[]>([
-    "Technology",
-    "Lifestyle",
-    "Travel",
-    "Food",
-    "Business",
-    "social",
+    "科技",
+    "生活方式",
+    "旅行",
+    "美食",
+    "商业",
+    "社交",
   ]);
 
   const [tagOptions] = useState<string[]>([
-    "Trending",
-    "Tips",
-    "News",
-    "Guide",
-    "Popular",
+    "热门",
+    "技巧",
+    "新闻",
+    "指南",
+    "流行",
   ]);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const CategoryTags = () => {
             : [firstPost.category]
         );
       }
-      setTags(["Trending"]);
+      setTags(["热门"]);
     }
   }, [posts]);
 
@@ -68,13 +68,13 @@ const CategoryTags = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Blog Category</CardTitle>
+        <CardTitle>博客分类</CardTitle>
       </CardHeader>
       <CardContent>
         <div>
           <div className="mb-2 block">
             <Label htmlFor="cat">
-              Categories <span className="text-destructive">*</span>
+              分类 <span className="text-destructive">*</span>
             </Label>
           </div>
           <div>
@@ -83,28 +83,28 @@ const CategoryTags = () => {
                 <ComboboxValue>
                   {Cats.map((cat) => <ComboboxChip key={cat}>{cat}</ComboboxChip>)}
                 </ComboboxValue>
-                <ComboboxChipsInput aria-label="Categories" id="cat" placeholder="Select categories" />
+                <ComboboxChipsInput aria-label="分类" id="cat" placeholder="选择分类" />
               </ComboboxChips>
               <ComboboxContent>
-                <ComboboxEmpty>No categories found.</ComboboxEmpty>
+                <ComboboxEmpty>未找到分类</ComboboxEmpty>
                 <ComboboxList>{(option) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}</ComboboxList>
               </ComboboxContent>
             </Combobox>
             <small className="text-xs text-muted-foreground">
-              Add blog to a category.
+              为博客选择一个或多个分类。
             </small>
           </div>
         </div>
 
         <div className="mt-2">
           <Button variant="outline" className="">
-            <Plus size={18} /> Add selected category
+            <Plus size={18} /> 添加所选分类
           </Button>
         </div>
 
         <div className="mt-4">
           <div className="mb-2 block">
-            <Label htmlFor="tags">Tags</Label>
+            <Label htmlFor="tags">标签</Label>
           </div>
           <div>
             <Combobox
@@ -119,15 +119,15 @@ const CategoryTags = () => {
                 <ComboboxValue>
                   {tags.map((tag) => <ComboboxChip key={tag}>{tag}</ComboboxChip>)}
                 </ComboboxValue>
-                <ComboboxChipsInput aria-label="Tags" id="tags" onKeyDown={handleTagInputKeyDown} placeholder="Add tags" />
+                <ComboboxChipsInput aria-label="标签" id="tags" onKeyDown={handleTagInputKeyDown} placeholder="添加标签" />
               </ComboboxChips>
               <ComboboxContent>
-                <ComboboxEmpty>Press Enter to create this tag.</ComboboxEmpty>
+                <ComboboxEmpty>按回车键创建此标签</ComboboxEmpty>
                 <ComboboxList>{(option) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}</ComboboxList>
               </ComboboxContent>
             </Combobox>
             <small className="text-xs text-muted-foreground">
-              Add tags for blog.
+              为博客添加标签。
             </small>
           </div>
         </div>

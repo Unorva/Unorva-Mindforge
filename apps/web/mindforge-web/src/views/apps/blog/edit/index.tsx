@@ -12,7 +12,7 @@ const BlogEdit = () => {
   return (
     <BlogProvider>
       <AppPage className="gap-5 bg-transparent p-0">
-        <AppPageHeader title="Blog Edit" />
+        <AppPageHeader title="编辑博客" />
         <div className="grid grid-cols-12 gap-5">
           <div className="col-span-12 flex flex-col gap-5 lg:col-span-8">
               <GeneralDetail />
@@ -27,8 +27,8 @@ const BlogEdit = () => {
           </div>
           <Card className="col-span-12 lg:col-span-8">
             <CardContent className="flex flex-wrap gap-3 p-4">
-              <Button className="sm:mb-0 mb-3 w-fit">Save changes</Button>
-              <Button variant={"destructive"}>Cancel</Button>
+              <Button className="sm:mb-0 mb-3 w-fit">保存更改</Button>
+              <Button variant={"destructive"}>取消</Button>
             </CardContent>
           </Card>
         </div>

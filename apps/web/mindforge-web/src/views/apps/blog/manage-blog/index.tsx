@@ -6,7 +6,7 @@ const MangeBlog = () => {
   return (
     <BlogProvider>
       <AppPage className="gap-5 bg-transparent p-0">
-        <AppPageHeader title="Manage Blog" />
+        <AppPageHeader title="管理博客" />
         <ManageBlogTable />
       </AppPage>
     </BlogProvider>
