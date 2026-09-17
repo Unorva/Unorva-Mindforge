@@ -1,19 +1,19 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  AudioWaveform,
   ArrowUp,
   BookOpen,
   Check,
+  ChevronDown,
   FileText,
   Lightbulb,
+  LoaderCircle,
   Menu as MenuIcon,
   Mic,
   MoreHorizontal,
-  Paperclip,
   PenLine,
   Plus,
   Search,
-  Settings,
-  SlidersHorizontal,
   Sparkles,
   Trash2,
   X,
@@ -32,21 +32,31 @@ import { Bubble, BubbleContent, BubbleGroup } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
 } from '@/components/ui/input-group'
-import { Message, MessageAvatar, MessageContent, MessageGroup } from '@/components/ui/message'
+import { Message, MessageContent, MessageGroup } from '@/components/ui/message'
+import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -130,33 +140,71 @@ function ConversationSidebar({
   onNewChat: () => void
   onSelect: (id: string) => void
 }) {
-  const [query, setQuery] = useState('')
-  const filteredConversations = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase()
-    if (!normalizedQuery) return conversations
-    return conversations.filter((conversation) =>
-      `${conversation.title} ${conversation.preview}`.toLocaleLowerCase().includes(normalizedQuery),
-    )
-  }, [conversations, query])
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col bg-card">
       <div className="p-4 pb-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            aria-label="搜索对话历史"
-            className="h-10 bg-background pr-3 pl-9"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索对话历史…"
-            value={query}
-          />
+        <div className="flex items-center gap-2">
+          <Button className="h-10 flex-1" onClick={onNewChat} type="button">
+            <Plus />新对话
+          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="搜索对话"
+                  className="size-10 shrink-0"
+                  onClick={() => setIsSearchOpen(true)}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                />
+              }
+            >
+              <Search />
+            </TooltipTrigger>
+            <TooltipContent>搜索对话</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
+      <CommandDialog
+        className="sm:max-w-lg"
+        description="按标题或内容搜索对话历史"
+        onOpenChange={setIsSearchOpen}
+        open={isSearchOpen}
+        title="搜索对话"
+      >
+        <Command>
+          <CommandInput autoFocus placeholder="搜索对话历史…" />
+          <CommandList>
+            <CommandEmpty>没有找到相关对话</CommandEmpty>
+            <CommandGroup heading="对话历史">
+              {conversations.map((conversation) => (
+                <CommandItem
+                  data-checked={activeId === conversation.id}
+                  key={conversation.id}
+                  onSelect={() => {
+                    onSelect(conversation.id)
+                    setIsSearchOpen(false)
+                  }}
+                  value={`${conversation.title} ${conversation.preview}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{conversation.title}</span>
+                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{conversation.preview}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CommandDialog>
+
       <ScrollArea className="min-h-0 flex-1 px-3 py-2">
         <div className="space-y-1 pb-3">
-          {filteredConversations.map((conversation) => (
+          {conversations.map((conversation) => (
             <div
               className={cn(
                 'group relative w-full rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -193,17 +241,8 @@ function ConversationSidebar({
               </DropdownMenu>
             </div>
           ))}
-          {filteredConversations.length === 0 ? (
-            <div className="px-3 py-10 text-center text-sm text-muted-foreground">没有找到相关对话</div>
-          ) : null}
         </div>
       </ScrollArea>
-
-      <div className="border-t p-4">
-        <Button className="h-10 w-full" onClick={onNewChat} type="button">
-          <Plus />新对话
-        </Button>
-      </div>
     </aside>
   )
 }
@@ -216,7 +255,7 @@ export default function AiAssistant() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isResponding, setIsResponding] = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [model, setModel] = useState('Mindforge AI')
+  const [model, setModel] = useState('GPT-5.6 Sol')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const activeConversation = conversations.find((conversation) => conversation.id === activeId)
 
@@ -306,78 +345,49 @@ export default function AiAssistant() {
           </SheetContent>
         </Sheet>
 
-        <main className="flex min-h-0 min-w-0 flex-col bg-background">
-          <div className="flex h-14 shrink-0 items-center justify-between border-b px-4 lg:px-6">
-            <div className="flex items-center gap-2">
-              <Button
-                aria-label="打开对话历史"
-                className="lg:hidden"
-                onClick={() => setIsHistoryOpen(true)}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <MenuIcon />
-              </Button>
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Sparkles className="size-4" />
-                </span>
-                {activeConversation?.title ?? 'AI 助手'}
-              </div>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button size="sm" type="button" variant="outline" />}>
-                {model}<SlidersHorizontal />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>选择模型</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {['Mindforge AI', '快速模式', '深度思考'].map((option) => (
-                  <DropdownMenuItem key={option} onClick={() => setModel(option)}>
-                    <span>{option}</span>{model === option ? <Check className="ml-auto" /> : null}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
+        <main className="relative flex min-h-0 min-w-0 flex-col bg-background">
+          <Button
+            aria-label="打开对话历史"
+            className="absolute top-4 left-4 z-10 lg:hidden"
+            onClick={() => setIsHistoryOpen(true)}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
+            <MenuIcon />
+          </Button>
           <div className="min-h-0 flex-1">
             {activeConversation ? (
               <ScrollArea className="h-full">
                 <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
                   <MessageGroup className="gap-6">
                     {activeConversation.messages.map((message) => (
-                      <Message align={message.role === 'user' ? 'end' : 'start'} key={message.id}>
-                        {message.role === 'assistant' ? (
-                          <MessageAvatar className="size-8 self-start bg-primary text-primary-foreground">
-                            <Sparkles className="size-4" />
-                          </MessageAvatar>
-                        ) : null}
-                        <MessageContent>
-                          <BubbleGroup>
-                            <Bubble variant={message.role === 'user' ? 'default' : 'secondary'}>
-                              <BubbleContent className="max-w-xl px-4 py-3 leading-6">{message.text}</BubbleContent>
-                            </Bubble>
-                          </BubbleGroup>
-                        </MessageContent>
-                      </Message>
+                      message.role === 'assistant' ? (
+                        <Marker className="max-w-xl items-start py-1.5" key={message.id}>
+                          <MarkerIcon className="mt-0.5">
+                            <Sparkles />
+                          </MarkerIcon>
+                          <MarkerContent className="leading-6">{message.text}</MarkerContent>
+                        </Marker>
+                      ) : (
+                        <Message align="end" key={message.id}>
+                          <MessageContent>
+                            <BubbleGroup>
+                              <Bubble>
+                                <BubbleContent className="max-w-xl px-4 py-3 leading-6">{message.text}</BubbleContent>
+                              </Bubble>
+                            </BubbleGroup>
+                          </MessageContent>
+                        </Message>
+                      )
                     ))}
                     {isResponding ? (
-                      <Message>
-                        <MessageAvatar className="size-8 self-start bg-primary text-primary-foreground">
-                          <Sparkles className="size-4" />
-                        </MessageAvatar>
-                        <MessageContent>
-                          <Bubble variant="secondary">
-                            <BubbleContent className="flex items-center gap-1.5 px-4 py-3" aria-label="AI 正在回复">
-                              <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground" />
-                              <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground [animation-delay:120ms]" />
-                              <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground [animation-delay:240ms]" />
-                            </BubbleContent>
-                          </Bubble>
-                        </MessageContent>
-                      </Message>
+                      <Marker aria-live="polite" className="max-w-xl py-1.5 opacity-50" role="status">
+                        <MarkerIcon>
+                          <LoaderCircle className="animate-spin" />
+                        </MarkerIcon>
+                        <MarkerContent>正在思考…</MarkerContent>
+                      </Marker>
                     ) : null}
                   </MessageGroup>
                 </div>
@@ -427,10 +437,10 @@ export default function AiAssistant() {
                   </AttachmentActions>
                 </Attachment>
               ) : null}
-              <InputGroup className="rounded-xl bg-card shadow-sm">
+              <InputGroup className="min-h-[108px] rounded-[1.75rem] border-border/80 bg-card shadow-[0_8px_28px_rgba(15,23,42,0.06)] has-[[data-slot=input-group-control]:focus-visible]:border-border/80 has-[[data-slot=input-group-control]:focus-visible]:ring-0">
                 <InputGroupTextarea
                   aria-label="向 AI 提问"
-                  className="min-h-14 max-h-32 px-4 pt-3 text-sm"
+                  className="min-h-14 max-h-36 px-6 pt-4 text-base leading-6 placeholder:text-muted-foreground/55"
                   onChange={(event) => setComposerValue(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && !event.shiftKey) {
@@ -438,12 +448,12 @@ export default function AiAssistant() {
                       sendPrompt()
                     }
                   }}
-                  placeholder="问我任何问题…"
+                  placeholder="随心输入"
                   rows={2}
                   value={composerValue}
                 />
-                <InputGroupAddon align="block-end" className="justify-between px-3 pb-3">
-                  <div className="flex items-center gap-1">
+                <InputGroupAddon align="block-end" className="justify-between px-4 pb-3 sm:px-5">
+                  <div className="flex min-w-0 items-center gap-1">
                     <input
                       className="hidden"
                       onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
@@ -451,30 +461,49 @@ export default function AiAssistant() {
                       type="file"
                     />
                     <Tooltip>
-                      <TooltipTrigger render={<InputGroupButton aria-label="添加附件" onClick={() => fileInputRef.current?.click()} size="icon-sm" />}>
-                        <Paperclip />
+                      <TooltipTrigger
+                        render={
+                          <InputGroupButton
+                            aria-label="添加附件"
+                            className="rounded-full"
+                            onClick={() => fileInputRef.current?.click()}
+                            size="icon-sm"
+                          />
+                        }
+                      >
+                        <Plus className="size-5" />
                       </TooltipTrigger>
                       <TooltipContent>添加附件</TooltipContent>
                     </Tooltip>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
                     <DropdownMenu>
-                      <DropdownMenuTrigger render={<InputGroupButton size="sm" />}>
-                        <Settings />设置
+                      <DropdownMenuTrigger
+                        render={<InputGroupButton className="h-9 rounded-full px-2.5 text-foreground" size="sm" />}
+                      >
+                        <span>{model}</span>
+                        <span className="text-muted-foreground">高</span>
+                        <ChevronDown className="size-3.5 text-muted-foreground" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-52">
-                        <DropdownMenuLabel>回复偏好</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>简洁回答</DropdownMenuItem>
-                        <DropdownMenuItem>展示思路</DropdownMenuItem>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel>选择模型</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {['GPT-5.6 Sol', 'GPT-6 Astra', 'GPT-5.6 Terra'].map((option) => (
+                            <DropdownMenuItem key={option} onClick={() => setModel(option)}>
+                              <span>{option}</span>
+                              {model === option ? <Check className="ml-auto" /> : null}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
-                  <div className="flex items-center gap-1">
                     <Tooltip>
                       <TooltipTrigger
                         render={
                           <InputGroupButton
                             aria-label={isListening ? '停止语音输入' : '开始语音输入'}
-                            className={cn(isListening && 'bg-destructive/10 text-destructive')}
+                            className={cn('rounded-full', isListening && 'bg-muted text-foreground')}
                             onClick={() => setIsListening((value) => !value)}
                             size="icon-sm"
                           />
@@ -485,18 +514,18 @@ export default function AiAssistant() {
                       <TooltipContent>{isListening ? '停止语音输入' : '语音输入'}</TooltipContent>
                     </Tooltip>
                     <InputGroupButton
-                      aria-label="发送消息"
-                      disabled={!composerValue.trim() || isResponding}
-                      onClick={() => sendPrompt()}
+                      aria-label={composerValue.trim() ? '发送消息' : isListening ? '停止语音对话' : '开始语音对话'}
+                      className="size-10 rounded-full"
+                      disabled={isResponding}
+                      onClick={() => composerValue.trim() ? sendPrompt() : setIsListening((value) => !value)}
                       size="icon-sm"
                       variant="default"
                     >
-                      <ArrowUp />
+                      {composerValue.trim() ? <ArrowUp className="size-5" /> : <AudioWaveform className="size-5" />}
                     </InputGroupButton>
                   </div>
                 </InputGroupAddon>
               </InputGroup>
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">AI 可能会出错，请核对重要信息。</p>
             </div>
           </div>
         </main>
