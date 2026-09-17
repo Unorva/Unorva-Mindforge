@@ -5,6 +5,7 @@ import type {
   AppIntegration,
   EmailBinding,
   NotificationSettings,
+  ReportSettings,
   SecuritySettings,
 } from 'src/types/apps/settings';
 
@@ -45,8 +46,8 @@ let SettingsData: AccountSettingsData = {
     },
     {
       id: 'daily-review',
-      name: '每日复盘',
-      description: '每晚汇总当日任务与邮件，生成复盘草稿。',
+      name: '复盘报告',
+      description: '记录日报，并通过 AI 汇总生成周报、月报与年报。',
       enabled: true,
       options: { syncFrequency: '每天', notify: false, aiAssist: true },
     },
@@ -97,6 +98,9 @@ let SettingsData: AccountSettingsData = {
     dailyReviewReminder: true,
     projectUpdates: true,
     aiWeeklyReport: false,
+  },
+  reports: {
+    weekStartsOn: '星期一',
   },
   security: {
     twoFactor: false,
@@ -253,6 +257,17 @@ export const SettingsHandlers = [
     try {
       const notifications = (await request.json()) as NotificationSettings;
       SettingsData = { ...SettingsData, notifications };
+      return success();
+    } catch (error) {
+      return failure(error);
+    }
+  }),
+
+  // 保存报告周期设置
+  http.put('/api/data/settings/reports', async ({ request }) => {
+    try {
+      const reports = (await request.json()) as ReportSettings;
+      SettingsData = { ...SettingsData, reports };
       return success();
     } catch (error) {
       return failure(error);

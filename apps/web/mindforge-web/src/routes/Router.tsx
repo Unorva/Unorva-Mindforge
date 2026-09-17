@@ -24,11 +24,13 @@ const BlogEdit = Loadable(lazy(() => import('../views/apps/blog/edit')));
 const BlogTable = Loadable(lazy(() => import('../views/apps/blog/manage-blog')));
 
 const Notes = Loadable(lazy(() => import('../views/apps/notes')));
+const Ai = Loadable(lazy(() => import('../views/apps/ai')));
 const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Finance = Loadable(lazy(() => import('../views/apps/finance')));
 const SegmentedBarChartTest = Loadable(lazy(() => import('../views/components/segmented-bar-chart')));
+const MarkdownEditorTest = Loadable(lazy(() => import('../views/components/markdown-editor')));
 
 // authentication
 
@@ -50,12 +52,14 @@ const Router = [
           { path: 'apps/blog/edit', element: <BlogEdit /> },
           { path: 'apps/blog/manage-blog', element: <BlogTable /> },
           { path: 'apps/notes', element: <Notes /> },
+          { path: 'apps/ai', element: <Ai /> },
           { path: 'apps/mail', element: <Mail /> },
           { path: 'apps/daily-review', element: <DailyReview /> },
           { path: 'apps/projects', element: <Projects /> },
           { path: 'apps/projects/:projectId', element: <Projects /> },
           { path: 'apps/finance', element: <Finance /> },
           { path: 'components/segmented-bar-chart', element: <SegmentedBarChartTest /> },
+          { path: 'components/markdown-editor', element: <MarkdownEditorTest /> },
           { path: '*', element: <Navigate to="/auth/404" /> },
         ],
       },
@@ -71,6 +75,16 @@ const Router = [
           <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
             <div className="mx-auto max-w-[1120px]">
               <SegmentedBarChartTest />
+            </div>
+          </div>
+        ),
+      },
+      {
+        path: '/preview/markdown-editor',
+        element: (
+          <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
+            <div className="mx-auto max-w-[1120px]">
+              <MarkdownEditorTest />
             </div>
           </div>
         ),

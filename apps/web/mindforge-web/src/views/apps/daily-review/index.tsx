@@ -1,16 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { type DateRange } from 'react-day-picker'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { zhCN } from 'react-day-picker/locale'
-import { CalendarRange, Eye, FilePenLine, LoaderCircle, Pencil, Save, Sparkles } from 'lucide-react'
+import {
+  CalendarDays,
+  CheckCircle2,
+  Download,
+  Lightbulb,
+  LoaderCircle,
+  RefreshCcw,
+  Sparkles,
+  Target,
+} from 'lucide-react'
 
 import {
   getDailyReview,
   getDailyReviewCalendar,
   updateDailyReview,
 } from '@/api/daily-review/daily-review'
+import MarkdownEditor from '@/components/markdown/markdown-editor'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -19,11 +27,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { AppPage, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
 
 function dateKey(date: Date) {
@@ -41,161 +54,171 @@ function hasReviewContent(content: string) {
   return Boolean(content.trim())
 }
 
-function formatSummaryRange(range: DateRange | undefined) {
-  if (!range?.from) return '请选择开始日期和结束日期'
-  const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' })
-  return range.to ? `${formatter.format(range.from)} 至 ${formatter.format(range.to)}` : `${formatter.format(range.from)} 至 …`
+type ReportType = 'weekly' | 'monthly' | 'yearly'
+
+const REPORT_OPTIONS: Array<{ description: string; label: string; value: ReportType }> = [
+  { description: '查看本周总结', label: '周报', value: 'weekly' },
+  { description: '查看本月总结', label: '月报', value: 'monthly' },
+  { description: '查看本年总结', label: '年报', value: 'yearly' },
+]
+
+const SUMMARY_CONTENT = {
+  weekly: {
+    eyebrow: '本周总结',
+    title: '核心事项稳步推进，工作节奏整体良好',
+    overview: '本周围绕产品交付与个人成长两条主线推进，多项关键任务取得阶段性进展。时间分配较为集中，日报中多次提到的协作等待问题仍需在下周优先解决。',
+    stats: [
+      { label: '日报覆盖', value: '5 / 7 天' },
+      { label: '完成事项', value: '12 项' },
+      { label: '关键收获', value: '4 条' },
+    ],
+    highlights: ['完成本周核心功能的界面梳理与交付', '沉淀了两项可复用的工作方法', '重要事项均按计划进入下一阶段'],
+    reflections: ['跨团队信息同步仍有延迟', '部分低优先级事项占用了整块专注时间'],
+    nextSteps: ['优先关闭本周遗留的两项阻塞', '为核心目标预留连续专注时间', '继续保持工作日记录日报'],
+  },
+  monthly: {
+    eyebrow: '本月总结',
+    title: '交付效率持续提升，重点目标已形成清晰闭环',
+    overview: '本月日报反映出稳定的执行节奏，核心工作从方案阶段顺利推进到交付阶段。能力沉淀和流程优化开始带来复利，但并行事项偏多仍是影响深度工作的主要因素。',
+    stats: [
+      { label: '日报覆盖', value: '21 / 30 天' },
+      { label: '完成事项', value: '46 项' },
+      { label: '里程碑', value: '3 个' },
+    ],
+    highlights: ['完成三个阶段性里程碑', '重点项目进入稳定交付阶段', '建立了更清晰的复盘与计划习惯'],
+    reflections: ['月中出现较明显的上下文切换', '对长期事项的进度记录还不够连续'],
+    nextSteps: ['下月聚焦两个最高优先级目标', '减少非必要的并行工作', '每周固定检查月度目标进展'],
+  },
+  yearly: {
+    eyebrow: '年度总结',
+    title: '持续行动构成了这一年的成长主线',
+    overview: '全年日报呈现出从探索、聚焦到稳定产出的变化。多个长期目标获得实质性推进，知识与方法的积累也更加系统。下一年度可以进一步收窄目标范围，把有效习惯转化为更稳定的成果。',
+    stats: [
+      { label: '日报覆盖', value: '238 天' },
+      { label: '完成事项', value: '326 项' },
+      { label: '年度目标', value: '7 / 9' },
+    ],
+    highlights: ['完成年度核心项目并形成可复用经验', '个人工作系统逐步稳定', '在关键能力方向保持了持续投入'],
+    reflections: ['部分季度目标设置得过于分散', '休息与恢复没有被持续纳入计划'],
+    nextSteps: ['围绕一个年度主题设定目标', '按季度维护可衡量的关键结果', '为长期健康与学习安排固定节奏'],
+  },
+} as const
+
+function startOfWeek(date: Date, weekStartsOn = 1) {
+  const result = new Date(date)
+  result.setHours(0, 0, 0, 0)
+  const distance = (result.getDay() - weekStartsOn + 7) % 7
+  result.setDate(result.getDate() - distance)
+  return result
 }
 
-function MarkdownEditor({
-  content,
-  isSaving,
-  onChange,
+function endOfPeriod(date: Date, reportType: ReportType) {
+  if (reportType === 'weekly') {
+    const end = startOfWeek(date)
+    end.setDate(end.getDate() + 6)
+    return end
+  }
+  if (reportType === 'monthly') return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  return new Date(date.getFullYear(), 11, 31)
+}
+
+function startOfPeriod(date: Date, reportType: ReportType) {
+  if (reportType === 'weekly') return startOfWeek(date)
+  if (reportType === 'monthly') return new Date(date.getFullYear(), date.getMonth(), 1)
+  return new Date(date.getFullYear(), 0, 1)
+}
+
+function formatPeriod(date: Date, reportType: ReportType) {
+  if (reportType === 'yearly') return `${date.getFullYear()} 年`
+  if (reportType === 'monthly') return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`
+  const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' })
+  return `${formatter.format(startOfPeriod(date, reportType))} - ${formatter.format(endOfPeriod(date, reportType))}`
+}
+
+function SummaryReport({
+  reportType,
 }: {
-  content: string
-  isSaving: boolean
-  onChange: (content: string) => void
+  reportType: ReportType
 }) {
+  const summary = SUMMARY_CONTENT[reportType]
+
   return (
-    <div className="overflow-hidden rounded-lg border border-input bg-background">
-      <div className="border-b border-border bg-muted/35 px-4 py-2 text-sm text-muted-foreground">
-        使用 Markdown 编写，支持标题、列表、引用、链接和代码块。
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge><Sparkles />AI 总结</Badge>
+        <Badge variant="outline">样式预览</Badge>
       </div>
-      <Textarea
-        aria-label="每日复盘 Markdown 正文"
-        className="min-h-[calc(100vh-420px)] resize-y rounded-none border-0 px-5 py-4 font-mono text-sm leading-7 shadow-none focus-visible:ring-0"
-        disabled={isSaving}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={'# 今天的复盘\n\n- 完成了什么\n- 有什么收获\n- 明天准备怎么做'}
-        value={content}
-      />
+        <section className="rounded-xl border border-primary/15 bg-primary/5 p-5">
+          <p className="text-xs font-medium tracking-[0.16em] text-primary uppercase">{summary.eyebrow}</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight">{summary.title}</h2>
+          <p className="mt-3 max-w-4xl text-sm leading-7 text-muted-foreground">{summary.overview}</p>
+        </section>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {summary.stats.map((stat) => (
+            <div className="rounded-xl border bg-card p-4" key={stat.label}>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SummaryList icon={CheckCircle2} items={summary.highlights} title="本期亮点" tone="emerald" />
+          <SummaryList icon={Lightbulb} items={summary.reflections} title="反思与发现" tone="amber" />
+          <SummaryList icon={Target} items={summary.nextSteps} title="下期计划" tone="blue" />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-xs text-muted-foreground">
+          <span>内容来源：本周期已完成的日报</span>
+          <span>AI 生成于今天 09:30</span>
+        </div>
     </div>
   )
 }
 
-function renderInlineMarkdown(value: string): ReactNode[] {
-  const tokenPattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^\s)]+\))/g
-  const nodes: ReactNode[] = []
-  let lastIndex = 0
-
-  for (const match of value.matchAll(tokenPattern)) {
-    const token = match[0]
-    const index = match.index ?? 0
-    if (index > lastIndex) nodes.push(value.slice(lastIndex, index))
-
-    if (token.startsWith('**')) {
-      nodes.push(<strong key={`${index}-bold`}>{token.slice(2, -2)}</strong>)
-    } else if (token.startsWith('`')) {
-      nodes.push(<code key={`${index}-code`}>{token.slice(1, -1)}</code>)
-    } else {
-      const linkMatch = /^\[([^\]]+)\]\(([^\s)]+)\)$/.exec(token)
-      if (linkMatch) {
-        nodes.push(<a href={linkMatch[2]} key={`${index}-link`} rel="noreferrer" target="_blank">{linkMatch[1]}</a>)
-      }
-    }
-    lastIndex = index + token.length
-  }
-
-  if (lastIndex < value.length) nodes.push(value.slice(lastIndex))
-  return nodes.length ? nodes : [value]
-}
-
-function MarkdownViewer({ content }: { content: string }) {
-  const lines = content.split('\n')
-  const blocks: ReactNode[] = []
-
-  for (let index = 0; index < lines.length;) {
-    const line = lines[index]
-    if (!line.trim()) {
-      index += 1
-      continue
-    }
-
-    if (line.startsWith('```')) {
-      const codeLines: string[] = []
-      const language = line.slice(3).trim()
-      index += 1
-      while (index < lines.length && !lines[index].startsWith('```')) {
-        codeLines.push(lines[index])
-        index += 1
-      }
-      if (index < lines.length) index += 1
-      blocks.push(<pre key={`code-${index}`}><code className={language ? `language-${language}` : undefined}>{codeLines.join('\n')}</code></pre>)
-      continue
-    }
-
-    const heading = /^(#{1,6})\s+(.+)$/.exec(line)
-    if (heading) {
-      const title = renderInlineMarkdown(heading[2])
-      const key = `heading-${index}`
-      if (heading[1].length === 1) blocks.push(<h1 key={key}>{title}</h1>)
-      else if (heading[1].length === 2) blocks.push(<h2 key={key}>{title}</h2>)
-      else if (heading[1].length === 3) blocks.push(<h3 key={key}>{title}</h3>)
-      else blocks.push(<h4 key={key}>{title}</h4>)
-      index += 1
-      continue
-    }
-
-    if (/^[-*+]\s+/.test(line)) {
-      const items: string[] = []
-      while (index < lines.length && /^[-*+]\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^[-*+]\s+/, ''))
-        index += 1
-      }
-      blocks.push(<ul key={`list-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInlineMarkdown(item)}</li>)}</ul>)
-      continue
-    }
-
-    if (/^\d+\.\s+/.test(line)) {
-      const items: string[] = []
-      while (index < lines.length && /^\d+\.\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^\d+\.\s+/, ''))
-        index += 1
-      }
-      blocks.push(<ol key={`ordered-list-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{renderInlineMarkdown(item)}</li>)}</ol>)
-      continue
-    }
-
-    if (line.startsWith('> ')) {
-      const quotes: string[] = []
-      while (index < lines.length && lines[index].startsWith('> ')) {
-        quotes.push(lines[index].slice(2))
-        index += 1
-      }
-      blocks.push(<blockquote key={`quote-${index}`}>{quotes.map((quote, quoteIndex) => <p key={quoteIndex}>{renderInlineMarkdown(quote)}</p>)}</blockquote>)
-      continue
-    }
-
-    const paragraph: string[] = []
-    while (index < lines.length && lines[index].trim() && !/^(#{1,6})\s+|^```|^[-*+]\s+|^\d+\.\s+|^> /.test(lines[index])) {
-      paragraph.push(lines[index])
-      index += 1
-    }
-    blocks.push(<p key={`paragraph-${index}`}>{renderInlineMarkdown(paragraph.join(' '))}</p>)
+function SummaryList({
+  icon: Icon,
+  items,
+  title,
+  tone,
+}: {
+  icon: typeof CheckCircle2
+  items: readonly string[]
+  title: string
+  tone: 'amber' | 'blue' | 'emerald'
+}) {
+  const tones = {
+    amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   }
 
   return (
-    <article className="typeset typeset-mindforge max-w-none px-1 py-2">
-      {blocks}
-    </article>
+    <section className="rounded-xl border p-4">
+      <div className="flex items-center gap-2">
+        <span className={`flex size-8 items-center justify-center rounded-lg ${tones[tone]}`}><Icon className="size-4" /></span>
+        <h3 className="font-medium">{title}</h3>
+      </div>
+      <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
+        {items.map((item) => <li className="flex gap-2" key={item}><span className="mt-2 size-1.5 shrink-0 rounded-full bg-current opacity-50" />{item}</li>)}
+      </ul>
+    </section>
   )
 }
 
 export default function DailyReviewPage() {
+  const [openReportType, setOpenReportType] = useState<ReportType | null>(null)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
   const [content, setContent] = useState('')
   const [savedContent, setSavedContent] = useState('')
-  const [activeTab, setActiveTab] = useState<'preview' | 'edit'>('preview')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [completedDateKeys, setCompletedDateKeys] = useState<string[]>([])
-  const [summaryRange, setSummaryRange] = useState<DateRange | undefined>()
-  const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
   const [developmentFeature, setDevelopmentFeature] = useState<string | null>(null)
   const loadRequestId = useRef(0)
   const selectedDateKey = dateKey(selectedDate)
-  const hasReview = hasReviewContent(content)
   const hasUnsavedChanges = content !== savedContent
 
   const loadDailyReview = useCallback(async (date: Date) => {
@@ -210,12 +233,10 @@ export default function DailyReviewPage() {
       const nextContent = result.data ?? ''
       setContent(nextContent)
       setSavedContent(nextContent)
-      setActiveTab('preview')
     } catch {
       if (requestId !== loadRequestId.current) return
       setContent('')
       setSavedContent('')
-      setActiveTab('preview')
     } finally {
       if (requestId === loadRequestId.current) setIsLoading(false)
     }
@@ -263,10 +284,10 @@ export default function DailyReviewPage() {
     }
   }, [])
 
-  const saveSource = async () => {
-    if (isSaving || !hasUnsavedChanges) return
-    const saved = await persistDailyReview(selectedDate, content, hasReviewContent(savedContent))
-    if (saved) setSavedContent(content)
+  const saveReview = async (nextContent: string) => {
+    const saved = await persistDailyReview(selectedDate, nextContent, hasReviewContent(savedContent))
+    if (!saved) throw new Error('保存每日复盘失败。')
+    setSavedContent(nextContent)
   }
 
   const handleDateSelect = async (date: Date | undefined) => {
@@ -282,173 +303,123 @@ export default function DailyReviewPage() {
     }
     setSelectedDate(date)
     setCalendarMonth(date)
-    setActiveTab('preview')
   }
 
-  const startSummary = () => {
-    if (!summaryRange?.from || !summaryRange.to) return
-    setIsSummaryDialogOpen(false)
-    setDevelopmentFeature('AI 总结')
-  }
-
-  const formattedDate = new Intl.DateTimeFormat('zh-CN', {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  }).format(selectedDate)
   const completedDates = useMemo(
     () => completedDateKeys.map((key) => new Date(`${key}T00:00:00`)),
     [completedDateKeys],
   )
+  const openReport = REPORT_OPTIONS.find((item) => item.value === openReportType)
 
   return (
     <AppPage className="gap-5 bg-transparent p-0">
-      <AppPageHeader
-        title="每日复盘"
-      />
-      <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] gap-5 overflow-visible bg-transparent xl:grid-cols-[280px_minmax(0,1fr)]">
-      <aside className="space-y-5">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">日历</CardTitle>
-            <CardDescription>绿色表示已写，红色表示未写</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center px-2 pb-3">
-            <Calendar
-              locale={zhCN}
-              mode="single"
-              modifiers={{ completed: completedDates }}
-              classNames={{
-                // 状态点需附着于日期按钮，避免被按钮的层级遮挡；默认显示居中的红点。
-                day: '[&>button]:after:pointer-events-none [&>button]:after:absolute [&>button]:after:bottom-1 [&>button]:after:left-1/2 [&>button]:after:size-1 [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full [&>button]:after:bg-red-500',
-                // 月份之外的占位日期不显示状态点，避免造成误解。
-                outside: '[&>button]:after:hidden',
-              }}
-              modifiersClassNames={{ completed: '[&>button]:after:!bg-emerald-500' }}
-              month={calendarMonth}
-              onMonthChange={setCalendarMonth}
-              onSelect={(date) => void handleDateSelect(date)}
-              selected={selectedDate}
-            />
-          </CardContent>
-        </Card>
-        <AlertDialog onOpenChange={setIsSummaryDialogOpen} open={isSummaryDialogOpen}>
-          <AlertDialogContent className="max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>AI 总结</AlertDialogTitle>
-              <AlertDialogDescription>选择需要汇总的每日复盘日期区间。</AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex justify-center rounded-lg border py-2">
-              <Calendar
-                locale={zhCN}
-                mode="range"
-                onSelect={setSummaryRange}
-                selected={summaryRange}
-              />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">{formatSummaryRange(summaryRange)}</p>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction disabled={!summaryRange?.from || !summaryRange.to} onClick={startSummary} type="button">
-                <Sparkles />开始 AI 总结
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </aside>
+      <AppPageHeader title="复盘报告" />
 
-      <main className="min-h-0 min-w-0">
-        <Tabs
-          // 预览正文较短时也占满右侧网格列，避免切换标签时标题和 Tabs 左移。
-          className="h-full w-full gap-0"
-          onValueChange={(value) => setActiveTab(value === 'edit' ? 'edit' : 'preview')}
-          value={activeTab}
-        >
-        {/* 显示页正文较短时也保留与编辑器接近的工作区高度，避免卡片随内容收缩。 */}
-        <Card className="h-full min-h-0 w-full">
-          <CardHeader className="border-b">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <CardTitle>复盘内容</CardTitle>
-                <CardDescription className="mt-1">
-                  {formattedDate}
-                  {activeTab === 'edit' && (hasUnsavedChanges ? ' · 有未保存的修改' : ' · 所有修改已保存')}
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button onClick={() => setIsSummaryDialogOpen(true)} size="sm" type="button" variant="outline"><CalendarRange />AI 总结</Button>
-                {activeTab === 'edit' ? <Button disabled={isSaving || !hasUnsavedChanges} onClick={() => void saveSource()} size="sm" type="button">{isSaving ? <LoaderCircle className="animate-spin" /> : <Save />}保存复盘</Button> : null}
-                <TabsList aria-label="每日复盘视图" className="shrink-0">
-                  <TabsTrigger value="preview"><Eye />显示</TabsTrigger>
-                  <TabsTrigger value="edit"><Pencil />编辑</TabsTrigger>
-                </TabsList>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-5">
-            <TabsContent value="preview">
-              {isLoading ? (
-                <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
-                </div>
-              ) : hasReview ? (
-                <MarkdownViewer content={content} />
-              ) : (
-                <Empty className="min-h-105 border-dashed">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon"><FilePenLine /></EmptyMedia>
-                    <EmptyTitle>这一天还没有复盘</EmptyTitle>
-                    <EmptyDescription>记录值得记住的事、收获或反思。</EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button onClick={() => setActiveTab('edit')} type="button"><Pencil />开始复盘</Button>
-                  </EmptyContent>
-                </Empty>
-              )}
-            </TabsContent>
-
-            <TabsContent className="space-y-4" value="edit">
-              {isLoading ? (
-                <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <LoaderCircle className="size-4 animate-spin" />正在加载复盘笔记…
-                </div>
-              ) : (
-                <>
-                  <MarkdownEditor
-                    content={content}
-                    isSaving={isSaving}
-                    onChange={setContent}
+        <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] gap-5 overflow-visible bg-transparent xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="space-y-5">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="size-4" />日历</CardTitle>
+                <CardDescription>绿色表示已写，红色表示未写</CardDescription>
+              </CardHeader>
+              <CardContent className="px-2 pb-3">
+                <div className="flex justify-center">
+                  <Calendar
+                    locale={zhCN}
+                    mode="single"
+                    modifiers={{ completed: completedDates }}
+                    classNames={{
+                      day: '[&>button]:after:pointer-events-none [&>button]:after:absolute [&>button]:after:bottom-1 [&>button]:after:left-1/2 [&>button]:after:size-1 [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full [&>button]:after:bg-red-500',
+                      outside: '[&>button]:after:hidden',
+                    }}
+                    modifiersClassNames={{ completed: '[&>button]:after:!bg-emerald-500' }}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    onSelect={(date) => void handleDateSelect(date)}
+                    selected={selectedDate}
                   />
-                  <div className="flex justify-end">
-                    <Button
-                      disabled={isSaving || !hasReview}
-                      onClick={() => setDevelopmentFeature('AI 润色')}
-                      type="button"
-                      variant="outline"
-                    >
-                      <Sparkles />AI 润色
-                    </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-3 px-1">
+              <p className="text-xs font-medium text-muted-foreground">周期报告</p>
+              <div className="grid grid-cols-3 gap-2">
+                {REPORT_OPTIONS.map((report) => (
+                  <Button
+                    aria-label={report.description}
+                    className="h-auto flex-col gap-1 py-3"
+                    key={report.value}
+                    onClick={() => setOpenReportType(report.value)}
+                    type="button"
+                    variant="outline"
+                  >
+                    <span className="text-base font-semibold">{report.label.slice(0, 1)}</span>
+                    <span className="text-xs font-normal text-muted-foreground">{report.label}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <main className="min-h-0 min-w-0">
+            {isLoading ? (
+              <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" />正在加载日报…
+              </div>
+            ) : (
+              <MarkdownEditor
+                className="shadow-none"
+                minHeight={480}
+                onChange={setContent}
+                onPolish={() => setDevelopmentFeature('AI 润色')}
+                onSave={saveReview}
+                placeholder="记录今天完成的事、收获与明日计划……"
+                value={content}
+              />
+            )}
+          </main>
+
+          <Dialog onOpenChange={(open) => !open && setOpenReportType(null)} open={openReportType !== null}>
+            <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden p-0 sm:max-w-5xl">
+              {openReportType ? (
+                <>
+                  <DialogHeader className="border-b px-6 py-5 pr-14">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <DialogTitle className="text-lg">{openReport?.label} · {formatPeriod(selectedDate, openReportType)}</DialogTitle>
+                        <DialogDescription className="mt-2">根据本周期内的日报内容自动归纳</DialogDescription>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button onClick={() => setDevelopmentFeature(`${openReport?.label}导出`)} size="sm" type="button" variant="outline">
+                          <Download />导出报告
+                        </Button>
+                        <Button onClick={() => setDevelopmentFeature(`${openReport?.label} AI 总结`)} size="sm" type="button" variant="outline">
+                          <RefreshCcw />重新生成
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogHeader>
+                  <div className="min-h-0 overflow-y-auto px-6 py-6">
+                    <SummaryReport reportType={openReportType} />
                   </div>
                 </>
-              )}
-            </TabsContent>
-          </CardContent>
-        </Card>
-        </Tabs>
-      </main>
+              ) : null}
+            </DialogContent>
+          </Dialog>
 
-      <AlertDialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{developmentFeature}</AlertDialogTitle>
-            <AlertDialogDescription>功能正在开发中，敬请期待。</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel variant="default">我知道了</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      </AppWorkspace>
+          <AlertDialog onOpenChange={(open) => !open && setDevelopmentFeature(null)} open={developmentFeature !== null}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{developmentFeature}</AlertDialogTitle>
+                <AlertDialogDescription>当前仅完成界面样式，相关能力将在后续接入。</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel variant="default">我知道了</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </AppWorkspace>
     </AppPage>
   )
 }

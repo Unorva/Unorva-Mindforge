@@ -3,9 +3,11 @@ import {
   BookOpen,
   ChartColumnStacked,
   ClipboardCheck,
+  FileText,
   FolderKanban,
   House,
   Mail,
+  MessageCircleMore,
   NotebookText,
   Wallet,
   type LucideIcon,
@@ -53,9 +55,15 @@ const SidebarContent: MenuItem[] = [
     items: [
       {
         id: uniqueId(),
-        name: "控制台",
+        name: "数据总览",
         icon: House,
         url: "/",
+      },
+      {
+        id: uniqueId(),
+        name: "智能助手",
+        icon: MessageCircleMore,
+        url: "/apps/ai",
       },
     ],
   },
@@ -70,7 +78,7 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: "每日复盘",
+        name: "复盘报告",
         icon: ClipboardCheck,
         url: "/apps/daily-review",
       },
@@ -82,13 +90,13 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: "笔记",
+        name: "笔记管理",
         icon: NotebookText,
         url: "/apps/notes",
       },
       {
         id: uniqueId(),
-        name: "博客",
+        name: "博客中心",
         icon: BookOpen,
         items: [
           {
@@ -125,9 +133,15 @@ const SidebarContent: MenuItem[] = [
     items: [
       {
         id: uniqueId(),
-        name: "图表组件测试",
+        name: "图表测试",
         icon: ChartColumnStacked,
         url: "/components/segmented-bar-chart",
+      },
+      {
+        id: uniqueId(),
+        name: "编辑测试",
+        icon: FileText,
+        url: "/components/markdown-editor",
       },
     ],
   },

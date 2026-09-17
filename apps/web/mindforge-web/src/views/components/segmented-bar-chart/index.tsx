@@ -92,12 +92,6 @@ export default function SegmentedBarChartTestPage() {
         maxValue={4000}
         segmentStep={200}
         series={series}
-        title={
-          <span className="flex items-center gap-2">
-            Bar Chart 07 - Multiple
-            <Badge className="border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300" variant="outline">自研</Badge>
-          </span>
-        }
         valueFormatter={(value) => `${value.toLocaleString('zh-CN')} 次`}
       />
     </AppPage>

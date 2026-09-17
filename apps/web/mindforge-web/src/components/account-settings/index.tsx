@@ -16,6 +16,7 @@ import {
   NotebookText,
   Palette,
   Plus,
+  ScrollText,
   ShieldCheck,
   Star,
   type LucideIcon,
@@ -57,6 +58,7 @@ import type {
   AiSettings,
   AppIntegration,
   NotificationSettings,
+  ReportSettings,
   SecuritySettings,
 } from '@/types/apps/settings';
 
@@ -73,6 +75,7 @@ const PROVIDERS = Object.keys(MODELS_BY_PROVIDER);
 const LANGUAGES = ['简体中文', '英语', '日语'];
 const SYNC_FREQUENCIES = ['实时', '每小时', '每天', '手动'] as const;
 const SESSION_TIMEOUTS = ['30 分钟', '2 小时', '8 小时', '24 小时'] as const;
+const WEEK_START_DAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'] as const;
 const EMAIL_PROVIDERS = ['Gmail', 'Outlook', '企业邮箱', 'QQ 邮箱', '163 邮箱'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -177,6 +180,7 @@ function AccountSettingsContent() {
     setPrimaryEmail,
     unbindEmail,
     saveNotifications,
+    saveReportSettings,
     saveSecurity,
   } = useSettings();
   const { theme, setTheme } = useTheme();
@@ -185,6 +189,7 @@ function AccountSettingsContent() {
   const [appsDraft, setAppsDraft] = useState<AppIntegration[] | null>(null);
   const [notificationsDraft, setNotificationsDraft] =
     useState<NotificationSettings | null>(null);
+  const [reportsDraft, setReportsDraft] = useState<ReportSettings | null>(null);
   const [securityDraft, setSecurityDraft] = useState<SecuritySettings | null>(null);
   const [savingSection, setSavingSection] = useState<string | null>(null);
 
@@ -201,6 +206,7 @@ function AccountSettingsContent() {
     setAiDraft(settings.ai);
     setAppsDraft(settings.apps);
     setNotificationsDraft(settings.notifications);
+    setReportsDraft(settings.reports);
     setSecurityDraft(settings.security);
   }, [settings]);
 
@@ -213,7 +219,7 @@ function AccountSettingsContent() {
     );
   }
 
-  if (loading || !settings || !aiDraft || !appsDraft || !notificationsDraft || !securityDraft) {
+  if (loading || !settings || !aiDraft || !appsDraft || !notificationsDraft || !reportsDraft || !securityDraft) {
     return (
       <div className="flex min-h-64 items-center justify-center">
         <Spinner />
@@ -304,6 +310,10 @@ function AccountSettingsContent() {
           <TabsTrigger aria-label="通知设置" value="notifications" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Bell />
             <span className="sr-only sm:not-sr-only">通知设置</span>
+          </TabsTrigger>
+          <TabsTrigger aria-label="报告设置" value="reports" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
+            <ScrollText />
+            <span className="sr-only sm:not-sr-only">报告设置</span>
           </TabsTrigger>
           <TabsTrigger aria-label="外观偏好" value="preferences" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3">
             <Palette />
@@ -797,6 +807,46 @@ function AccountSettingsContent() {
                 'notifications',
                 () => saveNotifications(notificationsDraft),
                 '通知设置已保存'
+              )
+            }
+          />
+        </TabsContent>
+
+        {/* 报告设置 */}
+        <TabsContent value="reports" className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
+          <SectionIntro
+            title="报告设置"
+            description="设置周报的统计周期，月报与年报按自然月和自然年生成。"
+          />
+
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>报告周期</CardTitle>
+              <CardDescription>该设置将影响周报的起止日期与日报归属。</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SettingRow
+                title="一周的第一天"
+                description={`当前按${reportsDraft.weekStartsOn}至下一周期前一天统计周报。`}
+              >
+                <OptionSelect
+                  ariaLabel="一周的第一天"
+                  className="w-32"
+                  items={WEEK_START_DAYS}
+                  value={reportsDraft.weekStartsOn}
+                  onValueChange={(weekStartsOn) => setReportsDraft({ weekStartsOn })}
+                />
+              </SettingRow>
+            </CardContent>
+          </Card>
+
+          <SaveBar
+            saving={savingSection === 'reports'}
+            onSave={() =>
+              runSave(
+                'reports',
+                () => saveReportSettings(reportsDraft),
+                '报告设置已保存'
               )
             }
           />

@@ -78,6 +78,87 @@ final result: passed
 
 ---
 
+# AI 助手页面视觉核验
+
+## Comparison target
+
+- Source visual truth: `C:\Users\yanshijie\AppData\Local\Temp\codex-clipboard-dee6f489-9f5f-4390-86dd-c504fda81117.png`，原始尺寸 2580 × 1386 px。
+- Browser-rendered implementation: `C:\Users\yanshijie\Desktop\Unorva\Unorva Mindforge\apps\web\mindforge-web\ai-page-implementation.png`，1275 × 685 px。
+- Combined comparison evidence: `C:\Users\yanshijie\Desktop\Unorva\Unorva Mindforge\apps\web\mindforge-web\ai-page-comparison.png`，2550 × 729 px。
+- Route: `http://localhost:5173/apps/ai`。
+- Viewport: requested 1290 × 693 CSS px, external-browser content capture 1275 × 685 px, density 1。
+- Normalization: source image downsampled to 1275 × 685 px before the side-by-side comparison; no crop was applied.
+- State: light theme, new-conversation welcome screen, desktop sidebar expanded.
+
+## Full-view comparison evidence
+
+The implementation keeps the source composition of searchable conversation history, a wide assistant workspace, centered welcome identity, three prompt cards, and a persistent bottom composer. It intentionally includes the existing Mindforge application sidebar and top bar because the requested AI entry belongs to the current dashboard shell; the inner AI workspace therefore uses a more compact vertical rhythm than the isolated reference page. Chinese copy and Mindforge naming replace the reference's English demo content.
+
+## Focused comparison evidence
+
+No separate crop was required. The combined image preserves both screens at the same pixel dimensions, and the history rows, welcome hierarchy, prompt-card labels, icon treatment, and composer controls are readable in the full comparison.
+
+## Required fidelity surfaces
+
+- Fonts and typography: passed. The page inherits the project's Geist stack and preserves the reference's strong welcome heading, muted support text, medium conversation titles, and truncated previews.
+- Spacing and layout rhythm: passed. The 300px history rail, three-column prompt grid, centered welcome block, and bottom composer follow the source while fitting the existing dashboard shell. Mobile uses stacked prompt cards and a Sheet-based history drawer.
+- Colors and visual tokens: passed. Neutral foreground, muted fills, border, card, primary, and dark-theme colors all come from existing tokens; no parallel palette was added.
+- Image quality and asset fidelity: passed. The source contains only interface icons and a decorative sparkle mark; matching Lucide icons from the project's existing icon library remain crisp at all tested densities. No raster placeholder or handcrafted SVG was introduced.
+- Copy and content: passed. All reference areas have localized, product-relevant content: conversation search/history, welcome prompt, three starter tasks, attachment/settings/voice/send controls, and a model selector.
+
+## Findings and comparison history
+
+- [P2, fixed] First 1290 × 693 capture used a 620px minimum workspace height, pushing the composer below the initial viewport. The workspace now tracks the available dashboard height with a 520px floor, and the welcome area/cards were compacted to keep the complete primary flow visible.
+- [P2, fixed] First browser run reported nested `<button>` errors because a conversation-row button contained its overflow-menu trigger. The row is now a keyboard-operable `role="button"` container and the menu remains a valid independent button; the refreshed browser session reports no console errors.
+- No actionable P0/P1/P2 findings remain. The extra outer dashboard chrome is an intentional product constraint, not design drift.
+
+## Interaction and responsive verification
+
+- Search history and restore full list: passed.
+- Send by Enter, loading state, local assistant response, and new conversation creation: passed.
+- New conversation reset: passed.
+- Mobile 390 × 844 layout and history drawer: passed; selecting a history row closes the drawer.
+- Browser console after fixes and interaction regression: no errors.
+- ESLint and production build: passed.
+
+final result: passed
+
+---
+
+# 笔记文件树工作区视觉核验
+
+## Comparison target
+
+- Source visual truth: 当前 Mindforge 框架的页面壳、Card、Button、Input、主题 token 与相邻 APP 页面；用户要求仅借鉴 Obsidian 的“左侧文件树 + 右侧内容区”信息架构，不复制其视觉皮肤。
+- Implementation: `http://localhost:5173/apps/notes`，在现有登录态浏览器中核验。
+- Desktop viewport: 1896 × 858 CSS px，light theme。
+
+## Fidelity review
+
+- 左侧 288px 导航区使用现有边框、背景和主题色，文件夹支持多级展开/收起，笔记保留清晰选中态和颜色标记。
+- 右侧使用框架原有输入、文本域与按钮组件，路径、保存状态、格式工具栏、标题和正文形成稳定的阅读编辑层级。
+- 新建笔记弹窗延续现有 Dialog 样式，可选择文件夹和标记颜色；窄屏目录使用现有 Sheet 组件。
+- 未引入自定义字体、图标包或新的视觉 token，浅色/深色主题均由框架变量驱动。
+
+## Findings and fixes
+
+- [P1, fixed] 原笔记列表为彩色卡片平铺，无法表达文件夹关系。已改为递归树结构并让父子层级、展开状态和选中状态可见。
+- [P2, fixed] 原编辑区只有一块承载全部文本的 Textarea，缺少标题、路径与保存反馈。已拆分为标题/正文并补齐自动保存状态和文件夹路径。
+- [P2, fixed] 新建笔记触发器首版出现嵌套 button 控制台错误。已改用 Base UI 的 `render` 组合方式，刷新后无新增警告。
+
+## Interaction and verification
+
+- 文件夹折叠/展开：passed。
+- 搜索正文与标题并恢复完整目录：passed。
+- 在文件树切换笔记并联动路径、标题、正文：passed。
+- 打开/取消新建笔记弹窗：passed。
+- ESLint and production build: passed。
+- Browser console: 修复后刷新无新增错误或警告。
+
+final result: passed
+
+---
+
 # 分段多组柱状图组件视觉核验
 
 ## Comparison target

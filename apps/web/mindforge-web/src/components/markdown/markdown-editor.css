@@ -1,0 +1,27 @@
+.markdown-visual-editor > .tiptap {
+  flex: 1;
+  min-height: var(--markdown-editor-min-height);
+  padding: 1.25rem 1.5rem 2rem;
+  outline: none;
+}
+
+.markdown-visual-editor > .tiptap::before {
+  color: var(--color-muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.markdown-visual-editor > .tiptap:not(:has(> p:only-child > br.ProseMirror-trailingBreak))::before {
+  content: none;
+}
+
+.markdown-visual-editor > .tiptap ::selection {
+  background: color-mix(in oklab, var(--color-primary) 18%, transparent);
+}
+
+.markdown-visual-editor > .tiptap img.ProseMirror-selectednode {
+  outline: 3px solid color-mix(in oklab, var(--color-ring) 55%, transparent);
+  outline-offset: 3px;
+}

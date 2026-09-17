@@ -11,6 +11,7 @@ import type {
   AiSettings,
   AppIntegration,
   NotificationSettings,
+  ReportSettings,
   SecuritySettings,
 } from 'src/types/apps/settings';
 
@@ -32,6 +33,7 @@ export interface SettingsContextType {
   setPrimaryEmail: (id: number) => Promise<void>;
   unbindEmail: (id: number) => Promise<void>;
   saveNotifications: (notifications: NotificationSettings) => Promise<void>;
+  saveReportSettings: (reports: ReportSettings) => Promise<void>;
   saveSecurity: (security: SecuritySettings) => Promise<void>;
 }
 
@@ -85,6 +87,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const saveNotifications = (notifications: NotificationSettings) =>
     applyUpdate(putFetcher('/api/data/settings/notifications', notifications));
 
+  const saveReportSettings = (reports: ReportSettings) =>
+    applyUpdate(putFetcher('/api/data/settings/reports', reports));
+
   const saveSecurity = (security: SecuritySettings) =>
     applyUpdate(putFetcher('/api/data/settings/security', security));
 
@@ -101,6 +106,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         setPrimaryEmail,
         unbindEmail,
         saveNotifications,
+        saveReportSettings,
         saveSecurity,
       }}
     >

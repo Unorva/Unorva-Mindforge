@@ -50,6 +50,11 @@ export interface NotificationSettings {
   aiWeeklyReport: boolean;
 }
 
+/** 报告周期设置 */
+export interface ReportSettings {
+  weekStartsOn: '星期一' | '星期二' | '星期三' | '星期四' | '星期五' | '星期六' | '星期日';
+}
+
 /** 活跃登录会话 */
 export interface ActiveSession {
   id: number;
@@ -73,5 +78,6 @@ export interface AccountSettingsData {
   apps: AppIntegration[];
   emails: EmailBinding[];
   notifications: NotificationSettings;
+  reports: ReportSettings;
   security: SecuritySettings;
 }

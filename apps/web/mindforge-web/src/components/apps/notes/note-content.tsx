@@ -1,104 +1,79 @@
+import { useContext, useEffect, useState } from 'react'
+import {
+  FileText,
+  Menu,
+} from 'lucide-react'
 
-import React, { useContext, useState, useEffect } from "react";
-import { Check } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { NotesContext } from "@/context/notes-context/index";
+import MarkdownEditor from '@/components/markdown/markdown-editor'
+import { Button } from '@/components/ui/button'
+import { NotesContext } from '@/context/notes-context/index'
 
-interface colorsType {
-  lineColor: string;
-  disp: string;
-  id: number;
+type NoteContentProps = {
+  onOpenSidebar: () => void
 }
 
+const NoteContent = ({ onOpenSidebar }: NoteContentProps) => {
+  const { notes, updateNote, selectedNoteId } = useContext(NotesContext)
+  const noteDetails = notes.find((note) => note.id === selectedNoteId && !note.deleted)
+  const [content, setContent] = useState('')
 
-const NoteContent = () => {
-  const { notes, updateNote, selectedNoteId } = useContext(NotesContext);
-  const noteDetails = notes.find((note) => note.id === selectedNoteId);
-
-  // Initialize state for updatedTitle, initialTitle, and isEditing status
-  const [initialTitle, setInitialTitle] = useState("");
-  const [updatedTitle, setUpdatedTitle] = useState("");
-  const [isEditing, setIsEditing] = useState(false); // State to track whether editing is in progress
-
-  // Effect to update initialTitle when noteDetails changes
   useEffect(() => {
-    if (noteDetails) {
-      setInitialTitle(noteDetails.title ?? "");
-      setUpdatedTitle(noteDetails.title ?? "");
-    }
-  }, [noteDetails]);
+    setContent(noteDetails?.content ?? '')
+  }, [noteDetails?.id, noteDetails?.content])
 
-  // Function to handle changes in the title text field
-  const handleTitleChange = (e: {
-    target: { value: React.SetStateAction<string> };
-  }) => {
-    setUpdatedTitle(e.target.value);
-    setIsEditing(true); // Set editing state to true when user starts editing
-  };
+  const saveNote = async (nextContent = content) => {
+    if (!noteDetails) return
+    await updateNote(noteDetails.id, {
+      content: nextContent,
+    })
+  }
 
-  // Function to handle color change and update note
-  const handleColorChange = (color: string) => {
-    const titleToUse = isEditing ? updatedTitle : initialTitle;
-    updateNote(selectedNoteId, titleToUse, color);
-  };
-
-  // Function to save changes on blur event
-  const handleBlur = () => {
-    setIsEditing(false); // Reset editing state when user finishes editing
-    // Call updateNote to save changes with the current color
-    if (noteDetails && typeof noteDetails.color === "string") {
-      updateNote(selectedNoteId, updatedTitle, noteDetails.color);
-    }
-  };
-
-  const colorvariation: colorsType[] = [
-    { id: 1, lineColor: "chart-4", disp: "chart-4" },
-    { id: 2, lineColor: "primary", disp: "primary" },
-    { id: 3, lineColor: "destructive", disp: "destructive" },
-    { id: 4, lineColor: "chart-2", disp: "chart-2" },
-    { id: 5, lineColor: "chart-3", disp: "chart-3" },
-  ];
+  if (!noteDetails) {
+    return (
+      <div className="flex h-full min-h-[560px] flex-1 items-center justify-center bg-background">
+        <div className="max-w-xs text-center">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-muted">
+            <FileText className="size-5 text-muted-foreground" />
+          </div>
+          <h3 className="font-medium">选择一篇笔记</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">从左侧文件夹中选择笔记，内容会显示在这里。</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <>
-      <div className="flex flex-grow p-6">
-        {/* ------------------------------------------- */}
-        {/* Edit notes */}
-        {/* ------------------------------------------- */}
-        {noteDetails ? (
-          <div className="w-full">
-            <Textarea
-              id="outlined-multiline-static"
-              placeholder="编辑笔记"
-              rows={5}
-              value={isEditing ? updatedTitle : initialTitle}
-              onChange={handleTitleChange}
-              className="w-full p-6 "
-              onBlur={handleBlur}
-            />
-            <br />
-            <h6 className="text-base mb-3">更改笔记颜色</h6>
-
-            <div className="flex gap-2 items-center">
-              {colorvariation.map((color1) => (
-                <div
-                  className={`h-7 w-7 flex justify-center items-center rounded-full cursor-pointer  bg-${color1?.disp}`}
-                  key={color1.id}
-                  onClick={() => handleColorChange(color1.disp)}
-                >
-                  {noteDetails.color === color1.disp ? (
-                    <Check width="18" className="text-white" />
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center w-full py-6 text-2xl ">请选择一篇笔记</div>
-        )}
+    <article className="flex h-full min-w-0 flex-1 flex-col bg-transparent">
+      <div className="border-b border-border p-2 lg:hidden">
+        <Button
+          aria-label="打开文件目录"
+          className="size-8"
+          onClick={onOpenSidebar}
+          size="icon"
+          type="button"
+          variant="outline"
+        >
+          <Menu className="size-4" />
+        </Button>
       </div>
-    </>
-  );
-};
 
-export default NoteContent;
+      <div className="min-h-0 flex-1">
+        <MarkdownEditor
+          className="h-full shadow-none"
+          minHeight={430}
+          value={content}
+          onChange={(nextContent) => {
+            setContent(nextContent)
+          }}
+          onSave={async (nextContent) => {
+            setContent(nextContent)
+            await saveNote(nextContent)
+          }}
+          placeholder="开始记录，支持 Markdown 与 Typora 快捷键……"
+        />
+      </div>
+    </article>
+  )
+}
+
+export default NoteContent

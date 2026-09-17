@@ -63,6 +63,7 @@ import {
 } from '@/components/charts/segmented-multiple-bar-chart'
 import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
+import Spinner from '@/views/spinner/Spinner'
 import {
   archiveProject as archiveProjectRequest,
   createDefect,
@@ -366,7 +367,7 @@ export default function Projects() {
   }, [activeProjects])
 
   if (loading) {
-    return <Empty className="min-h-72 border"><EmptyHeader><EmptyMedia variant="icon"><FolderKanban /></EmptyMedia><EmptyTitle>正在加载项目</EmptyTitle></EmptyHeader></Empty>
+    return <Spinner />
   }
 
   if (projectId && !activeProject) {
