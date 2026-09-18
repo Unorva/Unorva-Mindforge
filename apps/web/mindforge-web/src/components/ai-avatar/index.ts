@@ -1,0 +1,5 @@
+export { AiAvatar } from './ai-avatar'
+export { AI_AVATAR_VISUALS } from './expressions'
+export { parseAiAvatarCommand, useAiAvatarController } from './controller'
+export { AI_AVATAR_EXPRESSIONS } from './types'
+export type { AiAvatarCommand, AiAvatarExpression } from './types'

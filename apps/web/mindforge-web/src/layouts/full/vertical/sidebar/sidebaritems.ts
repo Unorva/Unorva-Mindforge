@@ -1,6 +1,7 @@
 import { uniqueId } from "lodash";
 import {
   BookOpen,
+  Bot,
   ChartColumnStacked,
   ClipboardCheck,
   FileText,
@@ -142,6 +143,12 @@ const SidebarContent: MenuItem[] = [
         name: "编辑测试",
         icon: FileText,
         url: "/components/markdown-editor",
+      },
+      {
+        id: uniqueId(),
+        name: "AI 动画测试",
+        icon: Bot,
+        url: "/components/ai-avatar",
       },
     ],
   },

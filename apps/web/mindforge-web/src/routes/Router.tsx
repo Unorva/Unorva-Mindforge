@@ -31,6 +31,7 @@ const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Finance = Loadable(lazy(() => import('../views/apps/finance')));
 const SegmentedBarChartTest = Loadable(lazy(() => import('../views/components/segmented-bar-chart')));
 const MarkdownEditorTest = Loadable(lazy(() => import('../views/components/markdown-editor')));
+const AiAvatarTest = Loadable(lazy(() => import('../views/components/ai-avatar')));
 
 // authentication
 
@@ -60,6 +61,7 @@ const Router = [
           { path: 'apps/finance', element: <Finance /> },
           { path: 'components/segmented-bar-chart', element: <SegmentedBarChartTest /> },
           { path: 'components/markdown-editor', element: <MarkdownEditorTest /> },
+          { path: 'components/ai-avatar', element: <AiAvatarTest /> },
           { path: '*', element: <Navigate to="/auth/404" /> },
         ],
       },
@@ -85,6 +87,16 @@ const Router = [
           <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
             <div className="mx-auto max-w-[1120px]">
               <MarkdownEditorTest />
+            </div>
+          </div>
+        ),
+      },
+      {
+        path: '/preview/ai-avatar',
+        element: (
+          <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
+            <div className="mx-auto max-w-[1280px]">
+              <AiAvatarTest />
             </div>
           </div>
         ),

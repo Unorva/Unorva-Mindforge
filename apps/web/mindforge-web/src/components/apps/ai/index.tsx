@@ -6,17 +6,15 @@ import {
   ChevronDown,
   FileText,
   History,
-  LoaderCircle,
   Mic,
   MoreHorizontal,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
 
-import bloubAnimation from '@/assets/images/bloub-demo.gif'
+import { AiAvatar, type AiAvatarExpression, useAiAvatarController } from '@/components/ai-avatar'
 import {
   Attachment,
   AttachmentAction,
@@ -53,6 +51,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 
 type ChatMessage = {
+  expression?: AiAvatarExpression
   id: string
   role: 'assistant' | 'user'
   text: string
@@ -72,7 +71,7 @@ const starterConversations: Conversation[] = [
     preview: '当然，可以先按目标、截止时间和优先级整理…',
     messages: [
       { id: 'weekly-plan-user', role: 'user', text: '帮我规划本周的重点任务。' },
-      { id: 'weekly-plan-ai', role: 'assistant', text: '当然。建议先选出 3 个本周必须完成的结果，再为每个结果安排不被打断的时间块。我也可以根据你的项目清单继续细化。' },
+      { id: 'weekly-plan-ai', role: 'assistant', expression: 'focused', text: '当然。建议先选出 3 个本周必须完成的结果，再为每个结果安排不被打断的时间块。我也可以根据你的项目清单继续细化。' },
     ],
   },
   {
@@ -81,7 +80,7 @@ const starterConversations: Conversation[] = [
     preview: '这篇笔记主要围绕目标拆解与复盘展开…',
     messages: [
       { id: 'note-summary-user', role: 'user', text: '总结这篇笔记的核心观点。' },
-      { id: 'note-summary-ai', role: 'assistant', text: '这篇笔记主要围绕目标拆解、执行节奏与复盘反馈展开，核心是把模糊目标转化为可验证的下一步行动。' },
+      { id: 'note-summary-ai', role: 'assistant', expression: 'inspired', text: '这篇笔记主要围绕目标拆解、执行节奏与复盘反馈展开，核心是把模糊目标转化为可验证的下一步行动。' },
     ],
   },
   {
@@ -90,7 +89,7 @@ const starterConversations: Conversation[] = [
     preview: '今天推进了两个关键事项，也识别出一个阻塞点…',
     messages: [
       { id: 'daily-review-user', role: 'user', text: '根据日报生成今日复盘。' },
-      { id: 'daily-review-ai', role: 'assistant', text: '今天推进了两个关键事项，也识别出一个需要尽快处理的协作阻塞点。明天可以优先关闭阻塞，再继续主要交付。' },
+      { id: 'daily-review-ai', role: 'assistant', expression: 'success', text: '今天推进了两个关键事项，也识别出一个需要尽快处理的协作阻塞点。明天可以优先关闭阻塞，再继续主要交付。' },
     ],
   },
   {
@@ -99,7 +98,7 @@ const starterConversations: Conversation[] = [
     preview: '目前最值得关注的是范围、依赖和交付节奏…',
     messages: [
       { id: 'project-risks-user', role: 'user', text: '分析当前项目的潜在风险。' },
-      { id: 'project-risks-ai', role: 'assistant', text: '目前最值得关注的是需求范围持续变化、外部依赖不明确，以及验证时间被压缩。建议为每一项设置负责人和最晚确认时间。' },
+      { id: 'project-risks-ai', role: 'assistant', expression: 'thinking', text: '目前最值得关注的是需求范围持续变化、外部依赖不明确，以及验证时间被压缩。建议为每一项设置负责人和最晚确认时间。' },
     ],
   },
 ]
@@ -109,6 +108,15 @@ function responseFor(prompt: string) {
   if (prompt.includes('复盘') || prompt.includes('工作记录')) return '建议把今天的复盘分为三个部分：已完成的结果、遇到的阻塞，以及明天最重要的一步。这样更容易把记录转化为行动。'
   if (prompt.includes('项目') || prompt.includes('行动')) return '可以先从目标清晰度、进度风险和当前阻塞三个维度检查项目，再选出一个今天就能推进的最小行动。'
   return '我已经收到你的问题。当前页面使用本地示例回复展示完整对话体验，后续接入 AI 服务后即可返回真实答案。'
+}
+
+function expressionForPrompt(prompt: string): AiAvatarExpression {
+  if (prompt.includes('错误') || prompt.includes('失败')) return 'worried'
+  if (prompt.includes('风险') || prompt.includes('问题')) return 'thinking'
+  if (prompt.includes('笔记') || prompt.includes('灵感')) return 'inspired'
+  if (prompt.includes('复盘') || prompt.includes('完成')) return 'success'
+  if (prompt.includes('谢谢') || prompt.includes('开心')) return 'happy'
+  return 'focused'
 }
 
 function ConversationHistory({
@@ -195,6 +203,7 @@ function ConversationHistory({
 }
 
 export default function AiAssistant() {
+  const avatar = useAiAvatarController('idle')
   const [conversations, setConversations] = useState(starterConversations)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [composerValue, setComposerValue] = useState('')
@@ -211,6 +220,8 @@ export default function AiAssistant() {
     setComposerValue('')
     setAttachment(null)
     setIsHistoryOpen(false)
+    setIsListening(false)
+    avatar.reset()
   }
 
   const deleteConversation = (id: string) => {
@@ -241,10 +252,13 @@ export default function AiAssistant() {
     setActiveId(conversationId)
     setComposerValue('')
     setAttachment(null)
+    setIsListening(false)
     setIsResponding(true)
+    avatar.play({ expression: 'thinking', intensity: 0.85 })
 
     window.setTimeout(() => {
       const answer = responseFor(prompt)
+      const responseExpression = expressionForPrompt(prompt)
       setConversations((items) => items.map((item) => item.id === conversationId
         ? {
           ...item,
@@ -253,11 +267,21 @@ export default function AiAssistant() {
             id: `${conversationId}-assistant-${Date.now()}`,
             role: 'assistant',
             text: answer,
+            expression: responseExpression,
           }],
         }
         : item))
       setIsResponding(false)
+      avatar.play({ expression: responseExpression, intensity: 0.8, durationMs: 2400, returnTo: 'idle' })
     }, 550)
+  }
+
+  const toggleListening = () => {
+    setIsListening((value) => {
+      const nextValue = !value
+      avatar.play({ expression: nextValue ? 'listening' : 'idle', intensity: 0.8 })
+      return nextValue
+    })
   }
 
   return (
@@ -301,8 +325,8 @@ export default function AiAssistant() {
                     {activeConversation.messages.map((message) => (
                       message.role === 'assistant' ? (
                         <Marker className="max-w-xl items-start py-1.5" key={message.id}>
-                          <MarkerIcon className="mt-0.5">
-                            <Sparkles />
+                          <MarkerIcon className="mt-0.5 size-7">
+                            <AiAvatar expression={message.expression ?? 'neutral'} intensity={0.45} size={28} />
                           </MarkerIcon>
                           <MarkerContent className="leading-6">{message.text}</MarkerContent>
                         </Marker>
@@ -320,8 +344,8 @@ export default function AiAssistant() {
                     ))}
                     {isResponding ? (
                       <Marker aria-live="polite" className="max-w-xl py-1.5 opacity-50" role="status">
-                        <MarkerIcon>
-                          <LoaderCircle className="animate-spin" />
+                        <MarkerIcon className="size-7">
+                          <AiAvatar expression={avatar.expression} intensity={avatar.intensity} size={28} />
                         </MarkerIcon>
                         <MarkerContent>正在思考…</MarkerContent>
                       </Marker>
@@ -332,17 +356,13 @@ export default function AiAssistant() {
             ) : (
               <ScrollArea className="h-full">
                 <div className="mx-auto flex min-h-full w-full max-w-5xl items-center justify-center px-5 py-6 sm:px-8">
-                  <figure className="flex items-center justify-center" data-testid="bloub-animation">
-                    <img
-                      alt="Mindforge AI 动态助手"
-                      className="size-[clamp(13rem,28vw,18.75rem)] object-contain contrast-[1.05] motion-reduce:hidden dark:mix-blend-screen dark:invert"
-                      draggable={false}
-                      src={bloubAnimation}
+                  <div className="flex items-center justify-center" data-testid="ai-avatar">
+                    <AiAvatar
+                      expression={avatar.expression}
+                      intensity={avatar.intensity}
+                      size="clamp(13rem, 28vw, 18.75rem)"
                     />
-                    <figcaption className="hidden text-center text-lg font-medium text-muted-foreground motion-reduce:block">
-                      Mindforge AI
-                    </figcaption>
-                  </figure>
+                  </div>
                 </div>
               </ScrollArea>
             )}
@@ -429,7 +449,7 @@ export default function AiAssistant() {
                           <InputGroupButton
                             aria-label={isListening ? '停止语音输入' : '开始语音输入'}
                             className={cn('rounded-full', isListening && 'bg-muted text-foreground')}
-                            onClick={() => setIsListening((value) => !value)}
+                            onClick={toggleListening}
                             size="icon-sm"
                           />
                         }
@@ -442,7 +462,7 @@ export default function AiAssistant() {
                       aria-label={composerValue.trim() ? '发送消息' : isListening ? '停止语音对话' : '开始语音对话'}
                       className="size-10 rounded-full"
                       disabled={isResponding}
-                      onClick={() => composerValue.trim() ? sendPrompt() : setIsListening((value) => !value)}
+                      onClick={() => composerValue.trim() ? sendPrompt() : toggleListening()}
                       size="icon-sm"
                       variant="default"
                     >
