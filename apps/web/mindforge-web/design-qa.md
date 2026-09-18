@@ -78,6 +78,51 @@ final result: passed
 
 ---
 
+# AI 空状态 bloub 动画视觉核验
+
+## Comparison target
+
+- Source visual truth: `C:\Users\yanshijie\AppData\Local\Temp\codex-clipboard-cd7553c8-60e7-4ecf-9c0e-2cfa939c057f.png`，1884 × 724 px；用户指定移除其中的欢迎图标、标题、副标题和三张建议卡，以 `bloub` 项目动画替换。
+- Animation source: `src/assets/images/bloub-demo.gif`，300 × 300 px，来自 <https://github.com/jeremy-prt/bloub/blob/main/docs/demo.gif>。
+- Browser-rendered implementation: Codex in-app Browser live capture at `http://127.0.0.1:4173/apps/ai`.
+- Viewports: desktop 1440 × 900 CSS px and mobile 390 × 844 CSS px, density 1.
+- State: new-conversation empty state in light and dark themes; reduced-motion fallback represented by the static `Mindforge AI` caption.
+
+## Full-view comparison evidence
+
+The live browser capture preserves the existing application shell, conversation history, and bottom composer while replacing the entire welcome/suggestion region identified in the source image with a single centered bloub animation. The intended content removal is complete: none of the original welcome heading, supporting copy, or three prompt cards remains in the empty state.
+
+## Focused comparison evidence
+
+The animation region was reviewed at desktop and 390 px mobile widths. The 300 px upstream asset scales responsively from 208 px to 300 px without cropping or distortion. Light-theme contrast removes the asset's near-white square edge; dark theme combines inversion and screen blending so the animated body remains visible without a black rectangular tile.
+
+## Required fidelity surfaces
+
+- Fonts and typography: passed. The removed welcome typography leaves no unintended residual copy; the reduced-motion fallback uses the existing type system.
+- Spacing and layout rhythm: passed. The animation remains centered in the available message area and keeps clear separation from the persistent composer at both tested widths.
+- Colors and visual tokens: passed. The original animation colors are retained in light mode; dark mode uses a reversible display filter and blend mode without introducing new product tokens.
+- Image quality and asset fidelity: passed. The 300 × 300 upstream GIF is used directly, remains sharp at its maximum rendered size, and is not recreated with CSS or handcrafted SVG.
+- Copy and content: passed. The requested welcome content and suggestion-card copy were removed; history, composer labels, and conversation copy remain unchanged.
+
+## Findings and comparison history
+
+- [P2, fixed] The first light-theme capture exposed the GIF's near-white 300 px square against the white workspace. A small contrast correction now clips that background to the page white while preserving the animation.
+- [P2, fixed] The first dark-theme capture inverted the asset correctly but left a darker square around it. `mix-blend-screen` now blends that square into the dark workspace while retaining the light animated body.
+- [P2, fixed] The initial implementation assumption considered replacing only the top icon. The final implementation follows the attached-image scope and removes the complete welcome/suggestion block.
+- No actionable P0/P1/P2 findings remain.
+
+## Interaction and responsive verification
+
+- Empty state animation: passed in desktop and 390 px mobile layouts.
+- Light and dark themes: passed.
+- Text entry, Enter-to-send, loading state, and local assistant response: passed.
+- Browser console errors and warnings: none.
+- ESLint, production build, and `git diff --check`: passed.
+
+final result: passed
+
+---
+
 # AI 输入框参考图视觉核验
 
 ## Comparison target

@@ -237,7 +237,7 @@ export default function MailApp() {
         title="邮件中心"
       />
       <Card className="overflow-hidden p-0">
-      <AppWorkspace className="flex min-h-[calc(100dvh-15rem)] flex-col rounded-none bg-card">
+      <AppWorkspace className="flex flex-col rounded-none bg-card">
         <div className="flex items-center justify-between border-b p-3 lg:hidden">
           <Button aria-label="打开邮件文件夹" onClick={() => setFoldersOpen(true)} size="icon" variant="outline">
             <Menu />

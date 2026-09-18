@@ -2,16 +2,13 @@ import { useRef, useState } from 'react'
 import {
   AudioWaveform,
   ArrowUp,
-  BookOpen,
   Check,
   ChevronDown,
   FileText,
-  Lightbulb,
+  History,
   LoaderCircle,
-  Menu as MenuIcon,
   Mic,
   MoreHorizontal,
-  PenLine,
   Plus,
   Search,
   Sparkles,
@@ -19,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 
+import bloubAnimation from '@/assets/images/bloub-demo.gif'
 import {
   Attachment,
   AttachmentAction,
@@ -30,16 +28,7 @@ import {
 } from '@/components/ui/attachment'
 import { Bubble, BubbleContent, BubbleGroup } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +44,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from '@/components/ui/input-group'
+import { Input } from '@/components/ui/input'
 import { Message, MessageContent, MessageGroup } from '@/components/ui/message'
 import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -114,12 +104,6 @@ const starterConversations: Conversation[] = [
   },
 ]
 
-const suggestions = [
-  { icon: BookOpen, text: '帮我总结最近的笔记，并提炼关键结论' },
-  { icon: PenLine, text: '根据今天的工作记录，生成一份复盘' },
-  { icon: Lightbulb, text: '分析当前项目，给出下一步行动建议' },
-]
-
 function responseFor(prompt: string) {
   if (prompt.includes('笔记')) return '我可以从近期笔记中提炼主题、关键结论和待办事项。接入笔记数据后，还可以按时间或标签生成更具体的摘要。'
   if (prompt.includes('复盘') || prompt.includes('工作记录')) return '建议把今天的复盘分为三个部分：已完成的结果、遇到的阻塞，以及明天最重要的一步。这样更容易把记录转化为行动。'
@@ -127,84 +111,47 @@ function responseFor(prompt: string) {
   return '我已经收到你的问题。当前页面使用本地示例回复展示完整对话体验，后续接入 AI 服务后即可返回真实答案。'
 }
 
-function ConversationSidebar({
+function ConversationHistory({
   activeId,
   conversations,
   onDelete,
-  onNewChat,
   onSelect,
 }: {
   activeId: string | null
   conversations: Conversation[]
   onDelete: (id: string) => void
-  onNewChat: () => void
   onSelect: (id: string) => void
 }) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
+  const filteredConversations = normalizedQuery
+    ? conversations.filter((conversation) => (
+        `${conversation.title} ${conversation.preview}`.toLocaleLowerCase().includes(normalizedQuery)
+      ))
+    : conversations
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col bg-card">
-      <div className="p-4 pb-2">
-        <div className="flex items-center gap-2">
-          <Button className="h-10 flex-1" onClick={onNewChat} type="button">
-            <Plus />新对话
-          </Button>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label="搜索对话"
-                  className="size-10 shrink-0"
-                  onClick={() => setIsSearchOpen(true)}
-                  size="icon"
-                  type="button"
-                  variant="outline"
-                />
-              }
-            >
-              <Search />
-            </TooltipTrigger>
-            <TooltipContent>搜索对话</TooltipContent>
-          </Tooltip>
+      <div className="border-b px-4 py-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            aria-label="搜索历史对话"
+            className="h-10 rounded-xl bg-muted/40 pr-3 pl-9"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索历史对话…"
+            type="search"
+            value={searchQuery}
+          />
         </div>
       </div>
 
-      <CommandDialog
-        className="sm:max-w-lg"
-        description="按标题或内容搜索对话历史"
-        onOpenChange={setIsSearchOpen}
-        open={isSearchOpen}
-        title="搜索对话"
-      >
-        <Command>
-          <CommandInput autoFocus placeholder="搜索对话历史…" />
-          <CommandList>
-            <CommandEmpty>没有找到相关对话</CommandEmpty>
-            <CommandGroup heading="对话历史">
-              {conversations.map((conversation) => (
-                <CommandItem
-                  data-checked={activeId === conversation.id}
-                  key={conversation.id}
-                  onSelect={() => {
-                    onSelect(conversation.id)
-                    setIsSearchOpen(false)
-                  }}
-                  value={`${conversation.title} ${conversation.preview}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{conversation.title}</span>
-                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{conversation.preview}</span>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </CommandDialog>
-
       <ScrollArea className="min-h-0 flex-1 px-3 py-2">
         <div className="space-y-1 pb-3">
-          {conversations.map((conversation) => (
+          {filteredConversations.length === 0 ? (
+            <div className="px-3 py-10 text-center text-sm text-muted-foreground">没有找到相关对话</div>
+          ) : null}
+          {filteredConversations.map((conversation) => (
             <div
               className={cn(
                 'group relative w-full rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -314,29 +261,18 @@ export default function AiAssistant() {
   }
 
   return (
-    <Card className="h-[calc(100dvh-10.5rem)] min-h-[520px] gap-0 overflow-hidden rounded-xl py-0">
-      <div className="grid h-full min-h-0 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <div className="hidden min-h-0 border-r lg:block">
-          <ConversationSidebar
-            activeId={activeId}
-            conversations={conversations}
-            onDelete={deleteConversation}
-            onNewChat={startNewChat}
-            onSelect={setActiveId}
-          />
-        </div>
-
+    <section className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'overflow-hidden')}>
+      <div className="h-full min-h-0">
         <Sheet onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
-          <SheetContent className="w-[min(88vw,320px)] max-w-[320px] gap-0 p-0" showCloseButton={false} side="left">
-            <SheetHeader className="sr-only">
+          <SheetContent className="w-[min(90vw,380px)] max-w-[380px] gap-0 p-0" side="left">
+            <SheetHeader className="border-b px-5 py-4 pr-12">
               <SheetTitle>对话历史</SheetTitle>
-              <SheetDescription>搜索、打开或新建对话</SheetDescription>
+              <SheetDescription>搜索或打开以前的对话</SheetDescription>
             </SheetHeader>
-            <ConversationSidebar
+            <ConversationHistory
               activeId={activeId}
               conversations={conversations}
               onDelete={deleteConversation}
-              onNewChat={startNewChat}
               onSelect={(id) => {
                 setActiveId(id)
                 setIsHistoryOpen(false)
@@ -345,17 +281,18 @@ export default function AiAssistant() {
           </SheetContent>
         </Sheet>
 
-        <main className="relative flex min-h-0 min-w-0 flex-col bg-background">
-          <Button
-            aria-label="打开对话历史"
-            className="absolute top-4 left-4 z-10 lg:hidden"
-            onClick={() => setIsHistoryOpen(true)}
-            size="icon"
-            type="button"
-            variant="outline"
-          >
-            <MenuIcon />
-          </Button>
+        <main className="relative flex h-full min-h-0 min-w-0 flex-col bg-background">
+          <div aria-label="对话操作" className="absolute top-0 right-0 z-10 flex items-center gap-2 py-2" role="toolbar">
+            <Button onClick={() => setIsHistoryOpen(true)} type="button" variant="outline">
+              <History />
+              <span className="hidden sm:inline">历史记录</span>
+              <span className="sr-only sm:hidden">打开对话历史</span>
+            </Button>
+            <Button onClick={startNewChat} type="button">
+              <Plus />
+              <span>新对话</span>
+            </Button>
+          </div>
           <div className="min-h-0 flex-1">
             {activeConversation ? (
               <ScrollArea className="h-full">
@@ -394,30 +331,18 @@ export default function AiAssistant() {
               </ScrollArea>
             ) : (
               <ScrollArea className="h-full">
-                <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center px-5 py-6 sm:px-8">
-                  <div className="text-center">
-                    <span className="mx-auto flex size-13 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                      <Sparkles className="size-6" />
-                    </span>
-                    <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">欢迎使用 Mindforge AI</h1>
-                    <p className="mt-2 text-sm text-muted-foreground sm:text-base">今天想一起完成什么？</p>
-                  </div>
-
-                  <div className="mt-6 grid gap-3 md:grid-cols-3">
-                    {suggestions.map((suggestion) => (
-                      <button
-                        className="group flex min-h-28 flex-col items-start rounded-xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        key={suggestion.text}
-                        onClick={() => sendPrompt(suggestion.text)}
-                        type="button"
-                      >
-                        <span className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground transition-colors group-hover:text-foreground">
-                          <suggestion.icon className="size-4" />
-                        </span>
-                        <span className="mt-auto pt-3 text-sm leading-5 font-medium">{suggestion.text}</span>
-                      </button>
-                    ))}
-                  </div>
+                <div className="mx-auto flex min-h-full w-full max-w-5xl items-center justify-center px-5 py-6 sm:px-8">
+                  <figure className="flex items-center justify-center" data-testid="bloub-animation">
+                    <img
+                      alt="Mindforge AI 动态助手"
+                      className="size-[clamp(13rem,28vw,18.75rem)] object-contain contrast-[1.05] motion-reduce:hidden dark:mix-blend-screen dark:invert"
+                      draggable={false}
+                      src={bloubAnimation}
+                    />
+                    <figcaption className="hidden text-center text-lg font-medium text-muted-foreground motion-reduce:block">
+                      Mindforge AI
+                    </figcaption>
+                  </figure>
                 </div>
               </ScrollArea>
             )}
@@ -530,6 +455,6 @@ export default function AiAssistant() {
           </div>
         </main>
       </div>
-    </Card>
+    </section>
   )
 }

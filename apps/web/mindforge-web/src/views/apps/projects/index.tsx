@@ -61,7 +61,7 @@ import {
   type SegmentedBarChartDatum,
   type SegmentedBarChartSeries,
 } from '@/components/charts/segmented-multiple-bar-chart'
-import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
+import { APP_WORKSPACE_HEIGHT_CLASS, AppPage, AppPageHeader } from '@/components/shared/app-workspace'
 import { cn } from '@/lib/utils'
 import Spinner from '@/views/spinner/Spinner'
 import {
@@ -501,7 +501,7 @@ export default function Projects() {
         />
 
         <Tabs
-          className="grid min-h-[calc(100dvh-19rem)] grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]"
+          className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]')}
           defaultValue="requirements"
           orientation="vertical"
         >
@@ -515,7 +515,7 @@ export default function Projects() {
             </CardContent>
           </Card>
 
-          <Card className="h-full min-h-[calc(100dvh-19rem)] p-5 sm:p-6">
+          <Card className="h-full min-h-0 overflow-auto p-5 sm:p-6">
           <TabsContent className="h-full min-h-0 w-full" value="requirements">
             <ManagementPanel
               action={() => { setEditingRequirementId(null); setRequirementForm(emptyRequirementForm()); setRequirementDialogOpen(true) }}

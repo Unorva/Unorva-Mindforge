@@ -315,7 +315,7 @@ export default function DailyReviewPage() {
     <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader title="复盘报告" />
 
-        <AppWorkspace className="grid min-h-[calc(100dvh-15rem)] gap-5 overflow-visible bg-transparent xl:grid-cols-[280px_minmax(0,1fr)]">
+        <AppWorkspace className="grid gap-5 overflow-visible bg-transparent xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="space-y-5">
             <Card>
               <CardHeader>
@@ -362,14 +362,14 @@ export default function DailyReviewPage() {
             </div>
           </aside>
 
-          <main className="min-h-0 min-w-0">
+          <main className="h-full min-h-0 min-w-0">
             {isLoading ? (
               <div className="flex min-h-105 items-center justify-center gap-2 text-sm text-muted-foreground">
                 <LoaderCircle className="size-4 animate-spin" />正在加载日报…
               </div>
             ) : (
               <MarkdownEditor
-                className="shadow-none"
+                className="h-full shadow-none"
                 minHeight={480}
                 onChange={setContent}
                 onPolish={() => setDevelopmentFeature('AI 润色')}
