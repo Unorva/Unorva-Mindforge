@@ -44,20 +44,28 @@ export type AiAvatarCommand = {
   returnTo?: AiAvatarExpression
 }
 
-export type AvatarBodyShape = 'round' | 'soft' | 'squash' | 'tall' | 'triangle' | 'wide'
-export type AvatarBrows = 'angry' | 'happy' | 'none' | 'raised' | 'sad' | 'thinking'
-export type AvatarEffect = 'dots' | 'error' | 'hearts' | 'idea' | 'none' | 'offline' | 'orbit' | 'pulse' | 'question' | 'search' | 'sparkles' | 'success' | 'sweat' | 'warning' | 'zzz'
-export type AvatarEyes = 'angry' | 'closed' | 'dizzy' | 'focused' | 'happy' | 'look-down' | 'look-left' | 'look-right' | 'look-up' | 'open' | 'sad' | 'sleepy' | 'uneven' | 'wide' | 'wink'
 export type AvatarMotion = 'bounce' | 'breathe' | 'float' | 'listen' | 'nod' | 'shake' | 'sleep' | 'speak' | 'spin' | 'think' | 'tilt'
-export type AvatarMouth = 'flat' | 'frown' | 'grin' | 'none' | 'o' | 'open' | 'smile' | 'small-smile' | 'talk' | 'wave'
+
+export type AvatarAccessory = 'none' | 'heart' | 'thought' | 'sparkle' | 'zzz' | 'check' | 'question' | 'alert' | 'cross'
+
+export type AvatarEyePose = {
+  h: number
+  open: number
+  tilt: number
+  w: number
+}
+
+export type AvatarHeadGaze = {
+  pitch: number
+  roll: number
+  yaw: number
+}
 
 export type AvatarVisual = {
-  body: AvatarBodyShape
-  brows: AvatarBrows
-  effect: AvatarEffect
-  eyes: AvatarEyes
+  accessory: AvatarAccessory
+  eyes: [AvatarEyePose, AvatarEyePose]
+  gaze: AvatarHeadGaze
   label: string
   motion: AvatarMotion
-  mouth: AvatarMouth
-  tilt?: number
+  split: number
 }

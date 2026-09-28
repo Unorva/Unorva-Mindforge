@@ -5,6 +5,10 @@
 This project includes `src/assets/images/bloub-demo.gif` from
 <https://github.com/jeremy-prt/bloub>.
 
+The AI avatar's sphere-projected capsule-eye geometry and expression measurements
+are adapted from `src/bot/face.ts`, `src/bot/expressions.ts`,
+`src/bot/engine.ts`, and `src/bot/shape.ts` in that project.
+
 MIT License
 
 Copyright (c) 2026 Jérémy Perret
