@@ -1,8 +1,4 @@
-
-
-import Divider from "./divider";
-
-
+import Divider from './divider';
 
 interface Props {
   wrapperClassName?: string;

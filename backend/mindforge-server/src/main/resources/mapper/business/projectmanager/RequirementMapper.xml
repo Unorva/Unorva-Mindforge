@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.projectmanager.dao.RequirementDao">
+    <select id="selectByProjects" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.RequirementEntity">
+        SELECT * FROM project_requirement WHERE deleted = 0 AND
+        <choose>
+            <when test="projectIds != null and !projectIds.isEmpty()">
+                project_id IN <foreach collection="projectIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>1 = 0</otherwise>
+        </choose>
+        ORDER BY updated_time DESC, id DESC
+    </select>
+    <select id="selectInProject" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.RequirementEntity">
+        SELECT * FROM project_requirement WHERE project_id = #{projectId} AND id = #{id} AND deleted = 0
+    </select>
+</mapper>

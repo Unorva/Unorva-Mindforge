@@ -1,4 +1,4 @@
-import { getAccessToken } from '@/utils/auth';
+import { clearAccessToken, getAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
 
 type ApiErrorPayload = Record<string, unknown>;
@@ -22,12 +22,25 @@ function showRequestError(message: string) {
 
 /**
  * 所有 HTTP 请求共用同一条失败反馈：网络、状态码和业务响应失败都会提示一次。
- * 业务响应仍原样返回，调用方可以继续根据 success 决定后续交互。
+ * 业务失败也会抛出异常，只有成功响应会交给调用方更新页面。
  */
 async function request(url: string, init: RequestInit, fallbackMessage: string) {
   try {
-    const response = await fetch(url, init);
+    const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+    const response = await fetch(`${apiBase}${url}`, {
+      ...init,
+      signal:
+        init.signal ??
+        AbortSignal.timeout(url.startsWith('/ai/') ? 65000 : url.startsWith('/mail') ? 120000 : 30000),
+    });
     const payload = await response.json().catch(() => undefined);
+
+    if (response.status === 401) {
+      clearAccessToken();
+      if (!window.location.pathname.startsWith('/auth/')) {
+        window.location.assign('/auth/auth2/login');
+      }
+    }
 
     if (!response.ok) {
       const message = getResponseErrorMessage(payload, fallbackMessage);
@@ -42,18 +55,23 @@ async function request(url: string, init: RequestInit, fallbackMessage: string) 
     }
 
     if (isApiErrorPayload(payload) && payload.success === false) {
-      showRequestError(getResponseErrorMessage(payload, fallbackMessage));
+      const message = getResponseErrorMessage(payload, fallbackMessage);
+      showRequestError(message);
+      throw new ReportedRequestError(message);
     }
 
     return payload;
   } catch (error) {
     if (error instanceof ReportedRequestError) throw error;
 
-    const message = error instanceof TypeError
-      ? '网络请求失败，请检查网络后重试。'
-      : error instanceof Error && error.message
-        ? error.message
-        : '网络请求失败，请检查网络后重试。';
+    const message =
+      error instanceof DOMException && error.name === 'TimeoutError'
+        ? '请求超时，请稍后重试。'
+        : error instanceof TypeError
+          ? '网络请求失败，请检查网络后重试。'
+          : error instanceof Error && error.message
+            ? error.message
+            : '网络请求失败，请检查网络后重试。';
     showRequestError(message);
     throw error;
   }
@@ -87,71 +105,85 @@ const getFetcher = async (
     const queryString = searchParams.toString();
 
     if (queryString) {
-      url += `?${queryString}`;
+      url += `${url.includes('?') ? '&' : '?'}${queryString}`;
     }
   }
 
-  return request(url, {
-    headers: getAuthorizationHeader(),
-  }, '获取数据失败，请稍后重试。');
+  return request(
+    url,
+    {
+      headers: getAuthorizationHeader(),
+    },
+    '获取数据失败，请稍后重试。',
+  );
 };
 
 /**
  * POST 请求
  */
 const postFetcher = (url: string, arg?: unknown) =>
-  request(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthorizationHeader(),
+  request(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeader(),
+      },
+      body: arg !== undefined ? JSON.stringify(arg) : undefined,
     },
-    body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }, '提交数据失败，请稍后重试。');
+    '提交数据失败，请稍后重试。',
+  );
 
 /**
  * PUT 请求
  */
 const putFetcher = (url: string, arg?: unknown) =>
-  request(url, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthorizationHeader(),
+  request(
+    url,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeader(),
+      },
+      body: arg !== undefined ? JSON.stringify(arg) : undefined,
     },
-    body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }, '更新数据失败，请稍后重试。');
+    '更新数据失败，请稍后重试。',
+  );
 
 /**
  * PATCH 请求
  */
 const patchFetcher = (url: string, arg?: unknown) =>
-  request(url, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthorizationHeader(),
+  request(
+    url,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeader(),
+      },
+      body: arg !== undefined ? JSON.stringify(arg) : undefined,
     },
-    body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }, '更新数据失败，请稍后重试。');
+    '更新数据失败，请稍后重试。',
+  );
 
 /**
  * DELETE 请求
  */
 const deleteFetcher = (url: string, arg?: unknown) =>
-  request(url, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthorizationHeader(),
+  request(
+    url,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeader(),
+      },
+      body: arg !== undefined ? JSON.stringify(arg) : undefined,
     },
-    body: arg !== undefined ? JSON.stringify(arg) : undefined,
-  }, '删除数据失败，请稍后重试。');
+    '删除数据失败，请稍后重试。',
+  );
 
-export {
-  getFetcher,
-  postFetcher,
-  putFetcher,
-  patchFetcher,
-  deleteFetcher,
-};
+export { getFetcher, postFetcher, putFetcher, patchFetcher, deleteFetcher };

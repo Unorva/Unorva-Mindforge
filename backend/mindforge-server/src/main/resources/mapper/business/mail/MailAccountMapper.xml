@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.mail.dao.MailAccountDao">
+<resultMap id="entity" type="com.unorva.mindforge.module.business.mail.domain.entity.MailAccountEntity">
+    <id property="id" column="id"/>
+    <result property="userId" column="user_id"/>
+    <result property="provider" column="provider"/>
+    <result property="email" column="email"/>
+    <result property="displayName" column="display_name"/>
+    <result property="username" column="username"/>
+    <result property="authType" column="auth_type"/>
+    <result property="imapHost" column="imap_host"/>
+    <result property="imapPort" column="imap_port"/>
+    <result property="imapSecurity" column="imap_security"/>
+    <result property="smtpHost" column="smtp_host"/>
+    <result property="smtpPort" column="smtp_port"/>
+    <result property="smtpSecurity" column="smtp_security"/>
+    <result property="passwordCiphertext" column="password_ciphertext"/>
+    <result property="enabled" column="enabled"/>
+    <result property="defaultAccount" column="is_default"/>
+    <result property="status" column="status"/>
+    <result property="lastError" column="last_error"/>
+    <result property="lastSyncAt" column="last_sync_at"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="updatedAt" column="updated_at"/>
+</resultMap>
+<sql id="columns">id, user_id, provider, email, display_name, username, auth_type, imap_host, imap_port, imap_security, smtp_host, smtp_port, smtp_security, password_ciphertext, enabled, is_default, status, last_error, last_sync_at, created_at, updated_at</sql>
+<select id="listOwned" resultMap="entity">SELECT <include refid="columns"/> FROM mf_mail_account WHERE user_id = #{userId} ORDER BY is_default DESC, id ASC</select>
+<select id="selectOwned" resultMap="entity">SELECT <include refid="columns"/> FROM mf_mail_account WHERE user_id = #{userId} AND id = #{id}</select>
+<select id="countOwned" resultType="java.lang.Long">SELECT COUNT(*) FROM mf_mail_account WHERE user_id = #{userId}</select>
+<insert id="insertOwned" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+ INSERT INTO mf_mail_account (user_id, provider, email, display_name, username, imap_host, imap_port, imap_security,
+ smtp_host, smtp_port, smtp_security, password_ciphertext, enabled, is_default, auth_type)
+ VALUES (#{entity.userId}, #{entity.provider}, #{entity.email}, #{entity.displayName}, #{entity.username}, #{entity.imapHost},
+ #{entity.imapPort}, #{entity.imapSecurity}, #{entity.smtpHost}, #{entity.smtpPort}, #{entity.smtpSecurity}, #{entity.passwordCiphertext},
+ #{entity.enabled}, #{entity.defaultAccount}, #{entity.authType})
+</insert>
+<update id="updateOwned">
+ UPDATE mf_mail_account SET provider = #{entity.provider}, email = #{entity.email}, display_name = #{entity.displayName}, username = #{entity.username},
+ imap_host = #{entity.imapHost}, imap_port = #{entity.imapPort}, imap_security = #{entity.imapSecurity}, smtp_host = #{entity.smtpHost},
+ smtp_port = #{entity.smtpPort}, smtp_security = #{entity.smtpSecurity}, password_ciphertext = #{entity.passwordCiphertext},
+ enabled = #{entity.enabled}, is_default = #{entity.defaultAccount}, auth_type = #{entity.authType}, status = #{entity.status},
+ last_error = #{entity.lastError}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{entity.userId} AND id = #{entity.id}
+</update>
+<update id="clearDefault">UPDATE mf_mail_account SET is_default = FALSE WHERE user_id = #{userId}</update>
+<update id="clearDisabledDefault">UPDATE mf_mail_account SET is_default = FALSE WHERE user_id = #{userId} AND enabled = FALSE</update>
+<select id="countEnabledDefault" resultType="java.lang.Long">SELECT COUNT(*) FROM mf_mail_account WHERE user_id = #{userId} AND enabled = TRUE AND is_default = TRUE</select>
+<update id="assignFirstDefault">UPDATE mf_mail_account SET is_default = TRUE WHERE user_id = #{userId} AND enabled = TRUE ORDER BY id ASC LIMIT 1</update>
+<update id="clearLastSync">UPDATE mf_mail_account SET last_sync_at = NULL WHERE user_id = #{userId} AND id = #{id}</update>
+<delete id="deleteOwned">DELETE FROM mf_mail_account WHERE user_id = #{userId} AND id = #{id}</delete>
+<update id="connectionSuccess">UPDATE mf_mail_account SET status = 'connected', last_error = NULL, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId} AND id = #{id}</update>
+<update id="syncSuccess">UPDATE mf_mail_account SET status = 'connected', last_error = NULL, last_sync_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId} AND id = #{id}</update>
+<update id="connectionFailure">UPDATE mf_mail_account SET status = 'error', last_error = #{message}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId} AND id = #{id}</update>
+</mapper>

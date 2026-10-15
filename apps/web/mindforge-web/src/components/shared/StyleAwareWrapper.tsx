@@ -1,4 +1,3 @@
-
 interface Props {
   children: React.ReactNode;
   lyraClassName: string;
@@ -6,11 +5,7 @@ interface Props {
 }
 
 const StyleAwareWrapper = ({ children, lyraClassName }: Props) => {
-  return (
-    <div className={lyraClassName}>
-      {children}
-    </div>
-  );
+  return <div className={lyraClassName}>{children}</div>;
 };
 
 export default StyleAwareWrapper;

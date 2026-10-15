@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.dailyreview.dao.DailyReviewDao">
+    <select id="selectWeekStartsOn" resultType="java.lang.String">
+        SELECT JSON_UNQUOTE(JSON_EXTRACT(reports_json, '$.weekStartsOn')) FROM mf_user_setting WHERE user_id = #{userId}
+    </select>
+    <select id="selectByDate" resultType="com.unorva.mindforge.module.business.dailyreview.domain.entity.DailyReviewEntity">
+        SELECT * FROM daily_review WHERE user_id = #{userId} AND review_date = #{date} AND deleted = 0
+    </select>
+    <sql id="rangeFilter">
+        user_id = #{userId} AND review_date BETWEEN #{start} AND #{end} AND deleted = 0
+        AND content IS NOT NULL AND TRIM(content) &lt;&gt; ''
+    </sql>
+    <select id="selectCalendar" resultType="java.time.LocalDate">
+        SELECT review_date FROM daily_review WHERE <include refid="rangeFilter"/> ORDER BY review_date ASC
+    </select>
+    <select id="selectEntries" resultType="com.unorva.mindforge.module.business.dailyreview.domain.entity.DailyReviewEntity">
+        SELECT * FROM daily_review WHERE <include refid="rangeFilter"/> ORDER BY review_date ASC
+    </select>
+    <insert id="upsertContent">
+        INSERT INTO daily_review (user_id, review_date, content, version, deleted)
+        VALUES (#{userId}, #{date}, #{content}, 0, 0)
+        ON DUPLICATE KEY UPDATE content = #{content}, deleted = 0,
+            version = version + 1, updated_time = CURRENT_TIMESTAMP
+    </insert>
+    <update id="deleteContent">
+        UPDATE daily_review SET content = '', deleted = 1, version = version + 1, updated_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId} AND review_date = #{date} AND deleted = 0
+    </update>
+</mapper>

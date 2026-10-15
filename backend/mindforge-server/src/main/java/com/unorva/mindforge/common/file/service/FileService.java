@@ -2,12 +2,7 @@ package com.unorva.mindforge.common.file.service;
 
 import java.io.InputStream;
 
-/**
- * 文件服务接口
- *
- * @Author yanshijie
- * @Date 2026/8/31 16:38
- */
+/** 文件服务接口 @Author yanshijie @Date 2026/8/31 16:38 */
 public interface FileService {
 
     /**
@@ -26,5 +21,4 @@ public interface FileService {
      * @param objectKey 对象 Key
      */
     void delete(String objectKey);
-
 }

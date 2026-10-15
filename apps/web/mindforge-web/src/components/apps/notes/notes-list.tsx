@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -8,62 +8,47 @@ import {
   FolderOpen,
   FolderPlus,
   Trash2,
-} from 'lucide-react'
+} from 'lucide-react';
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { NotesContext } from '@/context/notes-context/index'
-import { cn } from '@/lib/utils'
-import type { noteFolderType, notesType } from 'src/types/apps/notes'
+} from '@/components/ui/context-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { NotesContext } from '@/context/notes-context/index';
+import { cn } from '@/lib/utils';
+import type { noteFolderType, notesType } from 'src/types/apps/notes';
 
-type CreateTarget = {
-  kind: 'folder' | 'note'
-  parentId: string
-  parentName: string
-}
+import CreateItemDialog, { type CreateTarget } from './create-item-dialog';
 
 type DeleteTarget =
-  | { kind: 'folder'; id: string; name: string }
-  | { kind: 'note'; id: number; name: string }
+  { kind: 'folder'; id: string; name: string } | { kind: 'note'; id: number; name: string };
 
 type FolderBranchProps = {
-  depth: number
-  folder: noteFolderType
-  folders: noteFolderType[]
-  notes: notesType[]
-  openFolders: Set<string>
-  onToggle: (folderId: string) => void
-  onSelectNote: (noteId: number) => void
-  selectedNoteId: number
-  onCreate: (target: CreateTarget) => void
-  onDelete: (target: DeleteTarget) => void
-}
+  depth: number;
+  folder: noteFolderType;
+  folders: noteFolderType[];
+  notes: notesType[];
+  openFolders: Set<string>;
+  onToggle: (folderId: string) => void;
+  onSelectNote: (noteId: number) => void;
+  selectedNoteId: number;
+  onCreate: (target: CreateTarget) => void;
+  onDelete: (target: DeleteTarget) => void;
+};
 
 const noteColorClasses: Record<string, string> = {
   primary: 'text-primary',
@@ -71,7 +56,7 @@ const noteColorClasses: Record<string, string> = {
   'chart-2': 'text-chart-2',
   'chart-3': 'text-chart-3',
   'chart-4': 'text-chart-4',
-}
+};
 
 function NoteContextMenu({
   note,
@@ -80,11 +65,11 @@ function NoteContextMenu({
   onDelete,
   className,
 }: {
-  note: notesType
-  selectedNoteId: number
-  onSelectNote: (noteId: number) => void
-  onDelete: (target: DeleteTarget) => void
-  className?: string
+  note: notesType;
+  selectedNoteId: number;
+  onSelectNote: (noteId: number) => void;
+  onDelete: (target: DeleteTarget) => void;
+  className?: string;
 }) {
   return (
     <ContextMenu>
@@ -103,7 +88,12 @@ function NoteContextMenu({
           />
         }
       >
-        <FileText className={cn('size-4 shrink-0', noteColorClasses[note.color ?? ''] ?? 'text-muted-foreground')} />
+        <FileText
+          className={cn(
+            'size-4 shrink-0',
+            noteColorClasses[note.color ?? ''] ?? 'text-muted-foreground',
+          )}
+        />
         <span className="truncate">{note.title || '未命名笔记'}</span>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-40">
@@ -111,11 +101,12 @@ function NoteContextMenu({
           variant="destructive"
           onClick={() => onDelete({ kind: 'note', id: note.id, name: note.title })}
         >
-          <Trash2 />删除文件
+          <Trash2 />
+          删除文件
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }
 
 function FolderBranch({
@@ -130,9 +121,9 @@ function FolderBranch({
   onCreate,
   onDelete,
 }: FolderBranchProps) {
-  const childFolders = folders.filter((item) => item.parentId === folder.id)
-  const childNotes = notes.filter((note) => note.folderId === folder.id)
-  const isOpen = openFolders.has(folder.id)
+  const childFolders = folders.filter((item) => item.parentId === folder.id);
+  const childNotes = notes.filter((note) => note.folderId === folder.id);
+  const isOpen = openFolders.has(folder.id);
 
   return (
     <div>
@@ -148,24 +139,43 @@ function FolderBranch({
             />
           }
         >
-          {isOpen ? <ChevronDown className="size-3.5 text-muted-foreground" /> : <ChevronRight className="size-3.5 text-muted-foreground" />}
-          {isOpen ? <FolderOpen className="size-4 text-primary" /> : <Folder className="size-4 text-muted-foreground" />}
+          {isOpen ? (
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="size-3.5 text-muted-foreground" />
+          )}
+          {isOpen ? (
+            <FolderOpen className="size-4 text-primary" />
+          ) : (
+            <Folder className="size-4 text-muted-foreground" />
+          )}
           <span className="min-w-0 flex-1 truncate">{folder.name}</span>
-          {childNotes.length > 0 && <span className="text-xs tabular-nums text-muted-foreground">{childNotes.length}</span>}
+          {childNotes.length > 0 && (
+            <span className="text-xs tabular-nums text-muted-foreground">{childNotes.length}</span>
+          )}
         </ContextMenuTrigger>
         <ContextMenuContent className="min-w-44">
-          <ContextMenuItem onClick={() => onCreate({ kind: 'folder', parentId: folder.id, parentName: folder.name })}>
-            <FolderPlus />新建文件夹
+          <ContextMenuItem
+            onClick={() =>
+              onCreate({ kind: 'folder', parentId: folder.id, parentName: folder.name })
+            }
+          >
+            <FolderPlus />
+            新建文件夹
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => onCreate({ kind: 'note', parentId: folder.id, parentName: folder.name })}>
-            <FilePlus2 />新建文件
+          <ContextMenuItem
+            onClick={() => onCreate({ kind: 'note', parentId: folder.id, parentName: folder.name })}
+          >
+            <FilePlus2 />
+            新建文件
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
             variant="destructive"
             onClick={() => onDelete({ kind: 'folder', id: folder.id, name: folder.name })}
           >
-            <Trash2 />删除文件夹
+            <Trash2 />
+            删除文件夹
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -201,131 +211,110 @@ function FolderBranch({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 const Notelist = () => {
-  const {
-    notes,
-    folders,
-    selectNote,
-    addNote,
-    deleteNote,
-    addFolder,
-    deleteFolder,
-    selectedNoteId,
-  } = useContext(NotesContext)
-  const [openFolders, setOpenFolders] = useState<Set<string>>(() => new Set(folders.map((folder) => folder.id)))
-  const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null)
-  const [createName, setCreateName] = useState('')
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const { notes, folders, selectNote, deleteNote, deleteFolder, selectedNoteId, loading, error } =
+    useContext(NotesContext);
+  const [openFolders, setOpenFolders] = useState<Set<string>>(
+    () => new Set(folders.map((folder) => folder.id)),
+  );
+  const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (folders.length) {
-      setOpenFolders((current) => current.size ? current : new Set(folders.map((folder) => folder.id)))
+      setOpenFolders((current) =>
+        current.size ? current : new Set(folders.map((folder) => folder.id)),
+      );
     }
-  }, [folders])
+  }, [folders]);
 
-  const visibleNotes = useMemo(() => notes.filter((note) => !note.deleted), [notes])
+  const visibleNotes = useMemo(() => notes.filter((note) => !note.deleted), [notes]);
 
   const handleToggle = (folderId: string) => {
     setOpenFolders((current) => {
-      const next = new Set(current)
-      if (next.has(folderId)) next.delete(folderId)
-      else next.add(folderId)
-      return next
-    })
-  }
-
-  const handleCreate = async () => {
-    if (!createTarget || !createName.trim()) return
-    if (createTarget.kind === 'folder') {
-      await addFolder(createName.trim(), createTarget.parentId)
-    } else {
-      await addNote({
-        id: 0,
-        title: createName.trim(),
-        content: '',
-        color: 'primary',
-        folderId: createTarget.parentId,
-        deleted: false,
-      })
-    }
-    setOpenFolders((current) => new Set(current).add(createTarget.parentId))
-    setCreateTarget(null)
-    setCreateName('')
-  }
+      const next = new Set(current);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return
-    if (deleteTarget.kind === 'folder') await deleteFolder(deleteTarget.id)
-    else await deleteNote(deleteTarget.id)
-    setDeleteTarget(null)
-  }
+    if (!deleteTarget || busy) return;
+    setBusy(true);
+    try {
+      if (deleteTarget.kind === 'folder') await deleteFolder(deleteTarget.id);
+      else await deleteNote(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch {
+      /* 请求失败时保留删除目标。 */
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {loading && <p className="px-3 py-4 text-xs text-muted-foreground">正在加载笔记…</p>}
+      {error && (
+        <p className="px-3 py-4 text-xs text-destructive">笔记加载失败，请重新打开页面。</p>
+      )}
       <ScrollArea className="min-h-0 flex-1 px-2 py-2">
-        {folders
-          .filter((folder) => folder.parentId === null)
-          .map((folder) => (
-            <FolderBranch
-              key={folder.id}
-              depth={0}
-              folder={folder}
-              folders={folders}
-              notes={visibleNotes}
-              openFolders={openFolders}
-              onToggle={handleToggle}
-              onSelectNote={selectNote}
-              selectedNoteId={selectedNoteId}
-              onCreate={(target) => {
-                setCreateName('')
-                setCreateTarget(target)
-              }}
-              onDelete={setDeleteTarget}
+        <div className="flex min-h-full flex-col">
+          {folders
+            .filter((folder) => folder.parentId === null)
+            .map((folder) => (
+              <FolderBranch
+                key={folder.id}
+                depth={0}
+                folder={folder}
+                folders={folders}
+                notes={visibleNotes}
+                openFolders={openFolders}
+                onToggle={handleToggle}
+                onSelectNote={selectNote}
+                selectedNoteId={selectedNoteId}
+                onCreate={setCreateTarget}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          <ContextMenu>
+            <ContextMenuTrigger
+              render={
+                <div tabIndex={0} aria-label="笔记目录空白处" className="min-h-32 w-full flex-1" />
+              }
             />
-          ))}
+            <ContextMenuContent>
+              <ContextMenuItem
+                onClick={() =>
+                  setCreateTarget({ kind: 'folder', parentId: null, parentName: '根目录' })
+                }
+              >
+                <FolderPlus />
+                创建文件夹
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+        </div>
       </ScrollArea>
+      <p className="border-t px-3 py-2 text-xs text-muted-foreground">右键目录或文件夹以创建内容</p>
 
-      <Dialog
-        open={Boolean(createTarget)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateTarget(null)
-            setCreateName('')
-          }
+      <CreateItemDialog
+        target={createTarget}
+        onClose={() => setCreateTarget(null)}
+        onCreated={(target) => {
+          if (target.parentId) setOpenFolders((current) => new Set(current).add(target.parentId!));
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{createTarget?.kind === 'folder' ? '新建文件夹' : '新建文件'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="tree-item-name">名称</Label>
-            <Input
-              id="tree-item-name"
-              value={createName}
-              onChange={(event) => setCreateName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void handleCreate()
-              }}
-              placeholder={createTarget?.kind === 'folder' ? '输入文件夹名称' : '输入文件名称'}
-              autoFocus
-            />
-            <p className="text-xs text-muted-foreground">将创建在“{createTarget?.parentName}”中</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateTarget(null)}>取消</Button>
-            <Button disabled={!createName.trim()} onClick={handleCreate}>创建</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
 
       <AlertDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
+          if (!open) setDeleteTarget(null);
         }}
       >
         <AlertDialogContent>
@@ -341,12 +330,14 @@ const Notelist = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDelete}>确认删除</AlertDialogAction>
+            <Button disabled={busy} variant="destructive" onClick={handleDelete}>
+              {busy ? '删除中…' : '确认删除'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
-}
+  );
+};
 
-export default Notelist
+export default Notelist;

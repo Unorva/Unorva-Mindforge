@@ -1,4 +1,4 @@
-import { uniqueId } from "lodash";
+import { uniqueId } from 'lodash';
 import {
   BookOpen,
   Bot,
@@ -12,7 +12,7 @@ import {
   NotebookText,
   Wallet,
   type LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 export interface ChildItem {
   id?: number | string;
@@ -52,114 +52,104 @@ export interface MenuItem {
 
 const SidebarContent: MenuItem[] = [
   {
-    heading: "控制台",
+    heading: '控制台',
     items: [
       {
         id: uniqueId(),
-        name: "数据总览",
+        name: '数据总览',
         icon: House,
-        url: "/",
+        url: '/',
       },
       {
         id: uniqueId(),
-        name: "智能助手",
+        name: '智能助手',
         icon: MessageCircleMore,
-        url: "/apps/ai",
+        url: '/apps/ai',
       },
     ],
   },
   {
-    heading: "个人",
+    heading: '个人',
     items: [
       {
         id: uniqueId(),
-        name: "邮件中心",
+        name: '邮件中心',
         icon: Mail,
-        url: "/apps/mail",
+        url: '/apps/mail',
       },
       {
         id: uniqueId(),
-        name: "复盘报告",
+        name: '复盘报告',
         icon: ClipboardCheck,
-        url: "/apps/daily-review",
+        url: '/apps/daily-review',
       },
       {
         id: uniqueId(),
-        name: "资金管理",
+        name: '资金管理',
         icon: Wallet,
-        url: "/apps/finance",
+        url: '/apps/finance',
       },
       {
         id: uniqueId(),
-        name: "笔记管理",
+        name: '笔记管理',
         icon: NotebookText,
-        url: "/apps/notes",
+        url: '/apps/notes',
       },
       {
         id: uniqueId(),
-        name: "博客中心",
+        name: '博客中心',
         icon: BookOpen,
         items: [
           {
             id: uniqueId(),
-            name: "博客列表",
-            url: "/apps/blog/post",
+            name: '博客列表',
+            url: '/apps/blog/post',
           },
           {
             id: uniqueId(),
-            name: "博客详情",
-            url: "/apps/blog/detail/流媒体视频还没流行就将在明天停服",
+            name: '新建博客',
+            url: '/apps/blog/create',
           },
           {
             id: uniqueId(),
-            name: "编辑博客",
-            url: "/apps/blog/edit",
-          },
-          {
-            id: uniqueId(),
-            name: "新建博客",
-            url: "/apps/blog/create",
-          },
-          {
-            id: uniqueId(),
-            name: "管理博客",
-            url: "/apps/blog/manage-blog",
+            name: '管理博客',
+            url: '/apps/blog/manage-blog',
           },
         ],
       },
     ],
   },
   {
-    heading: "开发",
+    heading: '开发',
     items: [
       {
         id: uniqueId(),
-        name: "图表测试",
+        name: '图表测试',
         icon: ChartColumnStacked,
-        url: "/components/segmented-bar-chart",
+        url: '/components/segmented-bar-chart',
       },
       {
         id: uniqueId(),
-        name: "编辑测试",
+        name: '编辑测试',
         icon: FileText,
-        url: "/components/markdown-editor",
+        url: '/components/markdown-editor',
       },
       {
         id: uniqueId(),
-        name: "AI 动画测试",
+        name: 'AI 动画测试',
         icon: Bot,
-        url: "/components/ai-avatar",
+        url: '/components/ai-avatar',
       },
     ],
   },
   {
-    heading: "团队",
+    heading: '团队',
     items: [
       {
         id: uniqueId(),
-        name: "项目管理",
+        name: '项目管理',
         icon: FolderKanban,
-        url: "/apps/projects",
+        url: '/apps/projects',
       },
     ],
   },

@@ -6,3 +6,17 @@ node_modules/
 
 # JetBrains local IDE settings
 .idea/
+
+# Generated artifacts and local secrets
+target/
+dist/
+.local/
+.env.local
+*.log
+playwright-report/
+test-results/
+__pycache__/
+*.py[cod]
+
+# Temporary verification files and document render previews
+/tmp/

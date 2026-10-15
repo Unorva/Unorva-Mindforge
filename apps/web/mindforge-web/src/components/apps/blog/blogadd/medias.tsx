@@ -1,11 +1,10 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import FileUploadMotion from "@/components/animated-components/file-uploadmotion";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import FileUploadMotion from '@/components/animated-components/file-uploadmotion';
 
 const Media = () => {
   return (
     <>
-       <Card>
+      <Card>
         <CardHeader>
           <CardTitle>
             <h5>封面图片</h5>

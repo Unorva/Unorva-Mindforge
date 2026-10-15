@@ -4,13 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * @Author yanshijie
- * @Date 2026/8/25 11:15
+ * @Author yanshijie @Date 2026/8/25 11:15
  */
 @Getter
 @AllArgsConstructor
 public enum ResponseCode {
-
     SUCCESS(0, "操作成功"),
 
     DUPLICATED(1, "重复"),

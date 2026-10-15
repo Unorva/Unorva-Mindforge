@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.projectmanager.dao.DefectDao">
+    <select id="selectByProjects" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.DefectEntity">
+        SELECT * FROM project_defect WHERE deleted = 0 AND
+        <choose>
+            <when test="projectIds != null and !projectIds.isEmpty()">
+                project_id IN <foreach collection="projectIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>1 = 0</otherwise>
+        </choose>
+        ORDER BY updated_time DESC, id DESC
+    </select>
+    <select id="selectInProject" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.DefectEntity">
+        SELECT * FROM project_defect WHERE project_id = #{projectId} AND id = #{id} AND deleted = 0
+    </select>
+    <update id="detachRequirement">
+        UPDATE project_defect SET requirement_id = NULL, version = version + 1, updated_time = CURRENT_TIMESTAMP
+        WHERE project_id = #{projectId} AND requirement_id = #{requirementId} AND deleted = 0
+    </update>
+</mapper>

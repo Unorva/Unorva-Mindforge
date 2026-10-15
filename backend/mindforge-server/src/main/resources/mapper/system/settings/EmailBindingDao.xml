@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd"[]>
+<mapper namespace="com.unorva.mindforge.module.system.settings.dao.EmailBindingDao">
+    <resultMap id="email" type="com.unorva.mindforge.module.system.settings.domain.vo.EmailBindingVO">
+        <constructor>
+            <idArg column="id" javaType="_long" />
+            <arg column="email" javaType="java.lang.String" />
+            <arg column="provider" javaType="java.lang.String" />
+            <arg column="is_primary" javaType="_boolean" />
+            <arg column="verified" javaType="_boolean" />
+            <arg column="bound_date" javaType="java.time.LocalDate" />
+        </constructor>
+    </resultMap>
+    <select id="count" resultType="_long">SELECT COUNT(1) FROM mf_email_binding WHERE user_id = #{userId}</select>
+    <select id="countOwned" resultType="_long">SELECT COUNT(1) FROM mf_email_binding WHERE user_id = #{userId} AND id = #{id}</select>
+    <insert id="bind" useGeneratedKeys="true" keyProperty="id">INSERT INTO mf_email_binding (user_id, email, provider, is_primary, verified) VALUES (#{userId}, #{email}, #{provider}, #{isPrimary}, 0)</insert>
+    <update id="primary">UPDATE mf_email_binding SET is_primary = CASE WHEN id = #{id} THEN 1 ELSE 0 END WHERE user_id = #{userId}</update>
+    <select id="isPrimary" resultType="java.lang.Boolean">SELECT is_primary FROM mf_email_binding WHERE user_id = #{userId} AND id = #{id}</select>
+    <delete id="unbind">DELETE FROM mf_email_binding WHERE user_id = #{userId} AND id = #{id}</delete>
+    <select id="list" resultMap="email">SELECT id, email, provider, is_primary, verified, DATE(bound_at) AS bound_date FROM mf_email_binding WHERE user_id = #{userId} ORDER BY is_primary DESC, id</select>
+</mapper>

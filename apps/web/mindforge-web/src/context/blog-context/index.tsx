@@ -1,10 +1,8 @@
-import { createContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-import { BlogPostType, BlogType } from 'src/types/apps/blog';
-import React from 'react';
+import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import useSWR from 'swr';
-import { getFetcher } from 'src/api/global-fetcher';
+import { addBlogComment, getBlogs } from '@/api/blog/blog';
+import type { BlogPostType, BlogType } from '@/types/apps/blog';
 
-// Define BlogContextProps interface
 export interface BlogContextProps {
   posts: BlogPostType[];
   sortBy: string;
@@ -14,73 +12,58 @@ export interface BlogContextProps {
   setSortBy: Dispatch<SetStateAction<string>>;
   setSelectedPost: Dispatch<SetStateAction<BlogPostType | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
-  addComment: (postId: string | number, newComment: BlogType) => void;
-
+  addComment: (postId: string | number, comment: BlogType) => Promise<void>;
+  refresh: () => Promise<void>;
   error: unknown;
 }
 
-// Create context with default values
 export const BlogContext = createContext<BlogContextProps>({
   posts: [],
   sortBy: 'newest',
   selectedPost: null,
   isLoading: true,
-  setPosts: () => { },
-  setSortBy: () => { },
-  setSelectedPost: () => { },
-  setLoading: () => { },
-  addComment: () => { },
+  setPosts: () => {},
+  setSortBy: () => {},
+  setSelectedPost: () => {},
+  setLoading: () => {},
+  addComment: async () => {},
+  refresh: async () => {},
   error: null,
 });
 
-// BlogProvider component
-export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [posts, setPosts] = useState<BlogPostType[]>([]);
-  const [sortBy, setSortBy] = useState<string>('newest');
+export function BlogProvider({ children }: { children: ReactNode }) {
+  const { data, error, isLoading, mutate } = useSWR('blogs', getBlogs);
+  const [sortBy, setSortBy] = useState('newest');
   const [selectedPost, setSelectedPost] = useState<BlogPostType | null>(null);
-  const [isLoading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<unknown>(null);
-
-  // Fetch Post data from the API
-  const {
-    data: postsData,
-    isLoading: isPostsLoading,
-    error: postsError,
-  } = useSWR('/api/data/blog/BlogPosts', getFetcher);
-
-  useEffect(() => {
-    if (postsData) {
-      setPosts(postsData.data);
-      setLoading(isPostsLoading);
-    } else if (postsError) {
-      setError(postsError);
-      setLoading(isPostsLoading);
-    } else {
-      setLoading(isPostsLoading);
-    }
-  }, [postsData, postsError, isPostsLoading]);
-
-  // Adds a new comment to a specific post by updating the state.
-  const addComment = (postId: string | number, newComment: BlogType) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId ? { ...post, comments: [newComment, ...(post.comments || [])] } : post,
-      ),
-    );
+  const setPosts: Dispatch<SetStateAction<BlogPostType[]>> = (updates) => {
+    if (data)
+      void mutate(
+        { ...data, data: typeof updates === 'function' ? updates(data.data) : updates },
+        false,
+      );
   };
-
-  const value: BlogContextProps = {
-    posts,
-    sortBy,
-    selectedPost,
-    isLoading,
-    setPosts,
-    setSortBy,
-    setSelectedPost,
-    setLoading,
-    addComment,
-    error,
-  };
-
-  return <BlogContext.Provider value={value}>{children}</BlogContext.Provider>;
-};
+  return (
+    <BlogContext.Provider
+      value={{
+        posts: data?.data ?? [],
+        sortBy,
+        selectedPost,
+        isLoading,
+        setPosts,
+        setSortBy,
+        setSelectedPost,
+        setLoading: () => {},
+        error,
+        refresh: async () => {
+          await mutate();
+        },
+        addComment: async (postId, comment) => {
+          const result = await addBlogComment(postId, comment.comment ?? '');
+          await mutate(result, false);
+        },
+      }}
+    >
+      {children}
+    </BlogContext.Provider>
+  );
+}

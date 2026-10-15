@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.projectmanager.dao.ProjectDao">
+    <select id="selectOwnedList" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.ProjectEntity">
+        SELECT * FROM project WHERE user_id = #{userId} AND deleted = 0 ORDER BY updated_time DESC, id DESC
+    </select>
+    <select id="selectOwned" resultType="com.unorva.mindforge.module.business.projectmanager.domain.entity.ProjectEntity">
+        SELECT * FROM project WHERE user_id = #{userId} AND id = #{projectId} AND deleted = 0
+        <if test="lock">FOR UPDATE</if>
+    </select>
+</mapper>

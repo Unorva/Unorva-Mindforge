@@ -6,18 +6,15 @@ import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerIntercep
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.unorva.mindforge.common.datasource.handler.DataObjectHandler;
+
+import org.apache.ibatis.annotations.Mapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * 数据源配置
- *
- * @Author yanshijie
- * @Date 2026/8/25 23:41
- */
+/** 数据源配置 @Author yanshijie @Date 2026/8/25 23:41 */
 @Configuration
-@MapperScan(basePackages = "com.unorva.mindforge.module.*.*.mapper")
+@MapperScan(basePackages = "com.unorva.mindforge", annotationClass = Mapper.class)
 public class DatasourceConfiguration {
 
     @Bean
@@ -36,5 +33,4 @@ public class DatasourceConfiguration {
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
     }
-
 }

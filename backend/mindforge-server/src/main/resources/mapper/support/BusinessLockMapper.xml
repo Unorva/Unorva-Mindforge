@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.common.datasource.dao.BusinessLockDao">
+    <insert id="ensureKey">
+        INSERT INTO mf_business_lock (user_id, module_name) VALUES (#{userId}, #{module})
+        ON DUPLICATE KEY UPDATE module_name = module_name
+    </insert>
+    <select id="lockKey" resultType="java.lang.Long">
+        SELECT user_id FROM mf_business_lock WHERE user_id = #{userId} AND module_name = #{module} FOR UPDATE
+    </select>
+</mapper>

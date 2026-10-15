@@ -1,139 +1,67 @@
-import { createContext, useState, useEffect } from 'react';
-
-import React from 'react';
+import { createContext, useEffect, useState, type ReactNode } from 'react';
 import useSWR from 'swr';
-import { deleteFetcher, getFetcher, postFetcher, putFetcher } from 'src/api/global-fetcher';
-import { noteFolderType, notesType } from 'src/types/apps/notes';
+import { deleteFetcher, getFetcher, postFetcher, putFetcher } from '@/api/global-fetcher';
+import type { ApiResult } from '@/types/api';
+import type { noteFolderType, notesType } from '@/types/apps/notes';
 
-// Define context type
-interface NotesContextType {
+interface NotesData {
   notes: notesType[];
   folders: noteFolderType[];
+}
+
+interface NotesContextType extends NotesData {
   loading: boolean;
-  error: Error | null;
+  error: Error | undefined;
+  refresh: () => Promise<void>;
   selectedNoteId: number;
   selectNote: (id: number) => void;
-  addNote: (newNote: notesType) => Promise<void>;
-  updateNote: (
-    id: number,
-    updates: Partial<Pick<notesType, 'title' | 'content' | 'color' | 'folderId'>>,
-  ) => Promise<void>;
+  addNote: (note: notesType) => Promise<void>;
+  updateNote: (id: number, updates: Partial<notesType>) => Promise<void>;
   deleteNote: (id: number) => Promise<void>;
   addFolder: (name: string, parentId: string | null) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
 }
 
-// Initial context values
-const initialContext: NotesContextType = {
+export const NotesContext = createContext<NotesContextType>({
   notes: [],
   folders: [],
   loading: true,
-  error: null,
-  selectedNoteId: 1,
+  error: undefined,
+  refresh: async () => {},
+  selectedNoteId: 0,
   selectNote: () => {},
   addNote: async () => {},
   updateNote: async () => {},
   deleteNote: async () => {},
   addFolder: async () => {},
   deleteFolder: async () => {},
-};
+});
 
-// Create context
-export const NotesContext = createContext<NotesContextType>(initialContext);
+export function NotesProvider({ children }: { children: ReactNode }) {
+  const { data, error, isLoading, mutate } = useSWR<ApiResult<NotesData>, Error>(
+    '/api/data/notes/NotesData',
+    getFetcher,
+  );
+  const [selectedNoteId, selectNote] = useState(0);
+  const notes = data?.data.notes ?? [];
+  const folders = data?.data.folders ?? [];
 
-// Provider component
-export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [notes, setNotes] = useState<notesType[]>(initialContext.notes);
-  const [folders, setFolders] = useState<noteFolderType[]>(initialContext.folders);
-  const [loading, setLoading] = useState<boolean>(initialContext.loading);
-  const [error, setError] = useState<Error | null>(initialContext.error);
-  const [selectedNoteId, setSelectedNoteId] = useState<number>(initialContext.selectedNoteId);
-
-  // Fetch notes from the server
-  const {
-    data: notesData,
-    isLoading: isNotesLoading,
-    error: notesError,
-    mutate,
-  } = useSWR('/api/data/notes/NotesData', getFetcher);
   useEffect(() => {
-    if (notesData) {
-      setNotes(notesData.data);
-      setFolders(notesData.folders ?? []);
-      const visibleNotes = (notesData.data as notesType[]).filter((note) => !note.deleted);
-      if (visibleNotes.length && !visibleNotes.some((note) => note.id === selectedNoteId)) {
-        setSelectedNoteId(visibleNotes[0].id);
-      }
-      setLoading(false);
-    } else if (notesError) {
-      setError(notesError);
-      setLoading(false);
-    } else {
-      setLoading(false);
-    }
-  }, [notesData, notesError, isNotesLoading, selectedNoteId]);
+    const visible = data?.data.notes.filter((note) => !note.deleted) ?? [];
+    if (!visible.some((note) => note.id === selectedNoteId)) selectNote(visible[0]?.id ?? 0);
+  }, [data, selectedNoteId]);
 
-  // Select a note by its ID
-  const selectNote = (id: number) => {
-    setSelectedNoteId(id);
+  const applyUpdate = async (request: Promise<ApiResult<NotesData>>) => {
+    const result = await request;
+    if (!result.success) throw new Error(result.message);
+    await mutate(result, { revalidate: false });
+    return result.data;
   };
 
-  // Add a new note
-  const addNote = async (newNote: notesType) => {
-    try {
-      const response = await mutate(postFetcher('/api/notes/add', newNote));
-      const createdNote = response?.data?.at(-1) as notesType | undefined;
-      if (createdNote) setSelectedNoteId(createdNote.id);
-    } catch (error) {
-      console.error('Error adding note:', error);
-    }
-  };
-
-  // Update a note by its ID
-  const updateNote = async (
-    id: number,
-    updates: Partial<Pick<notesType, 'title' | 'content' | 'color' | 'folderId'>>,
-  ) => {
-    try {
-      await mutate(putFetcher('/api/notes/update', { id, ...updates }));
-    } catch (error) {
-      console.error('Error updating note:', error);
-    }
-  };
-
-  // Delete a note by its ID
-  const deleteNote = async (id: number) => {
-    try {
-      const response = await mutate(deleteFetcher('/api/notes/delete', { id }));
-      const nextNote = (response?.data as notesType[] | undefined)?.find((note) => !note.deleted);
-      if (nextNote) setSelectedNoteId(nextNote.id);
-    } catch (error) {
-      console.error('Error deleting note:', error);
-    }
-  };
-
-  const addFolder = async (name: string, parentId: string | null) => {
-    try {
-      const response = await postFetcher('/api/notes/folders/add', { name, parentId });
-      setFolders(response.data);
-    } catch (error) {
-      console.error('Error adding folder:', error);
-    }
-  };
-
-  const deleteFolder = async (id: string) => {
-    try {
-      const response = await deleteFetcher('/api/notes/folders/delete', { id });
-      const remainingNotes = response.notes as notesType[];
-      setFolders(response.data);
-      setNotes(remainingNotes);
-      if (!remainingNotes.some((note) => note.id === selectedNoteId)) {
-        setSelectedNoteId(remainingNotes[0]?.id ?? 0);
-      }
-      await mutate({ ...notesData, data: remainingNotes, folders: response.data }, false);
-    } catch (error) {
-      console.error('Error deleting folder:', error);
-    }
+  const addNote = async (note: notesType) => {
+    const previousIds = new Set(notes.map((item) => item.id));
+    const result = await applyUpdate(postFetcher('/api/notes/add', note));
+    selectNote(result.notes.find((item) => !previousIds.has(item.id))?.id ?? selectedNoteId);
   };
 
   return (
@@ -141,18 +69,29 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         notes,
         folders,
-        loading,
+        loading: isLoading,
         error,
+        refresh: async () => {
+          await mutate();
+        },
         selectedNoteId,
         selectNote,
         addNote,
-        updateNote,
-        deleteNote,
-        addFolder,
-        deleteFolder,
+        updateNote: async (id, updates) => {
+          await applyUpdate(putFetcher('/api/notes/update', { id, ...updates }));
+        },
+        deleteNote: async (id) => {
+          await applyUpdate(deleteFetcher('/api/notes/delete', { id }));
+        },
+        addFolder: async (name, parentId) => {
+          await applyUpdate(postFetcher('/api/notes/folders/add', { name, parentId }));
+        },
+        deleteFolder: async (id) => {
+          await applyUpdate(deleteFetcher('/api/notes/folders/delete', { id }));
+        },
       }}
     >
       {children}
     </NotesContext.Provider>
   );
-};
+}

@@ -1,9 +1,9 @@
-import { Link, useLocation } from "react-router";
-import NavItem from "../nav-items/index";
-import { cn } from "@/lib/utils";
-import { useSidebar } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MenuItem, ChildItem } from "../sidebaritems";
+import { Link, useLocation } from 'react-router';
+import NavItem from '../nav-items/index';
+import { cn } from '@/lib/utils';
+import { useSidebar } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { MenuItem, ChildItem } from '../sidebaritems';
 
 interface NavCollapseProps {
   menu: MenuItem[];
@@ -13,7 +13,7 @@ interface NavCollapseProps {
 export default function NavCollapse({ menu, className }: NavCollapseProps) {
   const { pathname } = useLocation();
   const { state } = useSidebar();
-  const isCollapse = state === "collapsed";
+  const isCollapse = state === 'collapsed';
 
   const isActiveRoute = (item: ChildItem): boolean => {
     if (item.url && pathname === item.url) return true;
@@ -23,29 +23,32 @@ export default function NavCollapse({ menu, className }: NavCollapseProps) {
 
   return (
     <>
-
       {menu.map((section, index) => (
         <div key={index}>
           {/* Heading */}
 
-
-          <span className={cn(
-            "text-xs uppercase block font-semibold text-muted-foreground mb-2 transition-all duration-200",
-            isCollapse ? "text-center group-hover:text-start group-data-[state=expanded]:text-start" : ""
-          )}>
+          <span
+            className={cn(
+              'text-xs uppercase block font-semibold text-muted-foreground mb-2 transition-all duration-200',
+              isCollapse
+                ? 'text-center group-hover:text-start group-data-[state=expanded]:text-start'
+                : '',
+            )}
+          >
             {isCollapse ? (
               <>
                 <span className="group-hover:hidden group-data-[state=expanded]:hidden">...</span>
-                <span className="hidden group-hover:inline group-data-[state=expanded]:inline">{section.heading ?? ""}</span>
+                <span className="hidden group-hover:inline group-data-[state=expanded]:inline">
+                  {section.heading ?? ''}
+                </span>
               </>
             ) : (
-              section.heading ?? ""
+              (section.heading ?? '')
             )}
           </span>
 
           {section.items?.map((item: ChildItem, index) => {
-            const hasChildren =
-              Array.isArray(item.items) && item.items.length > 0;
+            const hasChildren = Array.isArray(item.items) && item.items.length > 0;
             const active = isActiveRoute(item);
 
             // 👉 No children → direct link
@@ -53,75 +56,62 @@ export default function NavCollapse({ menu, className }: NavCollapseProps) {
               return (
                 <Link
                   key={index}
-                  to={item.url || "#"}
-                  target={item.external ? "_blank" : undefined}
+                  to={item.url || '#'}
+                  target={item.external ? '_blank' : undefined}
                   className={cn(
-                    "flex items-center gap-3  rounded-md transition-all duration-200 ease-in-out ",
+                    'flex items-center gap-3  rounded-md transition-all duration-200 ease-in-out ',
 
                     className,
                   )}
-
                 >
-
                   <NavItem item={item} hasChildren={false} isActive={active} />
                 </Link>
-
-
-
-
               );
 
             // 👉 With children → collapsible
             return (
-              <Collapsible
-                key={index}
-                className="group/nav"
-                defaultOpen={active || item.isActive}
-              >
+              <Collapsible key={index} className="group/nav" defaultOpen={active || item.isActive}>
                 <CollapsibleTrigger
                   className={cn(
-                    "flex w-full cursor-pointer items-center rounded-md text-left transition-all duration-200 ease-in-out",
-
+                    'flex w-full cursor-pointer items-center rounded-md text-left transition-all duration-200 ease-in-out',
                   )}
                 >
-                  <NavItem
-                    item={item}
-                    hasChildren={true}
-                    className={className}
-                    isActive={active}
-                  />
+                  <NavItem item={item} hasChildren={true} className={className} isActive={active} />
                 </CollapsibleTrigger>
 
                 <CollapsibleContent className="ml-5 border-l border-border pl-3">
                   {item.items?.map((sub: ChildItem, index) =>
                     sub.items ? (
-                      <NavCollapse
-                        key={index}
-                        menu={[{ items: [sub] }]}
-                        className={className}
-                      />
+                      <NavCollapse key={index} menu={[{ items: [sub] }]} className={className} />
                     ) : (
                       <Link
                         key={index}
-                        to={sub.url || "#"}
-                        target={sub.external ? "_blank" : undefined}
+                        to={sub.url || '#'}
+                        target={sub.external ? '_blank' : undefined}
                         className={cn(
-                          "block rounded-md transition-all duration-200 ease-in-out",
+                          'block rounded-md transition-all duration-200 ease-in-out',
 
                           className,
                         )}
                       >
-                        <NavItem item={sub} hasChildren={false} className={cn("px-2! py-1! my-1!", pathname === sub.url && "bg-primary/5 text-primary")} isActive={pathname === sub.url} />
+                        <NavItem
+                          item={sub}
+                          hasChildren={false}
+                          className={cn(
+                            'px-2! py-1! my-1!',
+                            pathname === sub.url && 'bg-primary/5 text-primary',
+                          )}
+                          isActive={pathname === sub.url}
+                        />
                       </Link>
-                    )
+                    ),
                   )}
                 </CollapsibleContent>
               </Collapsible>
             );
           })}
-        </div >
-      ))
-      }
+        </div>
+      ))}
     </>
   );
 }

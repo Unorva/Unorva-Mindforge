@@ -1,9 +1,7 @@
-
-'use client'
+'use client';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DashboardCard } from "../../shared/dashboard-card";
+import { DashboardCard } from '../../shared/dashboard-card';
 import { Bookmark, BriefcaseBusiness, Box, Users, File } from 'lucide-react';
-
 
 const assetsData = [
   {
@@ -11,7 +9,7 @@ const assetsData = [
     title: 'Employees',
     href: '/apps/kanban',
     value: '96',
-    icon: Users
+    icon: Users,
   },
 
   {
@@ -19,21 +17,21 @@ const assetsData = [
     title: 'Projects',
     href: '/apps/calendar',
     value: '356',
-    icon: File
+    icon: File,
   },
   {
     id: 'Clients',
     title: 'Clients',
     href: '/',
     value: '3,650',
-    icon: BriefcaseBusiness
+    icon: BriefcaseBusiness,
   },
   {
     id: 'Events',
     title: 'Events',
     href: '/',
     value: '86',
-    icon: Bookmark
+    icon: Bookmark,
   },
 ];
 
@@ -46,13 +44,13 @@ type AssetCardProps = {
 
 function AssetCard({ title, value, icon: Icon }: AssetCardProps) {
   return (
-    <div className='flex flex-col justify-between p-6 bg-background'>
-      <div className='border border-border rounded-md p-2 w-fit'>
+    <div className="flex flex-col justify-between p-6 bg-background">
+      <div className="border border-border rounded-md p-2 w-fit">
         <Icon width={16} height={16} />
       </div>
       <div>
-        <h6 className='text-2xl font-semibold'>{value}</h6>
-        <p className='text-sm font-normal'>{title}</p>
+        <h6 className="text-2xl font-semibold">{value}</h6>
+        <p className="text-sm font-normal">{title}</p>
       </div>
     </div>
   );
@@ -67,9 +65,9 @@ export default function TotalAssets() {
           Total Assets
         </CardTitle>
       </CardHeader>
-      <CardContent className='h-full! px-0!'>
-        <div className='h-full!'>
-          <div className='grid grid-cols-2 h-full! gap-px bg-border'>
+      <CardContent className="h-full! px-0!">
+        <div className="h-full!">
+          <div className="grid grid-cols-2 h-full! gap-px bg-border">
             {assetsData.map((item) => (
               <AssetCard key={item.id} {...item} />
             ))}

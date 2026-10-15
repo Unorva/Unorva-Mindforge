@@ -1,13 +1,24 @@
 const TOKEN_KEY = 'mindforge_access_token';
+const AUTH_CHANGED_EVENT = 'mindforge-auth-changed';
+
+/** 登录身份变化时刷新依赖身份的组件和缓存，包括其他浏览器标签页。 */
+export function subscribeAuthChanges(listener: () => void): () => void {
+  const onStorageChange = (event: StorageEvent) => {
+    if (event.key === TOKEN_KEY || event.key === null) listener();
+  };
+  window.addEventListener(AUTH_CHANGED_EVENT, listener);
+  window.addEventListener('storage', onStorageChange);
+  return () => {
+    window.removeEventListener(AUTH_CHANGED_EVENT, listener);
+    window.removeEventListener('storage', onStorageChange);
+  };
+}
 
 /**
  * 获取token
  */
 export function getAccessToken(): string | null {
-  return (
-    localStorage.getItem(TOKEN_KEY) ??
-    sessionStorage.getItem(TOKEN_KEY)
-  );
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
 }
 
 /**
@@ -27,6 +38,7 @@ export function saveAccessToken(token: string, remember: boolean) {
   } else {
     sessionStorage.setItem(TOKEN_KEY, token);
   }
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
 
 /**
@@ -35,4 +47,5 @@ export function saveAccessToken(token: string, remember: boolean) {
 export function clearAccessToken() {
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }

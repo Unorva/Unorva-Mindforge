@@ -1,8 +1,7 @@
+import { useContext, useEffect, useState } from 'react';
 
-import { useContext, useEffect, useState } from "react";
-
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Combobox,
   ComboboxChip,
@@ -13,55 +12,38 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxValue,
-} from "@/components/ui/combobox";
-import { Plus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BlogContext } from "src/context/blog-context";
+} from '@/components/ui/combobox';
+import { Plus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BlogContext } from 'src/context/blog-context';
 
 const CategoryTags = () => {
   const { posts } = useContext(BlogContext);
 
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState<string>("");
+  const [tagInput, setTagInput] = useState<string>('');
 
   const [Cats, setCats] = useState<string[]>([]);
-  const [catOptions] = useState<string[]>([
-    "科技",
-    "生活方式",
-    "旅行",
-    "美食",
-    "商业",
-    "社交",
-  ]);
+  const [catOptions] = useState<string[]>(['科技', '生活方式', '旅行', '美食', '商业', '社交']);
 
-  const [tagOptions] = useState<string[]>([
-    "热门",
-    "技巧",
-    "新闻",
-    "指南",
-    "流行",
-  ]);
+  const [tagOptions] = useState<string[]>(['热门', '技巧', '新闻', '指南', '流行']);
 
   useEffect(() => {
     if (posts.length > 0) {
       const firstPost = posts[0];
       if (firstPost.category) {
-        setCats(
-          Array.isArray(firstPost.category)
-            ? firstPost.category
-            : [firstPost.category]
-        );
+        setCats(Array.isArray(firstPost.category) ? firstPost.category : [firstPost.category]);
       }
-      setTags(["热门"]);
+      setTags(['热门']);
     }
   }, [posts]);
 
   const handleTagInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     const nextTag = tagInput.trim();
-    if (event.key === "Enter" && nextTag) {
+    if (event.key === 'Enter' && nextTag) {
       event.preventDefault();
       if (!tags.includes(nextTag)) setTags([...tags, nextTag]);
-      setTagInput("");
+      setTagInput('');
     }
   };
 
@@ -81,18 +63,24 @@ const CategoryTags = () => {
             <Combobox items={catOptions} multiple onValueChange={setCats} value={Cats}>
               <ComboboxChips>
                 <ComboboxValue>
-                  {Cats.map((cat) => <ComboboxChip key={cat}>{cat}</ComboboxChip>)}
+                  {Cats.map((cat) => (
+                    <ComboboxChip key={cat}>{cat}</ComboboxChip>
+                  ))}
                 </ComboboxValue>
                 <ComboboxChipsInput aria-label="分类" id="cat" placeholder="选择分类" />
               </ComboboxChips>
               <ComboboxContent>
                 <ComboboxEmpty>未找到分类</ComboboxEmpty>
-                <ComboboxList>{(option) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}</ComboboxList>
+                <ComboboxList>
+                  {(option) => (
+                    <ComboboxItem key={option} value={option}>
+                      {option}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
               </ComboboxContent>
             </Combobox>
-            <small className="text-xs text-muted-foreground">
-              为博客选择一个或多个分类。
-            </small>
+            <small className="text-xs text-muted-foreground">为博客选择一个或多个分类。</small>
           </div>
         </div>
 
@@ -117,18 +105,29 @@ const CategoryTags = () => {
             >
               <ComboboxChips>
                 <ComboboxValue>
-                  {tags.map((tag) => <ComboboxChip key={tag}>{tag}</ComboboxChip>)}
+                  {tags.map((tag) => (
+                    <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                  ))}
                 </ComboboxValue>
-                <ComboboxChipsInput aria-label="标签" id="tags" onKeyDown={handleTagInputKeyDown} placeholder="添加标签" />
+                <ComboboxChipsInput
+                  aria-label="标签"
+                  id="tags"
+                  onKeyDown={handleTagInputKeyDown}
+                  placeholder="添加标签"
+                />
               </ComboboxChips>
               <ComboboxContent>
                 <ComboboxEmpty>按回车键创建此标签</ComboboxEmpty>
-                <ComboboxList>{(option) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}</ComboboxList>
+                <ComboboxList>
+                  {(option) => (
+                    <ComboboxItem key={option} value={option}>
+                      {option}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
               </ComboboxContent>
             </Combobox>
-            <small className="text-xs text-muted-foreground">
-              为博客添加标签。
-            </small>
+            <small className="text-xs text-muted-foreground">为博客添加标签。</small>
           </div>
         </div>
       </CardContent>

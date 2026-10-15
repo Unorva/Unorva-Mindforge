@@ -4,9 +4,34 @@ spring:
   profiles:
     # 本地直接启动时加载 application-dev.yml；生产环境通过 SPRING_PROFILES_ACTIVE=prod 覆盖。
     default: dev
+  config:
+    import: optional:file:./.local/application-secrets.yml
+  jackson:
+    time-zone: Asia/Shanghai
+  datasource:
+    hikari:
+      # DATETIME values and CURRENT_TIMESTAMP must use the same zone as business LocalDateTime.
+      connection-init-sql: "SET time_zone = '+08:00'"
 
 server:
   port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+
+mindforge:
+  mail:
+    # The generated persistent AI key is also used unless a dedicated mail key is supplied.
+    encryption-key: ${MINDFORGE_MAIL_ENCRYPTION_KEY:${mindforge.ai.encryption-key:}}
+    # Opt in only for trusted deployments that deliberately connect internal mail servers.
+    allow-private-hosts: ${MINDFORGE_MAIL_ALLOW_PRIVATE_HOSTS:false}
+    # Only built-in provider endpoints may use the proxy Fake-IP range; custom/internal hosts stay blocked.
+    allow-provider-fake-ip: ${MINDFORGE_MAIL_ALLOW_PROVIDER_FAKE_IP:false}
+  ai:
+    # Generated once by scripts/Initialize-LocalSecrets.ps1 and kept outside Git.
+    encryption-key: ${MINDFORGE_AI_ENCRYPTION_KEY:}
+  cors:
+    allowed-origins: ${MINDFORGE_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}
 
 sa-token:
   # 与现有前端请求约定一致：Authorization: Bearer <token>
@@ -18,3 +43,8 @@ sa-token:
   timeout: -1
   active-timeout: -1
   token-style: random-32
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true

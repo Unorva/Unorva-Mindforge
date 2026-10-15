@@ -1,11 +1,9 @@
-@import "tailwindcss";
-@import "./typeset.css";
-@import "tw-animate-css";
-@import "./pages/app.css";
+@import 'tailwindcss';
+@import './typeset.css';
+@import 'tw-animate-css';
+@import './pages/app.css';
 
-
-@import "./styles/style-lyra.css";
-
+@import './styles/style-lyra.css';
 
 @utility no-scrollbar {
   -ms-overflow-style: none;
@@ -21,10 +19,6 @@
 /* shadcn style variants — applied as body classes (e.g. .style-nova) */
 
 @custom-variant style-lyra (&:where(.style-lyra *));
-
-
-
-
 
 @font-face {
   font-family: 'Geist';
@@ -42,7 +36,6 @@
   font-display: swap;
 }
 
-
 @theme {
   --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
   --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -51,7 +44,6 @@
   --radius-lg: 7px;
   --margin-30: 30px;
   --text-40: 40px;
-
 }
 
 @theme inline {
@@ -171,8 +163,6 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-
-
 @utility frontend-page {
   & .container {
     @apply max-w-[1410px];
@@ -198,11 +188,11 @@
     @apply font-semibold;
   }
 
-  input[type="radio"]:focus {
+  input[type='radio']:focus {
     @apply !ring-primary;
   }
 
-  input[type="radio"]:checked {
+  input[type='radio']:checked {
     @apply bg-primary;
   }
 }
@@ -212,33 +202,33 @@
 }
 
 /* Card Shadow Control via Data Attribute */
-html[data-card-shadow="true"] [data-slot="card"] {
+html[data-card-shadow='true'] [data-slot='card'] {
   @apply shadow-md ring-0;
 }
 
-html[data-card-shadow="false"] [data-slot="card"] {
+html[data-card-shadow='false'] [data-slot='card'] {
   @apply border shadow-none ring-0;
 }
 
-[data-slot="checkbox"] {
+[data-slot='checkbox'] {
   /* @apply data-checked:bg-primary data-hover:bg-primary data-checked:border-primary data-checked:text-white; */
 }
 
-[data-slot="input"] {
+[data-slot='input'] {
   @apply focus-visible:border-primary focus-visible:ring-[0px];
 }
 
-[data-slot="textarea"] {
+[data-slot='textarea'] {
   @apply focus-visible:border-primary focus-visible:ring-[0px];
 }
 
 /*for sidebar */
 
-[data-sidebar-type="true"] {
+[data-sidebar-type='true'] {
   /* Only apply the icon-only + hover-preview behavior while the sidebar
      is actually in its real collapsed ("icon") state. When it's expanded
      (data-collapsible is empty), labels render normally with no overrides. */
-  [data-slot="sidebar"][data-collapsible="icon"] {
+  [data-slot='sidebar'][data-collapsible='icon'] {
     .sidebar-box .hide-menu {
       @apply hidden;
     }
@@ -247,9 +237,9 @@ html[data-card-shadow="false"] [data-slot="card"] {
       width: 250px !important;
       @apply transition-all duration-300;
 
-      [data-slot="sidebar-container"],
-      [data-sidebar="sidebar"],
-      [data-sidebar="sidebar-inner"] {
+      [data-slot='sidebar-container'],
+      [data-sidebar='sidebar'],
+      [data-sidebar='sidebar-inner'] {
         width: 250px !important;
         transition: width 0.3s ease-in-out !important;
       }
@@ -269,8 +259,8 @@ html[data-card-shadow="false"] [data-slot="card"] {
       }
 
       /* Powerfully override Shadcn's internal button restrictions on hover */
-      [data-slot="sidebar-menu-button"],
-      [data-sidebar="menu-button"] {
+      [data-slot='sidebar-menu-button'],
+      [data-sidebar='menu-button'] {
         display: flex !important;
         align-items: center !important;
         width: 100% !important;
@@ -282,24 +272,17 @@ html[data-card-shadow="false"] [data-slot="card"] {
         justify-content: flex-start !important;
       }
 
-
-
       /* Inner alignment for NavUser and NavSecondary to match standard items */
-      [data-sidebar="menu-button"] .flex.items-center {
+      [data-sidebar='menu-button'] .flex.items-center {
         padding: 8px 12px !important;
         width: 100% !important;
         gap: 12px !important;
       }
-
-
-
-
     }
 
     .sidebar-box:not(:hover) {
-
       /* Ensure icons are perfectly centered in mini mode */
-      [data-sidebar="menu-button"] {
+      [data-sidebar='menu-button'] {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -307,21 +290,17 @@ html[data-card-shadow="false"] [data-slot="card"] {
         width: 100% !important;
       }
 
-      [data-sidebar="menu-button"] .flex.items-center {
+      [data-sidebar='menu-button'] .flex.items-center {
         justify-content: center !important;
         padding: 0 !important;
         gap: 0 !important;
         width: 100% !important;
       }
-
-
-
     }
   }
 }
 
-
-[data-slot="chart"] {
+[data-slot='chart'] {
   @apply h-72 w-full;
 }
 
@@ -336,13 +315,12 @@ html[data-card-shadow="false"] [data-slot="card"] {
 }
 
 @theme inline {
-  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards)
+    linear infinite;
 
   @keyframes scroll {
     to {
       transform: translate(calc(-50% - 0.5rem));
     }
   }
-
-
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.finance.dao.FinanceTransactionDao">
+    <resultMap id="TransactionVO" type="com.unorva.mindforge.module.business.finance.domain.vo.TransactionVO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="date" column="transaction_date" javaType="java.time.LocalDate"/>
+            <arg name="type" column="transaction_type" javaType="java.lang.String"/>
+            <arg name="category" column="category" javaType="java.lang.String"/>
+            <arg name="description" column="description" javaType="java.lang.String"/>
+            <arg name="accountId" column="account_id" javaType="_long"/>
+            <arg name="amount" column="amount" javaType="java.math.BigDecimal"/>
+            <arg name="source" column="source" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="MonthlyPointVO" type="com.unorva.mindforge.module.business.finance.domain.vo.MonthlyPointVO">
+        <constructor>
+            <arg name="month" column="month_value" javaType="java.lang.String"/>
+            <arg name="income" column="income" javaType="java.math.BigDecimal"/>
+            <arg name="expense" column="expense" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="CategorySliceVO" type="com.unorva.mindforge.module.business.finance.domain.vo.CategorySliceVO">
+        <constructor>
+            <arg name="category" column="category" javaType="java.lang.String"/>
+            <arg name="amount" column="total" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+    <select id="listTransactions" resultMap="TransactionVO">
+        SELECT id, transaction_date, transaction_type, category, description, account_id, amount, source FROM mf_finance_transaction WHERE user_id = #{userId} ORDER BY transaction_date DESC, id DESC LIMIT 2000
+    </select>
+    <select id="accountNet" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE WHEN transaction_type = '收入' THEN amount ELSE -amount END), 0) FROM mf_finance_transaction WHERE user_id = #{userId} AND account_id = #{id}
+    </select>
+    <select id="accountTransactionCount" resultType="long">
+        SELECT COUNT(1) FROM mf_finance_transaction WHERE user_id = #{userId} AND account_id = #{id}
+    </select>
+    <insert id="insertTransaction" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+        INSERT INTO mf_finance_transaction (user_id, account_id, transaction_date, transaction_type, category, description, amount, source) VALUES (#{entity.userId}, #{entity.accountId}, #{entity.transactionDate}, #{entity.transactionType}, #{entity.category}, #{entity.description}, #{entity.amount}, #{entity.source})
+    </insert>
+    <update id="updateTransaction">
+        UPDATE mf_finance_transaction SET account_id = #{entity.accountId}, transaction_date = #{entity.transactionDate}, transaction_type = #{entity.transactionType}, category = #{entity.category}, description = #{entity.description}, amount = #{entity.amount}, source = #{entity.source}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{entity.userId} AND id = #{entity.id}
+    </update>
+    <delete id="deleteTransaction">
+        DELETE FROM mf_finance_transaction WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+    <select id="monthlyPoint" resultMap="MonthlyPointVO">
+        SELECT #{month} AS month_value, COALESCE(SUM(CASE WHEN transaction_type = '收入' THEN amount ELSE 0 END), 0) AS income, COALESCE(SUM(CASE WHEN transaction_type = '支出' THEN amount ELSE 0 END), 0) AS expense FROM mf_finance_transaction WHERE user_id = #{userId} AND transaction_date &gt;= #{start} AND transaction_date &lt;= #{end}
+    </select>
+    <select id="expenseCategories" resultMap="CategorySliceVO">
+        SELECT category, SUM(amount) AS total FROM mf_finance_transaction WHERE user_id = #{userId} AND transaction_type = '支出' AND transaction_date &gt;= #{start} AND transaction_date &lt;= #{end} GROUP BY category ORDER BY total DESC
+    </select>
+</mapper>

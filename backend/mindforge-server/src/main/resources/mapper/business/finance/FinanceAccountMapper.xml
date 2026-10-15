@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.finance.dao.FinanceAccountDao">
+    <resultMap id="AccountVO" type="com.unorva.mindforge.module.business.finance.domain.vo.AccountVO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="name" column="name" javaType="java.lang.String"/>
+            <arg name="type" column="account_type" javaType="java.lang.String"/>
+            <arg name="balance" column="balance" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+    <select id="listAccounts" resultMap="AccountVO">
+        SELECT account.id, account.name, account.account_type, account.opening_balance + COALESCE(SUM(CASE WHEN ledger.transaction_type = '收入' THEN ledger.amount ELSE -ledger.amount END), 0) AS balance FROM mf_finance_account account LEFT JOIN mf_finance_transaction ledger ON ledger.account_id = account.id AND ledger.user_id = account.user_id WHERE account.user_id = #{userId} GROUP BY account.id, account.name, account.account_type, account.opening_balance ORDER BY account.id
+    </select>
+    <select id="lockAccount" resultType="java.lang.Long">
+        SELECT id FROM mf_finance_account WHERE user_id = #{userId} AND id = #{id} FOR UPDATE
+    </select>
+    <insert id="insertAccount" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+        INSERT INTO mf_finance_account (user_id, name, account_type, opening_balance) VALUES (#{entity.userId}, #{entity.name}, #{entity.accountType}, #{entity.openingBalance})
+    </insert>
+    <update id="updateAccount">
+        UPDATE mf_finance_account SET name = #{entity.name}, account_type = #{entity.accountType}, opening_balance = #{entity.openingBalance}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{entity.userId} AND id = #{entity.id}
+    </update>
+    <delete id="deleteAccount">
+        DELETE FROM mf_finance_account WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+    <select id="lastSyncAt" resultType="java.time.LocalDateTime">
+        SELECT MAX(updated_at) FROM (SELECT updated_at FROM mf_finance_account WHERE user_id = #{userId} UNION ALL SELECT updated_at FROM mf_finance_transaction WHERE user_id = #{userId} UNION ALL SELECT updated_at FROM mf_finance_budget WHERE user_id = #{userId}) latest
+    </select>
+</mapper>

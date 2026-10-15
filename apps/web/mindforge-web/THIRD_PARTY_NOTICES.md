@@ -5,9 +5,11 @@
 This project includes `src/assets/images/bloub-demo.gif` from
 <https://github.com/jeremy-prt/bloub>.
 
-The AI avatar's sphere-projected capsule-eye geometry and expression measurements
-are adapted from `src/bot/face.ts`, `src/bot/expressions.ts`,
-`src/bot/engine.ts`, and `src/bot/shape.ts` in that project.
+The AI avatar includes the original clock-free animation engine from bloub's
+`src/bot/` directory, rendered here by a React SVG component. Its measured
+animation states, face expressions, shapes, colors, and sequence rules are
+used by the AI animation page. The existing AI chat expression API maps to
+those states and expressions.
 
 MIT License
 

@@ -1,6 +1,6 @@
-import { Link } from "react-router";
-import Logo from "src/assets/images/logos/darklogo.svg";
-import Logowhite from "src/assets/images/logos/whitelogo.svg";
+import { Link } from 'react-router';
+import Logo from 'src/assets/images/logos/darklogo.svg';
+import Logowhite from 'src/assets/images/logos/whitelogo.svg';
 
 const FullLogo = () => {
   return (
@@ -8,21 +8,20 @@ const FullLogo = () => {
       {/* Dark Logo   */}
       <img
         src={Logo}
-        alt='logo'
+        alt="logo"
         width={100}
         height={32}
-        className='block dark:hidden max-w-[120px] rtl:scale-x-[-1]'
+        className="block dark:hidden max-w-[120px] rtl:scale-x-[-1]"
       />
       {/* Light Logo  */}
       <img
         src={Logowhite}
-        alt='logo'
+        alt="logo"
         width={100}
         height={32}
-        className='hidden dark:block max-w-[120px] rtl:scale-x-[-1]'
+        className="hidden dark:block max-w-[120px] rtl:scale-x-[-1]"
       />
     </Link>
-
   );
 };
 

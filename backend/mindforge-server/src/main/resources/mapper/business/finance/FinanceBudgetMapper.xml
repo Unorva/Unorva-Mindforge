@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.finance.dao.FinanceBudgetDao">
+    <resultMap id="BudgetVO" type="com.unorva.mindforge.module.business.finance.domain.vo.BudgetVO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="month" column="month_value" javaType="java.lang.String"/>
+            <arg name="category" column="category" javaType="java.lang.String"/>
+            <arg name="budget" column="amount" javaType="java.math.BigDecimal"/>
+            <arg name="spent" column="spent" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+    <select id="listBudgets" resultMap="BudgetVO">
+        SELECT budget.id, budget.month_value, budget.category, budget.amount, COALESCE(SUM(ledger.amount), 0) AS spent FROM mf_finance_budget budget LEFT JOIN mf_finance_transaction ledger ON ledger.user_id = budget.user_id AND ledger.category = budget.category AND ledger.transaction_type = '支出' AND ledger.transaction_date &gt;= #{start} AND ledger.transaction_date &lt;= #{end} WHERE budget.user_id = #{userId} AND budget.month_value = #{month} GROUP BY budget.id, budget.month_value, budget.category, budget.amount ORDER BY budget.id
+    </select>
+    <insert id="saveBudget">
+        INSERT INTO mf_finance_budget (user_id, month_value, category, amount) VALUES (#{entity.userId}, #{entity.monthValue}, #{entity.category}, #{entity.amount}) ON DUPLICATE KEY UPDATE amount = VALUES(amount), updated_at = CURRENT_TIMESTAMP
+    </insert>
+    <delete id="deleteBudget">
+        DELETE FROM mf_finance_budget WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+</mapper>

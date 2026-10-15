@@ -1,21 +1,15 @@
-
-
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 
 // ShadCN UI Date Picker components
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const PostDate = () => {
   // Set today's date as default
@@ -40,17 +34,17 @@ const PostDate = () => {
           </div>
           <div>
             <Popover>
-              <PopoverTrigger className={"w-full"}>
+              <PopoverTrigger className={'w-full'}>
                 <Button
-                  variant={"outline"}
+                  variant={'outline'}
                   className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !publishDate && "text-muted-foreground"
+                    'w-full justify-start text-left font-normal',
+                    !publishDate && 'text-muted-foreground',
                   )}
                 >
                   <CalendarIcon />
                   {publishDate ? (
-                    format(publishDate, "PPP", { locale: zhCN })
+                    format(publishDate, 'PPP', { locale: zhCN })
                   ) : (
                     <span>选择日期</span>
                   )}
@@ -62,14 +56,11 @@ const PostDate = () => {
                   selected={publishDate}
                   onSelect={setPublishDate}
                   locale={zhCN}
-
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <small className="text-xs text-muted-foreground">
-            选择这篇博客的发布日期。
-          </small>
+          <small className="text-xs text-muted-foreground">选择这篇博客的发布日期。</small>
         </div>
       </CardContent>
     </Card>

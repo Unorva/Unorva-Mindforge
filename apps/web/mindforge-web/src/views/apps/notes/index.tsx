@@ -1,5 +1,5 @@
-import NotesApp from "src/components/apps/notes";
-import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
+import NotesApp from 'src/components/apps/notes';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
 
 const Notes = () => {
   return (

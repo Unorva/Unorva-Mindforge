@@ -1,8 +1,11 @@
 package com.unorva.mindforge.common.file.service.impl;
 
 import com.unorva.mindforge.common.file.service.FileService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.util.Assert;
+
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -13,29 +16,17 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.InputStream;
 
-/**
- * 文件服务实现类
- *
- * @Author yanshijie
- * @Date 2026/8/31 16:38
- */
+/** 文件服务实现类 @Author yanshijie @Date 2026/8/31 16:38 */
 @RequiredArgsConstructor
 public class OssServiceImpl implements FileService {
 
-    /**
-     * 对象存储客户端
-     */
+    /** 对象存储客户端 */
     private final S3Client s3Client;
 
-    /**
-     * 桶名称
-     */
+    /** 桶名称 */
     private final String bucket;
 
-    /**
-     * 桶存在标识
-     * 桶创建只在首次使用时检查一次，避免每次上传都额外发起 HeadBucket 请求。
-     */
+    /** 桶存在标识 桶创建只在首次使用时检查一次，避免每次上传都额外发起 HeadBucket 请求。 */
     private volatile boolean bucketReady;
 
     @Override
@@ -46,11 +37,8 @@ public class OssServiceImpl implements FileService {
         Assert.isTrue(contentLength >= 0, "文件长度不能小于 0");
         // 2. 校验桶是否存在
         ensureBucketReady();
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(objectKey)
-                .contentType(contentType)
-                .build();
+        PutObjectRequest request =
+                PutObjectRequest.builder().bucket(bucket).key(objectKey).contentType(contentType).build();
         s3Client.putObject(request, RequestBody.fromInputStream(inputStream, contentLength));
     }
 
@@ -61,9 +49,7 @@ public class OssServiceImpl implements FileService {
         s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(objectKey).build());
     }
 
-    /**
-     * 确保桶存在。
-     */
+    /** 确保桶存在。 */
     private void ensureBucketReady() {
         if (bucketReady) {
             return;
@@ -84,9 +70,7 @@ public class OssServiceImpl implements FileService {
         }
     }
 
-    /**
-     * 如果桶不存在，则创建桶。
-     */
+    /** 如果桶不存在，则创建桶。 */
     private void createBucketIfAbsent() {
         try {
             s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
@@ -107,11 +91,12 @@ public class OssServiceImpl implements FileService {
     private boolean isBucketMissing(S3Exception exception) {
         return exception.statusCode() == 404
                 || (exception.awsErrorDetails() != null
-                && "NoSuchBucket".equals(exception.awsErrorDetails().errorCode()));
+                        && "NoSuchBucket".equals(exception.awsErrorDetails().errorCode()));
     }
 
     /**
      * 校验对象 Key 是否符合要求。
+     *
      * @param objectKey 对象 Key
      */
     private void validateObjectKey(String objectKey) {

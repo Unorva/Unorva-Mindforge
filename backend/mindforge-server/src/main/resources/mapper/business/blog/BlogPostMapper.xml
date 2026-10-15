@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.blog.dao.BlogPostDao">
+    <resultMap id="ProfileVO" type="com.unorva.mindforge.module.business.blog.domain.vo.ProfileVO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="name" column="nickname" javaType="java.lang.String"/>
+            <arg name="avatar" column="avatar" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="BlogPostBO" type="com.unorva.mindforge.module.business.blog.domain.bo.BlogPostBO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="title" column="title" javaType="java.lang.String"/>
+            <arg name="content" column="content" javaType="java.lang.String"/>
+            <arg name="coverImg" column="cover_img" javaType="java.lang.String"/>
+            <arg name="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg name="viewCount" column="view_count" javaType="_long"/>
+            <arg name="shareCount" column="share_count" javaType="_long"/>
+            <arg name="category" column="category" javaType="java.lang.String"/>
+            <arg name="featured" column="featured" javaType="_boolean"/>
+            <arg name="published" column="published" javaType="_boolean"/>
+        </constructor>
+    </resultMap>
+    <select id="findAuthor" resultMap="ProfileVO">
+        SELECT id, nickname, avatar FROM `user` WHERE id = #{userId} AND deleted = 0
+    </select>
+    <select id="listPosts" resultMap="BlogPostBO">
+        SELECT id, title, content, cover_img, created_at, view_count, share_count, category, featured, published FROM mf_blog_post WHERE user_id = #{userId} ORDER BY updated_at DESC, id DESC LIMIT 1000
+    </select>
+    <select id="lockPost" resultType="java.lang.Long">
+        SELECT id FROM mf_blog_post WHERE user_id = #{userId} AND id = #{id} FOR UPDATE
+    </select>
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+        INSERT INTO mf_blog_post (user_id, title, content, cover_img, category, featured, published) VALUES (#{entity.userId}, #{entity.title}, #{entity.content}, #{entity.coverImg}, #{entity.category}, #{entity.featured}, #{entity.published})
+    </insert>
+    <update id="updatePost">
+        UPDATE mf_blog_post SET title = #{entity.title}, content = #{entity.content}, cover_img = #{entity.coverImg}, category = #{entity.category}, featured = #{entity.featured}, published = #{entity.published}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{entity.userId} AND id = #{entity.id}
+    </update>
+    <delete id="deletePost">
+        DELETE FROM mf_blog_post WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+</mapper>

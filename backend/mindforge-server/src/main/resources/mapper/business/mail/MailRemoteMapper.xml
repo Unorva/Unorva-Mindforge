@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.mail.dao.MailRemoteDao">
+<resultMap id="entity" type="com.unorva.mindforge.module.business.mail.domain.entity.MailRemoteEntity">
+    <result property="userId" column="user_id"/>
+    <result property="accountId" column="account_id"/>
+    <result property="mailId" column="mail_id"/>
+    <result property="remoteFolder" column="remote_folder"/>
+    <result property="uidValidity" column="uid_validity"/>
+    <result property="remoteUid" column="remote_uid"/>
+</resultMap>
+<sql id="columns">user_id, account_id, mail_id, remote_folder, uid_validity, remote_uid</sql>
+<select id="selectForMail" resultMap="entity">SELECT <include refid="columns"/> FROM mf_mail_remote WHERE user_id = #{userId} AND mail_id = #{id}</select>
+<select id="selectIdentity" resultMap="entity">
+ SELECT <include refid="columns"/> FROM mf_mail_remote WHERE user_id = #{userId} AND account_id = #{accountId}
+ AND remote_folder = 'INBOX' AND uid_validity = #{validity} AND remote_uid = #{uid}
+</select>
+<insert id="insertIdentity">
+ INSERT INTO mf_mail_remote (user_id, account_id, mail_id, remote_folder, uid_validity, remote_uid)
+ VALUES (#{entity.userId}, #{entity.accountId}, #{entity.mailId}, #{entity.remoteFolder}, #{entity.uidValidity}, #{entity.remoteUid})
+</insert>
+<update id="tombstone">UPDATE mf_mail_remote SET mail_id = NULL WHERE user_id = #{userId} AND mail_id = #{id}</update>
+<select id="selectObsoleteMailIds" resultType="java.lang.Long">
+ SELECT mail_id FROM mf_mail_remote WHERE user_id = #{userId} AND account_id = #{accountId} AND remote_folder = 'INBOX'
+ AND uid_validity &lt;&gt; #{validity} AND mail_id IS NOT NULL
+</select>
+<delete id="deleteObsolete">DELETE FROM mf_mail_remote WHERE user_id = #{userId} AND account_id = #{accountId} AND remote_folder = 'INBOX' AND uid_validity &lt;&gt; #{validity}</delete>
+<delete id="deleteForAccount">DELETE FROM mf_mail_remote WHERE user_id = #{userId} AND account_id = #{accountId}</delete>
+</mapper>

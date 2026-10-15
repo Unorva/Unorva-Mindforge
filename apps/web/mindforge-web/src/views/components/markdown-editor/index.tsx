@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { useMemo, useState } from 'react';
+import { FileText } from 'lucide-react';
 
-import MarkdownEditor from '@/components/markdown/markdown-editor'
-import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
-import { Badge } from '@/components/ui/badge'
+import MarkdownEditor from '@/components/markdown/markdown-editor';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
+import { Badge } from '@/components/ui/badge';
 
-const STORAGE_KEY = 'mindforge-markdown-editor-preview'
+const STORAGE_KEY = 'mindforge-markdown-editor-preview';
 
 const exampleMarkdown = `# Markdown 编辑器
 
@@ -30,36 +30,39 @@ function greet(name: string) {
 
 ---
 
-编辑完成后点击右上角的“保存”按钮。`
+编辑完成后点击右上角的“保存”按钮。`;
 
 function getInitialMarkdown() {
-  if (typeof window === 'undefined') return exampleMarkdown
-  return window.localStorage.getItem(STORAGE_KEY) ?? exampleMarkdown
+  if (typeof window === 'undefined') return exampleMarkdown;
+  return window.localStorage.getItem(STORAGE_KEY) ?? exampleMarkdown;
 }
 
 export default function MarkdownEditorTestPage() {
-  const initialMarkdown = useMemo(getInitialMarkdown, [])
-  const [markdown, setMarkdown] = useState(initialMarkdown)
+  const initialMarkdown = useMemo(getInitialMarkdown, []);
+  const [markdown, setMarkdown] = useState(initialMarkdown);
 
   const saveMarkdown = async (value: string) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 350))
-    window.localStorage.setItem(STORAGE_KEY, value)
-  }
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+    window.localStorage.setItem(STORAGE_KEY, value);
+  };
 
   return (
     <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
-        extra={(
-          <Badge className="hidden gap-1.5 bg-primary/10! text-primary! sm:inline-flex" variant="secondary">
+        extra={
+          <Badge
+            className="hidden gap-1.5 bg-primary/10! text-primary! sm:inline-flex"
+            variant="secondary"
+          >
             <FileText size={13} />
             组件测试页
           </Badge>
-        )}
+        }
         showHome={false}
         title="Markdown 编辑器"
       />
 
       <MarkdownEditor onChange={setMarkdown} onSave={saveMarkdown} value={markdown} />
     </AppPage>
-  )
+  );
 }

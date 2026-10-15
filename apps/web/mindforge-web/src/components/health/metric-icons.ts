@@ -35,9 +35,9 @@ import {
   Wind,
   Zap,
   type LucideIcon,
-} from 'lucide-react'
+} from 'lucide-react';
 
-import type { HealthCategory } from '@/types/apps/health'
+import type { HealthCategory } from '@/types/apps/health';
 
 export const categoryIcons: Record<HealthCategory, LucideIcon> = {
   activity: Activity,
@@ -49,7 +49,7 @@ export const categoryIcons: Record<HealthCategory, LucideIcon> = {
   hearing: Ear,
   nutrition: Apple,
   mobility: Footprints,
-}
+};
 
 export const categoryNames: Record<HealthCategory, string> = {
   activity: '活动',
@@ -61,7 +61,7 @@ export const categoryNames: Record<HealthCategory, string> = {
   hearing: '听觉',
   nutrition: '营养',
   mobility: '移动能力',
-}
+};
 
 export const metricIcons: Record<string, LucideIcon> = {
   steps: Footprints,
@@ -104,4 +104,4 @@ export const metricIcons: Record<string, LucideIcon> = {
   walkingAsymmetry: Footprints,
   stairSpeed: Mountain,
   sixMinuteWalk: Route,
-}
+};

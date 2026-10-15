@@ -1,6 +1,6 @@
-'use client'
+'use client';
 import { v4 as uuidv4 } from 'uuid';
-import { useState } from "react";
+import { useState } from 'react';
 
 import SimpleBar from 'simplebar-react';
 import { CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
@@ -13,16 +13,8 @@ import {
   TableCell,
   TableRow,
 } from '@/components/ui/table';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-
-  SearchIcon,
-
-} from "lucide-react";
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { SearchIcon } from 'lucide-react';
 import { DashboardCard } from 'src/components/shared/dashboard-card';
 export default function RecentOrders() {
   const ProductTableData = [
@@ -72,18 +64,18 @@ export default function RecentOrders() {
     },
   ];
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredData = ProductTableData.filter((item) =>
-    item.project.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredData = ProductTableData.filter(
+    (item) =>
+      item.project.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.role.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
 
   return (
     <DashboardCard>
-      <CardHeader className='px-6 py-5'>
+      <CardHeader className="px-6 py-5">
         <CardTitle className="text-lg font-medium leading-none">Top Selling Products</CardTitle>
         <CardAction>
           <div className="flex items-center gap-1">
@@ -96,16 +88,14 @@ export default function RecentOrders() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-
                 }}
                 required
               />
             </InputGroup>
-
           </div>
         </CardAction>
       </CardHeader>
-      <CardContent className='p-0'>
+      <CardContent className="p-0">
         <SimpleBar className="max-h-[450px]">
           <div className="overflow-x-auto">
             <div className="min-w-[550px]">
@@ -157,7 +147,9 @@ export default function RecentOrders() {
                         <h4 className="text-sm font-normal">{item.budget}</h4>
                       </TableCell>
                       <TableCell className="p-3">
-                        <Badge className={`bg-${item.statuscolor}/10  text-${item.statuscolor}  capitalize`}>
+                        <Badge
+                          className={`bg-${item.statuscolor}/10  text-${item.statuscolor}  capitalize`}
+                        >
                           {item.statustext}
                         </Badge>
                       </TableCell>

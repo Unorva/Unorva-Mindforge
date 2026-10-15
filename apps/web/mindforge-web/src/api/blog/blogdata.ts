@@ -70,7 +70,7 @@ const BlogComment: BlogType[] = [
     comment: '很实用的建议，已经收藏了。',
     replies: [],
   },
-]
+];
 
 const BlogPost: BlogPostType[] = [
   {
@@ -111,8 +111,7 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title:
-      '苹果正在为 iOS 打造更简洁的辅助功能',
+    title: '苹果正在为 iOS 打造更简洁的辅助功能',
     content: blogSummary,
     coverImg: blogImg3,
     createdAt: sub(new Date(), { days: 5, hours: 2, minutes: 20 }),
@@ -184,8 +183,7 @@ const BlogPost: BlogPostType[] = [
   },
   {
     id: uniqueId(),
-    title:
-      '英特尔重启针对 Fortress 反垄断诉讼的请求被驳回',
+    title: '英特尔重启针对 Fortress 反垄断诉讼的请求被驳回',
     content: blogSummary,
     coverImg: blogImg9,
     createdAt: sub(new Date(), { days: 3, hours: 6, minutes: 20 }),
@@ -273,7 +271,7 @@ const BlogPost: BlogPostType[] = [
     comments: BlogComment,
     published: true,
   },
-]
+];
 // Mocked Apis
 export const Bloghandlers = [
   // Mock api endpoint to fetch all blogposts
@@ -288,7 +286,10 @@ export const Bloghandlers = [
   // Mock api endpoint to add post info
   http.post('/api/data/blog/post/add', async ({ request }) => {
     try {
-      const { postId, comment } = (await request.json()) as { postId: string | number; comment: BlogType };
+      const { postId, comment } = (await request.json()) as {
+        postId: string | number;
+        comment: BlogType;
+      };
       const postIndex = BlogPost.findIndex((x) => x.id === postId);
       const post = BlogPost[postIndex];
       const cComments = post.comments || [];

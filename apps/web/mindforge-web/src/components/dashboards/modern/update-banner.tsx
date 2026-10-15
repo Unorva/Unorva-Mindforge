@@ -1,6 +1,6 @@
-'use client'
+'use client';
 import { CardContent } from '@/components/ui/card';
-import { DashboardCard } from "../../shared/dashboard-card";
+import { DashboardCard } from '../../shared/dashboard-card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
@@ -16,7 +16,11 @@ export default function UpdateBanner() {
             <p className="text-sm font-medium  ps-4">Update</p>
             <span className="w-1 h-1 rounded-full bg-border" />
             <p className="text-sm font-normal text-muted-foreground">
-              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {new Date().toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
             </p>
           </div>
           <p className="text-sm font-normal">
@@ -24,7 +28,10 @@ export default function UpdateBanner() {
           </p>
         </div>
         <Link to={'#'}>
-          <Button variant={'outline'} className="flex gap-1.5 px-4 py-2 h-auto rounded-md cursor-pointer">
+          <Button
+            variant={'outline'}
+            className="flex gap-1.5 px-4 py-2 h-auto rounded-md cursor-pointer"
+          >
             See Statistics
             <span>
               <ArrowRight width={18} height={18} />

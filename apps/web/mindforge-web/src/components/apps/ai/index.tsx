@@ -1,480 +1,312 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowUp, History, Plus, Search, Trash2 } from 'lucide-react';
+import { AiAvatar, useAiAvatarController } from '@/components/ai-avatar';
 import {
-  AudioWaveform,
-  ArrowUp,
-  Check,
-  ChevronDown,
-  FileText,
-  History,
-  Mic,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react'
-
-import { AiAvatar, type AiAvatarExpression, useAiAvatarController } from '@/components/ai-avatar'
-import {
-  Attachment,
-  AttachmentAction,
-  AttachmentActions,
-  AttachmentContent,
-  AttachmentDescription,
-  AttachmentMedia,
-  AttachmentTitle,
-} from '@/components/ui/attachment'
-import { Bubble, BubbleContent, BubbleGroup } from '@/components/ui/bubble'
-import { Button } from '@/components/ui/button'
-import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  createConversation,
+  deleteConversation,
+  getAiConfig,
+  getConversations,
+  getMessages,
+  sendMessage,
+  type AiConfig,
+  type ChatMessage,
+  type Conversation,
+} from '@/api/ai/ai';
+import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from '@/components/ui/input-group'
-import { Input } from '@/components/ui/input'
-import { Message, MessageContent, MessageGroup } from '@/components/ui/message'
-import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
-
-type ChatMessage = {
-  expression?: AiAvatarExpression
-  id: string
-  role: 'assistant' | 'user'
-  text: string
-}
-
-type Conversation = {
-  id: string
-  messages: ChatMessage[]
-  preview: string
-  title: string
-}
-
-const starterConversations: Conversation[] = [
-  {
-    id: 'weekly-plan',
-    title: '帮我规划本周的重点任务',
-    preview: '当然，可以先按目标、截止时间和优先级整理…',
-    messages: [
-      { id: 'weekly-plan-user', role: 'user', text: '帮我规划本周的重点任务。' },
-      { id: 'weekly-plan-ai', role: 'assistant', expression: 'focused', text: '当然。建议先选出 3 个本周必须完成的结果，再为每个结果安排不被打断的时间块。我也可以根据你的项目清单继续细化。' },
-    ],
-  },
-  {
-    id: 'note-summary',
-    title: '总结这篇笔记的核心观点',
-    preview: '这篇笔记主要围绕目标拆解与复盘展开…',
-    messages: [
-      { id: 'note-summary-user', role: 'user', text: '总结这篇笔记的核心观点。' },
-      { id: 'note-summary-ai', role: 'assistant', expression: 'inspired', text: '这篇笔记主要围绕目标拆解、执行节奏与复盘反馈展开，核心是把模糊目标转化为可验证的下一步行动。' },
-    ],
-  },
-  {
-    id: 'daily-review',
-    title: '根据日报生成今日复盘',
-    preview: '今天推进了两个关键事项，也识别出一个阻塞点…',
-    messages: [
-      { id: 'daily-review-user', role: 'user', text: '根据日报生成今日复盘。' },
-      { id: 'daily-review-ai', role: 'assistant', expression: 'success', text: '今天推进了两个关键事项，也识别出一个需要尽快处理的协作阻塞点。明天可以优先关闭阻塞，再继续主要交付。' },
-    ],
-  },
-  {
-    id: 'project-risks',
-    title: '分析当前项目的潜在风险',
-    preview: '目前最值得关注的是范围、依赖和交付节奏…',
-    messages: [
-      { id: 'project-risks-user', role: 'user', text: '分析当前项目的潜在风险。' },
-      { id: 'project-risks-ai', role: 'assistant', expression: 'thinking', text: '目前最值得关注的是需求范围持续变化、外部依赖不明确，以及验证时间被压缩。建议为每一项设置负责人和最晚确认时间。' },
-    ],
-  },
-]
-
-function responseFor(prompt: string) {
-  if (prompt.includes('笔记')) return '我可以从近期笔记中提炼主题、关键结论和待办事项。接入笔记数据后，还可以按时间或标签生成更具体的摘要。'
-  if (prompt.includes('复盘') || prompt.includes('工作记录')) return '建议把今天的复盘分为三个部分：已完成的结果、遇到的阻塞，以及明天最重要的一步。这样更容易把记录转化为行动。'
-  if (prompt.includes('项目') || prompt.includes('行动')) return '可以先从目标清晰度、进度风险和当前阻塞三个维度检查项目，再选出一个今天就能推进的最小行动。'
-  return '我已经收到你的问题。当前页面使用本地示例回复展示完整对话体验，后续接入 AI 服务后即可返回真实答案。'
-}
-
-function expressionForPrompt(prompt: string): AiAvatarExpression {
-  if (prompt.includes('错误') || prompt.includes('失败')) return 'worried'
-  if (prompt.includes('风险') || prompt.includes('问题')) return 'thinking'
-  if (prompt.includes('笔记') || prompt.includes('灵感')) return 'inspired'
-  if (prompt.includes('复盘') || prompt.includes('完成')) return 'success'
-  if (prompt.includes('谢谢') || prompt.includes('开心')) return 'happy'
-  return 'focused'
-}
-
-function ConversationHistory({
-  activeId,
-  conversations,
-  onDelete,
-  onSelect,
-}: {
-  activeId: string | null
-  conversations: Conversation[]
-  onDelete: (id: string) => void
-  onSelect: (id: string) => void
-}) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
-  const filteredConversations = normalizedQuery
-    ? conversations.filter((conversation) => (
-        `${conversation.title} ${conversation.preview}`.toLocaleLowerCase().includes(normalizedQuery)
-      ))
-    : conversations
-
-  return (
-    <aside className="flex h-full min-h-0 w-full flex-col bg-card">
-      <div className="border-b px-4 py-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            aria-label="搜索历史对话"
-            className="h-10 rounded-xl bg-muted/40 pr-3 pl-9"
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="搜索历史对话…"
-            type="search"
-            value={searchQuery}
-          />
-        </div>
-      </div>
-
-      <ScrollArea className="min-h-0 flex-1 px-3 py-2">
-        <div className="space-y-1 pb-3">
-          {filteredConversations.length === 0 ? (
-            <div className="px-3 py-10 text-center text-sm text-muted-foreground">没有找到相关对话</div>
-          ) : null}
-          {filteredConversations.map((conversation) => (
-            <div
-              className={cn(
-                'group relative w-full rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                activeId === conversation.id && 'bg-muted',
-              )}
-              key={conversation.id}
-              onClick={() => onSelect(conversation.id)}
-              onKeyDown={(event) => {
-                if (event.currentTarget !== event.target) return
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  onSelect(conversation.id)
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <span className="block truncate pr-8 text-sm font-medium">{conversation.title}</span>
-              <span className="mt-1 block truncate pr-8 text-xs leading-5 text-muted-foreground">{conversation.preview}</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  aria-label={`管理对话：${conversation.title}`}
-                  className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg opacity-0 transition-opacity hover:bg-background focus:opacity-100 group-hover:opacity-100 data-popup-open:opacity-100"
-                  onClick={(event) => event.stopPropagation()}
-                  onKeyDown={(event) => event.stopPropagation()}
-                >
-                  <MoreHorizontal className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-36">
-                  <DropdownMenuItem onClick={() => onDelete(conversation.id)} variant="destructive">
-                    <Trash2 />删除对话
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </aside>
-  )
-}
+} from '@/components/ui/input-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 export default function AiAssistant() {
-  const avatar = useAiAvatarController('idle')
-  const [conversations, setConversations] = useState(starterConversations)
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [composerValue, setComposerValue] = useState('')
-  const [attachment, setAttachment] = useState<File | null>(null)
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const [isResponding, setIsResponding] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [model, setModel] = useState('GPT-5.6 Sol')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const activeConversation = conversations.find((conversation) => conversation.id === activeId)
+  const avatar = useAiAvatarController('idle');
+  const [config, setConfig] = useState<AiConfig | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [composer, setComposer] = useState('');
+  const [search, setSearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [responding, setResponding] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [error, setError] = useState('');
+  const requestId = useRef(0);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const startNewChat = () => {
-    setActiveId(null)
-    setComposerValue('')
-    setAttachment(null)
-    setIsHistoryOpen(false)
-    setIsListening(false)
-    avatar.reset()
-  }
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [configuration, history] = await Promise.all([getAiConfig(), getConversations()]);
+      setConfig(configuration.data);
+      setConversations(history.data);
+      setError('');
+    } catch {
+      setError('AI 服务信息加载失败，请重试。');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const deleteConversation = (id: string) => {
-    setConversations((items) => items.filter((item) => item.id !== id))
-    if (activeId === id) setActiveId(null)
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, responding]);
 
-  const sendPrompt = (rawPrompt?: string) => {
-    const prompt = (rawPrompt ?? composerValue).trim()
-    if (!prompt || isResponding) return
+  const selectConversation = async (id: number) => {
+    if (responding) return;
+    const currentRequest = ++requestId.current;
+    setActiveId(id);
+    setHistoryOpen(false);
+    setMessageLoading(true);
+    setMessages([]);
+    try {
+      const result = await getMessages(id);
+      if (currentRequest === requestId.current) setMessages(result.data);
+    } catch {
+      setError('对话加载失败，请重新选择。');
+    } finally {
+      if (currentRequest === requestId.current) setMessageLoading(false);
+    }
+  };
 
-    const conversationId = activeId ?? `conversation-${Date.now()}`
-    const userMessage: ChatMessage = { id: `${conversationId}-user-${Date.now()}`, role: 'user', text: prompt }
-    setConversations((items) => {
-      const existingConversation = items.find((item) => item.id === conversationId)
-      if (existingConversation) {
-        return items.map((item) => item.id === conversationId
-          ? { ...item, messages: [...item.messages, userMessage], preview: prompt }
-          : item)
+  const send = async () => {
+    const content = composer.trim();
+    if (!content || responding || !config?.configured || messageLoading) return;
+    setResponding(true);
+    setError('');
+    avatar.play({ expression: 'thinking', intensity: 0.85 });
+    let conversationId = activeId;
+    try {
+      if (conversationId === null) {
+        const created = await createConversation(content.slice(0, 100));
+        conversationId = created.data.id;
+        setActiveId(conversationId);
+        setConversations((items) => [created.data, ...items]);
       }
-      return [{
-        id: conversationId,
-        title: prompt.length > 22 ? `${prompt.slice(0, 22)}…` : prompt,
-        preview: prompt,
-        messages: [userMessage],
-      }, ...items]
-    })
-    setActiveId(conversationId)
-    setComposerValue('')
-    setAttachment(null)
-    setIsListening(false)
-    setIsResponding(true)
-    avatar.play({ expression: 'thinking', intensity: 0.85 })
-
-    window.setTimeout(() => {
-      const answer = responseFor(prompt)
-      const responseExpression = expressionForPrompt(prompt)
-      setConversations((items) => items.map((item) => item.id === conversationId
-        ? {
-          ...item,
-          preview: answer,
-          messages: [...item.messages, {
-            id: `${conversationId}-assistant-${Date.now()}`,
-            role: 'assistant',
-            text: answer,
-            expression: responseExpression,
-          }],
+      const result = await sendMessage(conversationId, content);
+      setMessages((items) => [...items, result.data.userMessage, result.data.assistantMessage]);
+      setConversations((items) => [
+        result.data.conversation,
+        ...items.filter((item) => item.id !== conversationId),
+      ]);
+      setComposer('');
+      avatar.play({ expression: 'success', intensity: 0.8, durationMs: 2400, returnTo: 'idle' });
+    } catch {
+      setError('回复生成失败，输入已保留，可重试。');
+      if (conversationId !== null) {
+        try {
+          setMessages((await getMessages(conversationId)).data);
+        } catch {
+          /* 请求层已提示加载失败。 */
         }
-        : item))
-      setIsResponding(false)
-      avatar.play({ expression: responseExpression, intensity: 0.8, durationMs: 2400, returnTo: 'idle' })
-    }, 550)
-  }
+      }
+      avatar.play({ expression: 'worried', intensity: 0.7, durationMs: 2400, returnTo: 'idle' });
+    } finally {
+      setResponding(false);
+    }
+  };
 
-  const toggleListening = () => {
-    setIsListening((value) => {
-      const nextValue = !value
-      avatar.play({ expression: nextValue ? 'listening' : 'idle', intensity: 0.8 })
-      return nextValue
-    })
-  }
+  const remove = async (id: number) => {
+    if (responding) return;
+    try {
+      await deleteConversation(id);
+      setConversations((items) => items.filter((item) => item.id !== id));
+      if (activeId === id) {
+        ++requestId.current;
+        setActiveId(null);
+        setMessages([]);
+      }
+    } catch {
+      setError('删除对话失败，请重试。');
+    }
+  };
 
   return (
-    <section className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'overflow-hidden')}>
-      <div className="h-full min-h-0">
-        <Sheet onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
-          <SheetContent className="w-[min(90vw,380px)] max-w-[380px] gap-0 p-0" side="left">
-            <SheetHeader className="border-b px-5 py-4 pr-12">
-              <SheetTitle>对话历史</SheetTitle>
-              <SheetDescription>搜索或打开以前的对话</SheetDescription>
-            </SheetHeader>
-            <ConversationHistory
-              activeId={activeId}
-              conversations={conversations}
-              onDelete={deleteConversation}
-              onSelect={(id) => {
-                setActiveId(id)
-                setIsHistoryOpen(false)
-              }}
-            />
-          </SheetContent>
-        </Sheet>
-
-        <main className="relative flex h-full min-h-0 min-w-0 flex-col bg-background">
-          <div aria-label="对话操作" className="absolute top-0 right-0 z-10 flex items-center gap-2 py-2" role="toolbar">
-            <Button onClick={() => setIsHistoryOpen(true)} type="button" variant="outline">
-              <History />
-              <span className="hidden sm:inline">历史记录</span>
-              <span className="sr-only sm:hidden">打开对话历史</span>
-            </Button>
-            <Button onClick={startNewChat} type="button">
-              <Plus />
-              <span>新对话</span>
-            </Button>
-          </div>
-          <div className="min-h-0 flex-1">
-            {activeConversation ? (
-              <ScrollArea className="h-full">
-                <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
-                  <MessageGroup className="gap-6">
-                    {activeConversation.messages.map((message) => (
-                      message.role === 'assistant' ? (
-                        <Marker className="max-w-xl items-start py-1.5" key={message.id}>
-                          <MarkerIcon className="mt-0.5 size-7">
-                            <AiAvatar expression={message.expression ?? 'neutral'} intensity={0.45} size={28} />
-                          </MarkerIcon>
-                          <MarkerContent className="leading-6">{message.text}</MarkerContent>
-                        </Marker>
-                      ) : (
-                        <Message align="end" key={message.id}>
-                          <MessageContent>
-                            <BubbleGroup>
-                              <Bubble>
-                                <BubbleContent className="max-w-xl px-4 py-3 leading-6">{message.text}</BubbleContent>
-                              </Bubble>
-                            </BubbleGroup>
-                          </MessageContent>
-                        </Message>
-                      )
-                    ))}
-                    {isResponding ? (
-                      <Marker aria-live="polite" className="max-w-xl py-1.5 opacity-50" role="status">
-                        <MarkerIcon className="size-7">
-                          <AiAvatar expression={avatar.expression} intensity={avatar.intensity} size={28} />
-                        </MarkerIcon>
-                        <MarkerContent>正在思考…</MarkerContent>
-                      </Marker>
-                    ) : null}
-                  </MessageGroup>
-                </div>
-              </ScrollArea>
-            ) : (
-              <ScrollArea className="h-full">
-                <div className="mx-auto flex min-h-full w-full max-w-5xl items-center justify-center px-5 py-6 sm:px-8">
-                  <div className="flex items-center justify-center" data-testid="ai-avatar">
-                    <AiAvatar
-                      expression={avatar.expression}
-                      intensity={avatar.intensity}
-                      size="clamp(13rem, 28vw, 18.75rem)"
-                    />
-                  </div>
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-
-          <div className="shrink-0 px-4 pb-4 sm:px-6 sm:pb-6">
-            <div className="mx-auto max-w-4xl">
-              {attachment ? (
-                <Attachment className="mb-2" size="sm">
-                  <AttachmentMedia><FileText /></AttachmentMedia>
-                  <AttachmentContent>
-                    <AttachmentTitle>{attachment.name}</AttachmentTitle>
-                    <AttachmentDescription>{Math.max(1, Math.round(attachment.size / 1024))} KB</AttachmentDescription>
-                  </AttachmentContent>
-                  <AttachmentActions>
-                    <AttachmentAction aria-label="移除附件" onClick={() => setAttachment(null)}><X /></AttachmentAction>
-                  </AttachmentActions>
-                </Attachment>
-              ) : null}
-              <InputGroup className="min-h-[108px] rounded-[1.75rem] border-border/80 bg-card shadow-[0_8px_28px_rgba(15,23,42,0.06)] has-[[data-slot=input-group-control]:focus-visible]:border-border/80 has-[[data-slot=input-group-control]:focus-visible]:ring-0">
-                <InputGroupTextarea
-                  aria-label="向 AI 提问"
-                  className="min-h-14 max-h-36 px-6 pt-4 text-base leading-6 placeholder:text-muted-foreground/55"
-                  onChange={(event) => setComposerValue(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault()
-                      sendPrompt()
-                    }
-                  }}
-                  placeholder="随心输入"
-                  rows={2}
-                  value={composerValue}
-                />
-                <InputGroupAddon align="block-end" className="justify-between px-4 pb-3 sm:px-5">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <input
-                      className="hidden"
-                      onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
-                      ref={fileInputRef}
-                      type="file"
-                    />
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <InputGroupButton
-                            aria-label="添加附件"
-                            className="rounded-full"
-                            onClick={() => fileInputRef.current?.click()}
-                            size="icon-sm"
-                          />
-                        }
-                      >
-                        <Plus className="size-5" />
-                      </TooltipTrigger>
-                      <TooltipContent>添加附件</TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={<InputGroupButton className="h-9 rounded-full px-2.5 text-foreground" size="sm" />}
-                      >
-                        <span>{model}</span>
-                        <span className="text-muted-foreground">高</span>
-                        <ChevronDown className="size-3.5 text-muted-foreground" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
-                        <DropdownMenuGroup>
-                          <DropdownMenuLabel>选择模型</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          {['GPT-5.6 Sol', 'GPT-6 Astra', 'GPT-5.6 Terra'].map((option) => (
-                            <DropdownMenuItem key={option} onClick={() => setModel(option)}>
-                              <span>{option}</span>
-                              {model === option ? <Check className="ml-auto" /> : null}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <InputGroupButton
-                            aria-label={isListening ? '停止语音输入' : '开始语音输入'}
-                            className={cn('rounded-full', isListening && 'bg-muted text-foreground')}
-                            onClick={toggleListening}
-                            size="icon-sm"
-                          />
-                        }
-                      >
-                        <Mic />
-                      </TooltipTrigger>
-                      <TooltipContent>{isListening ? '停止语音输入' : '语音输入'}</TooltipContent>
-                    </Tooltip>
-                    <InputGroupButton
-                      aria-label={composerValue.trim() ? '发送消息' : isListening ? '停止语音对话' : '开始语音对话'}
-                      className="size-10 rounded-full"
-                      disabled={isResponding}
-                      onClick={() => composerValue.trim() ? sendPrompt() : toggleListening()}
-                      size="icon-sm"
-                      variant="default"
-                    >
-                      {composerValue.trim() ? <ArrowUp className="size-5" /> : <AudioWaveform className="size-5" />}
-                    </InputGroupButton>
-                  </div>
-                </InputGroupAddon>
-              </InputGroup>
-            </div>
-          </div>
-        </main>
+    <section className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'flex min-h-0 flex-col overflow-hidden')}>
+      <div className="flex shrink-0 items-center justify-between gap-3 py-2">
+        <span className="truncate text-sm text-muted-foreground">
+          {loading
+            ? '加载 AI 配置…'
+            : config?.configured
+              ? `${config.provider} · ${config.model}`
+              : '尚未配置 AI 服务'}
+        </span>
+        <div className="flex gap-2">
+          <Button onClick={() => setHistoryOpen(true)} variant="outline">
+            <History />
+            历史记录
+          </Button>
+          <Button
+            disabled={responding}
+            onClick={() => {
+              ++requestId.current;
+              setActiveId(null);
+              setMessages([]);
+              setComposer('');
+              setMessageLoading(false);
+              avatar.reset();
+            }}
+          >
+            <Plus />
+            新对话
+          </Button>
+        </div>
       </div>
+      {!loading && !config?.configured && (
+        <p className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+          请点击右上角头像，在头像侧边栏的“账户设置”中配置兼容 OpenAI 的接口地址、模型和 API Key
+          后使用对话。会话历史仍可查看。
+        </p>
+      )}
+      {error && (
+        <div
+          className="flex items-center justify-between gap-2 py-2 text-sm text-destructive"
+          role="alert"
+        >
+          <span>{error}</span>
+          <Button onClick={() => void load()} size="sm" variant="outline">
+            重新加载
+          </Button>
+        </div>
+      )}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="left" className="flex w-80 flex-col">
+          <SheetHeader>
+            <SheetTitle>对话历史</SheetTitle>
+            <SheetDescription>对话已保存到你的个人工作台</SheetDescription>
+          </SheetHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+            <Input
+              aria-label="搜索对话"
+              className="pl-9"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="搜索对话标题"
+            />
+          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            {conversations
+              .filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    'my-1 flex items-center gap-1 rounded-lg',
+                    item.id === activeId && 'bg-muted',
+                  )}
+                >
+                  <Button
+                    className="min-w-0 flex-1 justify-start"
+                    disabled={responding}
+                    variant="ghost"
+                    onClick={() => void selectConversation(item.id)}
+                  >
+                    <span className="truncate">{item.title}</span>
+                  </Button>
+                  <Button
+                    aria-label={`删除 ${item.title}`}
+                    disabled={responding}
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => void remove(item.id)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ))}
+            {!conversations.length && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                还没有对话，开始你的第一个问题。
+              </p>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+      <ScrollArea className="min-h-0 flex-1">
+        {messages.length || responding || messageLoading ? (
+          <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
+            {messageLoading && <p className="text-sm text-muted-foreground">正在加载消息…</p>}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn('flex items-start gap-3', message.role === 'user' && 'justify-end')}
+              >
+                {message.role === 'assistant' && (
+                  <AiAvatar expression="focused" intensity={0.45} size={28} />
+                )}
+                <p
+                  className={cn(
+                    'max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-7',
+                    message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/40',
+                  )}
+                >
+                  {message.content}
+                </p>
+              </div>
+            ))}
+            {responding && (
+              <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
+                <AiAvatar expression={avatar.expression} intensity={avatar.intensity} size={28} />
+                正在思考…
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        ) : (
+          <div className="flex min-h-72 items-center justify-center py-12">
+            <AiAvatar
+              expression={avatar.expression}
+              intensity={avatar.intensity}
+              size="clamp(13rem, 28vw, 18.75rem)"
+            />
+          </div>
+        )}
+      </ScrollArea>
+      <InputGroup className="mx-auto mb-3 w-full max-w-4xl shrink-0 rounded-3xl bg-card">
+        <InputGroupTextarea
+          aria-label="向 AI 提问"
+          placeholder="输入问题，Enter 发送，Shift + Enter 换行"
+          value={composer}
+          maxLength={10000}
+          disabled={loading || !config?.configured}
+          onChange={(event) => setComposer(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              void send();
+            }
+          }}
+        />
+        <InputGroupAddon align="block-end" className="justify-between">
+          <span className="text-xs text-muted-foreground">{composer.length} / 10000</span>
+          <InputGroupButton
+            aria-label="发送消息"
+            disabled={!composer.trim() || responding || messageLoading || !config?.configured}
+            size="icon-sm"
+            variant="default"
+            onClick={() => void send()}
+          >
+            <ArrowUp />
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
     </section>
-  )
+  );
 }

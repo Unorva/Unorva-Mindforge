@@ -1,101 +1,63 @@
+import { useState } from 'react';
+import { addBlogComment } from '@/api/blog/blog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import type { BlogType } from '@/types/apps/blog';
 
-import { useState } from "react";
-import { CornerUpLeft } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BlogType } from "src/types/apps/blog";
-
-const BlogComment = ({ comment }: { comment: BlogType }) => {
+export default function BlogComment({
+  comment,
+  postId,
+  onSaved,
+}: {
+  comment: BlogType;
+  postId: string | number;
+  onSaved: () => Promise<void>;
+}) {
+  const [reply, setReply] = useState('');
   const [showReply, setShowReply] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!reply.trim() || saving) return;
+    setSaving(true);
+    try {
+      await addBlogComment(postId, reply.trim(), comment.id);
+      await onSaved();
+      setReply('');
+      setShowReply(false);
+    } catch {
+      /* 失败保留回复。 */
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
-    <>
-      <div className="mt-5 p-5 bg-primary/5 rounded-md">
-        <div className="flex gap-3 items-center">
-          <Avatar>
-            <AvatarImage
-              src={comment?.profile?.avatar}
-              alt={comment?.profile?.name}
-            />
-            <AvatarFallback>{comment?.profile?.name}</AvatarFallback>
-          </Avatar>
-          <h6 className="text-base">{comment?.profile?.name}</h6>
-          <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-40  block"></span>
-          <p>{comment?.profile?.time}</p>
+    <div className="space-y-3 rounded-lg bg-muted/40 p-4">
+      <p className="text-xs text-muted-foreground">
+        {comment.profile?.name || '我'} · {comment.profile?.time || '刚刚'}
+      </p>
+      <p className="whitespace-pre-wrap break-words text-sm">{comment.comment}</p>
+      <Button size="sm" variant="ghost" onClick={() => setShowReply(!showReply)}>
+        回复
+      </Button>
+      {showReply && (
+        <div className="flex gap-2">
+          <Input
+            aria-label="回复评论"
+            value={reply}
+            maxLength={5000}
+            onChange={(event) => setReply(event.target.value)}
+          />
+          <Button disabled={saving || !reply.trim()} onClick={() => void save()}>
+            {saving ? '保存中…' : '提交'}
+          </Button>
         </div>
-        <div className="py-4">
-          <p>{comment?.comment}</p>
-        </div>
-        <div className="relative w-fit">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant={"ghost"}
-                  className="flex items-center border border-border"
-                  onClick={() => setShowReply(!showReply)}
-                >
-                  <CornerUpLeft size={18} className="shrink-0!" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>回复</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-      {comment?.replies ? (
-        <>
-          {comment?.replies.map((reply: BlogType) => {
-            return (
-              <div className="ps-8 " key={reply.comment}>
-                <div className="mt-5 p-5 rounded-md bg-primary/5 ">
-                  <div className="flex gap-3 items-center">
-                    <Avatar>
-                      <AvatarImage
-                        src={reply.profile?.avatar}
-                        alt={reply.profile?.name}
-                      />
-                      <AvatarFallback>{reply.profile?.name}</AvatarFallback>
-                    </Avatar>
-                    <h6 className="text-base">{reply.profile?.name}</h6>
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground   opacity-40 block"></span>
-                    <p>{reply.profile?.time}</p>
-                  </div>
-                  <div className="py-4">
-                    <p>{reply.comment}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </>
-      ) : null}
-      {showReply ? (
-        <div className="py-5 px-5">
-          <div className="flex gap-3 items-center">
-            <div className="w-10">
-              <Avatar>
-                <AvatarImage
-                  src={comment.profile?.avatar}
-                  alt={comment.profile?.name}
-                />
-                <AvatarFallback>{comment.profile?.name}</AvatarFallback>
-              </Avatar>
-            </div>
-            <Input className=" md:w-full w-fit" placeholder="写下回复……" />
-            <Button>回复</Button>
-          </div>
-        </div>
-      ) : (
-        ""
       )}
-    </>
+      {comment.replies?.map((item) => (
+        <div className="ml-4 rounded-lg border p-3" key={item.id}>
+          <p className="text-xs text-muted-foreground">{item.profile?.name || '我'}</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm">{item.comment}</p>
+        </div>
+      ))}
+    </div>
   );
-};
-export default BlogComment;
+}

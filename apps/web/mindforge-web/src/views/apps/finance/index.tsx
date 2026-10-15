@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { createColumnHelper } from '@tanstack/react-table'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
 import {
   ArrowDownRight,
   ArrowLeftRight,
@@ -13,8 +13,8 @@ import {
   Smartphone,
   TrendingUp,
   Wallet,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import {
   getFinanceSummary,
@@ -25,48 +25,80 @@ import {
   type FinanceSummary,
   type Transaction,
   type TransactionType,
-} from '@/api/finance/finance'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { Progress } from '@/components/ui/progress'
-import { DataTable } from '@/components/data-table/data-table'
-import { AppPage, AppPageHeader } from '@/components/shared/app-workspace'
-import { cn } from '@/lib/utils'
-import { CategoryBreakdown, IncomeExpenseTrend } from './charts'
-import { formatDelta, formatMoney } from './format'
+} from '@/api/finance/finance';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import { Progress } from '@/components/ui/progress';
+import { DataTable } from '@/components/data-table/data-table';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
+import { cn } from '@/lib/utils';
+import { CategoryBreakdown, IncomeExpenseTrend } from './charts';
+import { formatDelta, formatMoney } from './format';
+import FinanceManager from './finance-manager';
 
 const accountIcons: Record<AccountType, LucideIcon> = {
   现金: Banknote,
   储蓄: Landmark,
   投资: TrendingUp,
   电子钱包: Smartphone,
-}
+};
 
 function Pill({ children, className }: { children: ReactNode; className: string }) {
-  return <Badge className={cn('rounded-md', className)} variant="secondary">{children}</Badge>
+  return (
+    <Badge className={cn('rounded-md', className)} variant="secondary">
+      {children}
+    </Badge>
+  );
 }
 
 function typeClass(type: TransactionType) {
   return type === '收入'
     ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400'
-    : 'bg-red-500/12 text-red-700 dark:text-red-400'
+    : 'bg-red-500/12 text-red-700 dark:text-red-400';
 }
 
-function DeltaText({ positiveIsGood, suffix, value }: { positiveIsGood: boolean; suffix: string; value: number }) {
-  const good = positiveIsGood ? value >= 0 : value < 0
-  const Icon = value >= 0 ? ArrowUpRight : ArrowDownRight
+function DeltaText({
+  positiveIsGood,
+  suffix,
+  value,
+}: {
+  positiveIsGood: boolean;
+  suffix: string;
+  value: number;
+}) {
+  const good = positiveIsGood ? value >= 0 : value < 0;
+  const Icon = value >= 0 ? ArrowUpRight : ArrowDownRight;
   return (
     <span className="flex items-center gap-1 text-xs">
       <Icon className={cn('size-3.5', good ? 'text-chart-2' : 'text-destructive')} />
-      <span className={cn('font-medium tabular-nums', good ? 'text-chart-2' : 'text-destructive')}>{formatDelta(value)}</span>
+      <span className={cn('font-medium tabular-nums', good ? 'text-chart-2' : 'text-destructive')}>
+        {formatDelta(value)}
+      </span>
       <span className="text-muted-foreground">{suffix}</span>
     </span>
-  )
+  );
 }
 
-function FinanceStatCard({ footer, icon: Icon, label, value }: { footer?: ReactNode; icon: LucideIcon; label: string; value: string }) {
+function FinanceStatCard({
+  footer,
+  icon: Icon,
+  label,
+  value,
+}: {
+  footer?: ReactNode;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
     <Card className="h-full">
       <CardContent className="px-6">
@@ -76,11 +108,13 @@ function FinanceStatCard({ footer, icon: Icon, label, value }: { footer?: ReactN
             <h3 className="text-2xl font-semibold tabular-nums">{value}</h3>
             {footer && <div className="mt-1">{footer}</div>}
           </div>
-          <div className="w-fit rounded-md border border-border p-2.5"><Icon size={16} /></div>
+          <div className="w-fit rounded-md border border-border p-2.5">
+            <Icon size={16} />
+          </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function AccountsPanel({ accounts }: { accounts: Account[] }) {
@@ -94,21 +128,26 @@ function AccountsPanel({ accounts }: { accounts: Account[] }) {
       </CardHeader>
       <CardContent className="grid gap-2.5 p-5">
         {accounts.map((account) => {
-          const Icon = accountIcons[account.type]
+          const Icon = accountIcons[account.type];
           return (
-            <div className="flex items-center gap-3 rounded-lg border border-border/70 p-3" key={account.id}>
-              <div className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"><Icon size={16} /></div>
+            <div
+              className="flex items-center gap-3 rounded-lg border border-border/70 p-3"
+              key={account.id}
+            >
+              <div className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                <Icon size={16} />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{account.name}</p>
                 <p className="text-xs text-muted-foreground">{account.type}</p>
               </div>
               <p className="text-sm font-semibold tabular-nums">{formatMoney(account.balance)}</p>
             </div>
-          )
+          );
         })}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function BudgetPanel({ budgets }: { budgets: BudgetItem[] }) {
@@ -122,12 +161,14 @@ function BudgetPanel({ budgets }: { budgets: BudgetItem[] }) {
       </CardHeader>
       <CardContent className="grid gap-4 p-5">
         {budgets.map((item) => {
-          const percent = item.budget > 0 ? Math.round((item.spent / item.budget) * 100) : 0
+          const percent = item.budget > 0 ? Math.round((item.spent / item.budget) * 100) : 0;
           return (
             <div className="grid gap-1.5" key={item.category}>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="font-medium">{item.category}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{formatMoney(item.spent, 0)} / {formatMoney(item.budget, 0)} · {percent}%</span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {formatMoney(item.spent, 0)} / {formatMoney(item.budget, 0)} · {percent}%
+                </span>
               </div>
               <Progress
                 aria-label={`${item.category}预算已使用 ${percent}%`}
@@ -142,42 +183,49 @@ function BudgetPanel({ budgets }: { budgets: BudgetItem[] }) {
                 value={Math.min(percent, 100)}
               />
             </div>
-          )
+          );
         })}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function Finance() {
-  const [loading, setLoading] = useState(true)
-  const [summary, setSummary] = useState<FinanceSummary | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<FinanceSummary | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
-      const [summaryResult, transactionsResult] = await Promise.all([getFinanceSummary(), getFinanceTransactions()])
-      if (summaryResult.success) setSummary(summaryResult.data)
-      if (transactionsResult.success) setTransactions(transactionsResult.data)
-    } catch {
+      const [summaryResult, transactionsResult] = await Promise.all([
+        getFinanceSummary(),
+        getFinanceTransactions(),
+      ]);
+      if (summaryResult.success) setSummary(summaryResult.data);
+      if (transactionsResult.success) setTransactions(transactionsResult.data);
+    } catch (error) {
       // 请求层已统一提示失败原因，这里只负责结束加载状态。
+      if (!showLoading) throw error;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load();
+  }, [load]);
 
   const columns = useMemo(() => {
-    const columnHelper = createColumnHelper<Transaction>()
-    const accountName = (accountId: number) => summary?.accounts.find((account) => account.id === accountId)?.name ?? '未知账户'
+    const columnHelper = createColumnHelper<Transaction>();
+    const accountName = (accountId: number) =>
+      summary?.accounts.find((account) => account.id === accountId)?.name ?? '未知账户';
     return [
       columnHelper.accessor('date', {
         header: '日期',
-        cell: ({ getValue }) => <span className="tabular-nums text-muted-foreground">{getValue()}</span>,
+        cell: ({ getValue }) => (
+          <span className="tabular-nums text-muted-foreground">{getValue()}</span>
+        ),
       }),
       columnHelper.accessor('type', {
         header: '类型',
@@ -190,7 +238,9 @@ export default function Finance() {
       columnHelper.accessor('description', { header: '描述' }),
       columnHelper.accessor('accountId', {
         header: '账户',
-        cell: ({ getValue }) => <span className="text-muted-foreground">{accountName(getValue())}</span>,
+        cell: ({ getValue }) => (
+          <span className="text-muted-foreground">{accountName(getValue())}</span>
+        ),
       }),
       columnHelper.accessor('source', {
         header: '来源',
@@ -199,88 +249,129 @@ export default function Finance() {
       columnHelper.accessor('amount', {
         header: '金额',
         cell: ({ row }) => (
-          <span className={cn('font-semibold tabular-nums', row.original.type === '收入' ? 'text-chart-2' : 'text-destructive')}>
-            {row.original.type === '收入' ? '+' : '-'}{formatMoney(row.original.amount)}
+          <span
+            className={cn(
+              'font-semibold tabular-nums',
+              row.original.type === '收入' ? 'text-chart-2' : 'text-destructive',
+            )}
+          >
+            {row.original.type === '收入' ? '+' : '-'}
+            {formatMoney(row.original.amount)}
           </span>
         ),
       }),
-    ]
-  }, [summary])
+    ];
+  }, [summary]);
 
   if (loading) {
-    return <Empty className="min-h-72 border"><EmptyHeader><EmptyMedia variant="icon"><Wallet /></EmptyMedia><EmptyTitle>正在加载资金数据</EmptyTitle></EmptyHeader></Empty>
+    return (
+      <Empty className="min-h-72 border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Wallet />
+          </EmptyMedia>
+          <EmptyTitle>正在加载资金数据</EmptyTitle>
+        </EmptyHeader>
+      </Empty>
+    );
   }
 
   if (!summary) {
     return (
       <Empty className="min-h-72 border">
-        <EmptyHeader><EmptyMedia variant="icon"><Wallet /></EmptyMedia><EmptyTitle>资金数据加载失败</EmptyTitle><EmptyDescription>请检查网络后重试；数据由手机端记录并同步生成。</EmptyDescription></EmptyHeader>
-        <EmptyContent><Button onClick={() => void load()} variant="outline"><RefreshCw />重新加载</Button></EmptyContent>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Wallet />
+          </EmptyMedia>
+          <EmptyTitle>资金数据加载失败</EmptyTitle>
+          <EmptyDescription>请检查后端服务与网络后重试。</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={() => void load()} variant="outline">
+            <RefreshCw />
+            重新加载
+          </Button>
+        </EmptyContent>
       </Empty>
-    )
+    );
   }
 
   return (
     <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
         extra={
-          <span className="hidden items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground sm:flex">
-            <Smartphone size={13} />
-            手机端最近同步：{summary.lastSyncAt}
-          </span>
+          <FinanceManager
+            accounts={summary.accounts}
+            budgets={summary.budgets}
+            transactions={transactions}
+            onChanged={() => load(false)}
+          />
         }
         title="资金管理"
       />
-        <section aria-label="资金概览" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <FinanceStatCard
-            footer={<Badge className="bg-primary/10! text-primary!">{summary.accounts.length} 个账户</Badge>}
-            icon={Landmark}
-            label="总资产"
-            value={formatMoney(summary.totalAssets, 0)}
-          />
-          <FinanceStatCard
-            footer={<DeltaText positiveIsGood suffix="较上月" value={summary.incomeDelta} />}
-            icon={TrendingUp}
-            label="本月收入"
-            value={formatMoney(summary.monthIncome, 0)}
-          />
-          <FinanceStatCard
-            footer={<DeltaText positiveIsGood={false} suffix="较上月" value={summary.expenseDelta} />}
-            icon={CreditCard}
-            label="本月支出"
-            value={formatMoney(summary.monthExpense, 0)}
-          />
-          <FinanceStatCard
-            footer={
-              <Badge className={cn(summary.savingsRate >= 20 ? 'bg-chart-2/12! text-chart-2!' : summary.savingsRate >= 0 ? 'bg-chart-4/12! text-chart-4!' : 'bg-destructive/10! text-destructive!')}>
-                储蓄率 {summary.savingsRate}%
-              </Badge>
-            }
-            icon={PiggyBank}
-            label="本月结余"
-            value={formatMoney(summary.monthBalance, 0)}
-          />
-        </section>
+      <section
+        aria-label="资金概览"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <FinanceStatCard
+          footer={
+            <Badge className="bg-primary/10! text-primary!">{summary.accounts.length} 个账户</Badge>
+          }
+          icon={Landmark}
+          label="总资产"
+          value={formatMoney(summary.totalAssets, 0)}
+        />
+        <FinanceStatCard
+          footer={<DeltaText positiveIsGood suffix="较上月" value={summary.incomeDelta} />}
+          icon={TrendingUp}
+          label="本月收入"
+          value={formatMoney(summary.monthIncome, 0)}
+        />
+        <FinanceStatCard
+          footer={<DeltaText positiveIsGood={false} suffix="较上月" value={summary.expenseDelta} />}
+          icon={CreditCard}
+          label="本月支出"
+          value={formatMoney(summary.monthExpense, 0)}
+        />
+        <FinanceStatCard
+          footer={
+            <Badge
+              className={cn(
+                summary.savingsRate >= 20
+                  ? 'bg-chart-2/12! text-chart-2!'
+                  : summary.savingsRate >= 0
+                    ? 'bg-chart-4/12! text-chart-4!'
+                    : 'bg-destructive/10! text-destructive!',
+              )}
+            >
+              储蓄率 {summary.savingsRate}%
+            </Badge>
+          }
+          icon={PiggyBank}
+          label="本月结余"
+          value={formatMoney(summary.monthBalance, 0)}
+        />
+      </section>
 
-        <section className="grid grid-cols-12 gap-5">
-          <div className="col-span-12 xl:col-span-7">
-            <IncomeExpenseTrend trend={summary.monthlyTrend} />
-          </div>
-          <div className="col-span-12 xl:col-span-5">
-            <CategoryBreakdown slices={summary.categoryBreakdown} />
-          </div>
-        </section>
+      <section className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 xl:col-span-7">
+          <IncomeExpenseTrend trend={summary.monthlyTrend} />
+        </div>
+        <div className="col-span-12 xl:col-span-5">
+          <CategoryBreakdown slices={summary.categoryBreakdown} />
+        </div>
+      </section>
 
-        <section className="grid grid-cols-12 gap-5">
-          <div className="col-span-12 lg:col-span-5">
-            <AccountsPanel accounts={summary.accounts} />
-          </div>
-          <div className="col-span-12 lg:col-span-7">
-            <BudgetPanel budgets={summary.budgets} />
-          </div>
-        </section>
+      <section className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 lg:col-span-5">
+          <AccountsPanel accounts={summary.accounts} />
+        </div>
+        <div className="col-span-12 lg:col-span-7">
+          <BudgetPanel budgets={summary.budgets} />
+        </div>
+      </section>
 
-        <Card>
+      <Card>
         <CardContent className="p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -288,13 +379,21 @@ export default function Finance() {
                 <ArrowLeftRight className="text-muted-foreground" size={16} />
                 交易明细
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">手机端记录的每一笔收支都会同步到这里，可按分类、账户或描述搜索。</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                账户与收支保存后自动计算统计，可按分类、账户或描述搜索。
+              </p>
             </div>
             <Badge className="bg-primary/10! text-primary!">共 {transactions.length} 笔</Badge>
           </div>
-          <DataTable centered columns={columns} data={transactions} fillHeight={false} searchPlaceholder="搜索交易…" />
+          <DataTable
+            centered
+            columns={columns}
+            data={transactions}
+            fillHeight={false}
+            searchPlaceholder="搜索交易…"
+          />
         </CardContent>
-        </Card>
+      </Card>
     </AppPage>
-  )
+  );
 }

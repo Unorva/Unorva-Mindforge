@@ -1,16 +1,12 @@
 package com.unorva.mindforge.common.datasource.handler;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+
 import org.apache.ibatis.reflection.MetaObject;
 
 import java.time.LocalDateTime;
 
-/**
- * MyBatis-Plus 数据对象处理器
- *
- * @Author yanshijie
- * @Date 2026/8/25 23:43
- */
+/** MyBatis-Plus 数据对象处理器 @Author yanshijie @Date 2026/8/25 23:43 */
 public class DataObjectHandler implements MetaObjectHandler {
 
     @Override
@@ -24,7 +20,6 @@ public class DataObjectHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        strictUpdateFill(metaObject, "updatedTime", LocalDateTime.class, LocalDateTime.now());
+        setFieldValByName("updatedTime", LocalDateTime.now(), metaObject);
     }
-
 }

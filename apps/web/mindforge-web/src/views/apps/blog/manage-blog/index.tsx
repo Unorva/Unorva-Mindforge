@@ -1,6 +1,6 @@
-import { BlogProvider } from "src/context/blog-context";
-import ManageBlogTable from "@/components/apps/blog/blogtable/manage-blogtable";
-import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
+import { BlogProvider } from 'src/context/blog-context';
+import ManageBlogTable from '@/components/apps/blog/blogtable/manage-blogtable';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
 
 const MangeBlog = () => {
   return (

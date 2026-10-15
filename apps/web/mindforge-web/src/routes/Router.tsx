@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import { lazy } from 'react';
 import { Navigate, createBrowserRouter } from 'react-router';
 import Loadable from '../layouts/full/shared/loadable/Loadable';
@@ -8,7 +6,6 @@ import RequireAuth from './RequireAuth';
 /* ***Layouts**** */
 const FullLayout = Loadable(lazy(() => import('../layouts/full/FullLayout')));
 const BlankLayout = Loadable(lazy(() => import('../layouts/blank/BlankLayout')));
-
 
 // dashboards
 
@@ -29,7 +26,9 @@ const Mail = Loadable(lazy(() => import('../views/apps/mail')));
 const DailyReview = Loadable(lazy(() => import('../views/apps/daily-review')));
 const Projects = Loadable(lazy(() => import('../views/apps/projects')));
 const Finance = Loadable(lazy(() => import('../views/apps/finance')));
-const SegmentedBarChartTest = Loadable(lazy(() => import('../views/components/segmented-bar-chart')));
+const SegmentedBarChartTest = Loadable(
+  lazy(() => import('../views/components/segmented-bar-chart')),
+);
 const MarkdownEditorTest = Loadable(lazy(() => import('../views/components/markdown-editor')));
 const AiAvatarTest = Loadable(lazy(() => import('../views/components/ai-avatar')));
 
@@ -46,6 +45,7 @@ const Router = [
         element: <FullLayout />,
         children: [
           { index: true, element: <ModernDashboard /> },
+          { path: 'settings', element: <Navigate to="/" replace /> },
           { path: 'dashboards/modern', element: <ModernDashboard /> },
           { path: 'apps/blog/post', element: <Blog /> },
           { path: 'apps/blog/detail/:id', element: <BlogDetail /> },

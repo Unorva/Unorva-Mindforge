@@ -1,5 +1,3 @@
-
-
 import { motion, useInView, Variants } from 'framer-motion';
 import { useRef } from 'react';
 import type { ReactNode } from 'react';

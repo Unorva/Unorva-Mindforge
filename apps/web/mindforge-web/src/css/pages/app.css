@@ -7,11 +7,11 @@
   background-color: var(--color-primary);
 }
 
-.calendar>.absolute {
+.calendar > .absolute {
   top: 51% !important;
 }
 
-.calendarSec>.absolute {
+.calendarSec > .absolute {
   top: 67% !important;
 }
 
@@ -39,28 +39,24 @@
   background-color: var(--color-muted) !important;
 }
 
-.rbc-month-row+.rbc-month-row,
-.rbc-day-bg+.rbc-day-bg,
+.rbc-month-row + .rbc-month-row,
+.rbc-day-bg + .rbc-day-bg,
 .rbc-header,
 .rbc-month-view,
 .rbc-toolbar button,
-.rbc-time-content>*+*>* {
+.rbc-time-content > * + * > * {
   border-color: var(--color-border) !important;
-
-
-
 }
 
 .rbc-month-view {
   border-radius: 12px;
-
 }
 
 .rbc-header {
   padding: 10px 3px !important;
 }
 
-.rbc-day-bg+.rbc-day-bg {
+.rbc-day-bg + .rbc-day-bg {
   border-left: 1px solid var(--color-border) !important;
 }
 
@@ -112,7 +108,7 @@
   border: 1px solid var(--color-border) !important;
 }
 
-.rbc-btn-group button+button {
+.rbc-btn-group button + button {
   border-left: 1px solid var(--color-border) !important;
 }
 
@@ -128,7 +124,6 @@
   .rbc-btn-group {
     width: auto;
     margin-bottom: 15px;
-
   }
 
   .rbc-toolbar .rbc-toolbar-label {
@@ -183,15 +178,14 @@
   font-family: inherit !important;
 }
 
-.ql-toolbar.ql-snow+.ql-container.ql-snow {
+.ql-toolbar.ql-snow + .ql-container.ql-snow {
   border-top: 0 !important;
 }
 
 .darkbg .ql-container.ql-snow,
 .darkbg .ql-toolbar.ql-snow,
-.darkbg .ql-snow .ql-tooltip input[type="text"] {
+.darkbg .ql-snow .ql-tooltip input[type='text'] {
   border-color: var(--color-border) !important;
-
 }
 
 .darkbg .ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg,
@@ -201,19 +195,18 @@
 }
 
 .darkbg .ql-snow .ql-picker,
-.darkbg .ql-snow .ql-tooltip input[type="text"] {
+.darkbg .ql-snow .ql-tooltip input[type='text'] {
   color: white;
 }
 
 .darkbg .ql-snow .ql-picker-options,
 .darkbg .ql-snow .ql-tooltip,
-.darkbg .ql-snow .ql-tooltip input[type="text"] {
+.darkbg .ql-snow .ql-tooltip input[type='text'] {
   background-color: #484b52;
 }
 
-.darkbg .ql-snow .ql-tooltip[data-mode="link"]::before {
+.darkbg .ql-snow .ql-tooltip[data-mode='link']::before {
   color: white;
-
 }
 
 .ql-editor,
@@ -263,7 +256,7 @@
   border-radius: 5px;
 }
 
-.ql-snow .ql-tooltip input[type="text"] {
+.ql-snow .ql-tooltip input[type='text'] {
   height: auto;
   padding: 5px 8px;
   border-radius: 5px;
@@ -291,11 +284,9 @@
   background-color: var(--color-primary);
 }
 
-
 .email-content p {
   margin: 12px 0;
 }
-
 
 .card-hover {
   transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
@@ -303,9 +294,8 @@
 
 .card-hover:hover img {
   transform: scale(1.09);
-  transition: transform .2s;
+  transition: transform 0.2s;
 }
-
 
 .product-thumb .slick-current img {
   border: 2px solid var(--color-primary) !important;
@@ -317,11 +307,11 @@
 
 .slick-prev:before,
 .slick-next:before {
-  color: #2b2b2b
+  color: #2b2b2b;
 }
 
 .slick-next {
-  right: 15px
+  right: 15px;
 }
 
 .slick-prev {

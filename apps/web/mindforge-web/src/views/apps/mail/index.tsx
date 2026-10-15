@@ -1,447 +1,938 @@
-import { useMemo, useState } from 'react'
-import { motion, type Variants } from 'framer-motion'
+import { useCallback, useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
 import {
   Archive,
-  ChevronLeft,
+  Copy,
   File,
   Inbox,
-  Menu,
-  MoreHorizontal,
-  Paperclip,
+  Loader2,
+  Mail,
   Pencil,
-  Search,
+  RefreshCw,
+  Reply,
+  RotateCcw,
   Send,
+  Settings2,
   Star,
   Trash2,
-} from 'lucide-react'
-
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Item, ItemContent, ItemGroup } from '@/components/ui/item'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { AppPage, AppPageHeader, AppWorkspace } from '@/components/shared/app-workspace'
-import { cn } from '@/lib/utils'
-
-type MailCategory = '项目协作' | '系统通知' | '产品更新'
-
-type MailItem = {
-  id: number
-  sender: string
-  initials: string
-  subject: string
-  preview: string
-  body: string[]
-  category: MailCategory
-  time: string
-  date: string
-  starred: boolean
-  unread: boolean
-}
-
-const initialMails: MailItem[] = [
-  {
-    id: 1,
-    sender: '林晓雨',
-    initials: '林',
-    subject: '项目「Mindforge」本周迭代安排',
-    preview: '我已整理好本周需要确认的需求和交付节点，请你抽空看一下。',
-    body: [
-      '你好，',
-      '我已整理好本周需要确认的需求和交付节点。邮件中心这一版会先聚焦收件箱、搜索、筛选与阅读体验，方便团队把零散通知放到同一个入口。',
-      '附件中包含了待确认的事项。确认后我会同步更新项目看板。',
-      '谢谢！',
-    ],
-    category: '项目协作',
-    time: '10:24',
-    date: '今天',
-    starred: true,
-    unread: true,
-  },
-  {
-    id: 2,
-    sender: 'Mindforge',
-    initials: 'M',
-    subject: '你的每日复盘已保存',
-    preview: '2026 年 9 月 8 日的复盘记录已经成功保存。',
-    body: [
-      '你好，',
-      '2026 年 9 月 8 日的每日复盘已经成功保存。你可以随时回到每日复盘页面继续编辑。',
-      '祝工作顺利。',
-    ],
-    category: '系统通知',
-    time: '昨天',
-    date: '昨天',
-    starred: false,
-    unread: true,
-  },
-  {
-    id: 3,
-    sender: '陈思远',
-    initials: '陈',
-    subject: '关于需求优先级的补充说明',
-    preview: 'P0 的两个问题已经补充到需求列表，请在评审前确认。',
-    body: [
-      '你好，',
-      'P0 的两个问题已经补充到需求列表。建议先确认范围，再进入实现排期，避免影响本周的交付节奏。',
-      '如果有需要，我可以一起参加评审。',
-    ],
-    category: '项目协作',
-    time: '昨天',
-    date: '昨天',
-    starred: false,
-    unread: false,
-  },
-  {
-    id: 4,
-    sender: '产品团队',
-    initials: '产',
-    subject: 'Mindforge 组件更新说明',
-    preview: '新的输入组和空状态组件已可在项目中使用。',
-    body: [
-      '大家好，',
-      '新的输入组和空状态组件已经可以在项目中使用。本次更新重点改善了表单、列表和移动端抽屉的体验。',
-      '如有组件需求，欢迎直接在项目中提出。',
-    ],
-    category: '产品更新',
-    time: '9 月 6 日',
-    date: '9 月 6 日',
-    starred: true,
-    unread: false,
-  },
-  {
-    id: 5,
-    sender: '赵一鸣',
-    initials: '赵',
-    subject: '缺陷 #128 已修复，等待验收',
-    preview: '请在测试环境确认详情页的筛选条件是否符合预期。',
-    body: [
-      '你好，',
-      '缺陷 #128 已修复并部署到测试环境。请重点确认详情页的筛选条件、空状态和移动端布局。',
-      '验收通过后我会关闭该问题。',
-    ],
-    category: '项目协作',
-    time: '9 月 5 日',
-    date: '9 月 5 日',
-    starred: false,
-    unread: false,
-  },
-]
+} from 'lucide-react';
+import {
+  deleteMail,
+  getMailAccounts,
+  getMailProviders,
+  getMails,
+  recoverMailSend,
+  saveMail,
+  sendMail,
+  syncMailAccount,
+  updateMail,
+  type MailAccount,
+  type MailFolder,
+  type MailItem,
+  type MailProvider,
+} from '@/api/mail/mail';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
+import AccountManager from './account-manager';
+import MailSelect from './mail-select';
+import { emailAddress, mailDate, mailError, sortMails } from './mail-utils';
 
 const folders = [
-  { label: '收件箱', icon: Inbox, count: 4 },
-  { label: '已加星标', icon: Star },
-  { label: '已发送', icon: Send },
-  { label: '草稿箱', icon: File, count: 2 },
-  { label: '归档', icon: Archive },
-  { label: '废纸篓', icon: Trash2 },
-]
+  { id: 'inbox', label: '收件箱', icon: Inbox },
+  { id: 'starred', label: '星标', icon: Star },
+  { id: 'draft', label: '草稿箱', icon: File },
+  { id: 'sending', label: '发送待确认', icon: Loader2 },
+  { id: 'sent', label: '已发送', icon: Send },
+  { id: 'archive', label: '本地归档', icon: Archive },
+  { id: 'trash', label: '本地回收站', icon: Trash2 },
+] as const;
 
-const categoryClasses: Record<MailCategory, string> = {
-  项目协作: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
-  系统通知: 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
-  产品更新: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-}
-
-const mailListVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.98 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.4,
-      ease: 'easeOut',
-      staggerChildren: 0.25,
-    },
-  },
-}
-
-const mailItemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
-
-function MailFolders({ activeFolder, onSelect }: { activeFolder: string; onSelect: (folder: string) => void }) {
-  return (
-    <div className="flex h-full w-full flex-col gap-6 p-4">
-      <Button className="w-full justify-start" onClick={() => onSelect('新建邮件')}>
-        <Pencil />
-        新建邮件
-      </Button>
-
-      <nav className="space-y-1" aria-label="邮件文件夹">
-        {folders.map(({ label, icon: Icon, count }) => (
-          <Button
-            className={cn(
-              'h-9 w-full justify-start gap-3 px-3',
-              activeFolder === label ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-            )}
-            key={label}
-            onClick={() => onSelect(label)}
-            type="button"
-            variant="ghost"
-          >
-            <Icon className="size-4" />
-            <span className="flex-1 text-left">{label}</span>
-            {count ? <span className="text-xs tabular-nums">{count}</span> : null}
-          </Button>
-        ))}
-      </nav>
-    </div>
-  )
-}
+type ComposeStatus = 'editable' | 'uncertain' | 'sending' | 'sent';
 
 export default function MailApp() {
-  const [mails, setMails] = useState(initialMails)
-  const [selectedId, setSelectedId] = useState(1)
-  const [query, setQuery] = useState('')
-  const [activeFolder, setActiveFolder] = useState('收件箱')
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
-  const [foldersOpen, setFoldersOpen] = useState(false)
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
+  const [mails, setMails] = useState<MailItem[]>([]);
+  const [accounts, setAccounts] = useState<MailAccount[]>([]);
+  const [providers, setProviders] = useState<MailProvider[]>([]);
+  const [accountFilter, setAccountFilter] = useState('all');
+  const [folder, setFolder] = useState<MailFolder | 'starred'>('inbox');
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [accountManagerOpen, setAccountManagerOpen] = useState(false);
+  const [draft, setDraft] = useState<Partial<MailItem> | null>(null);
+  const [composeStatus, setComposeStatus] = useState<ComposeStatus>('editable');
+  const [composeError, setComposeError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<MailItem | null>(null);
+  const [recoverTarget, setRecoverTarget] = useState<MailItem | null>(null);
+  const operation = useRef(false);
+  const recipientInput = useRef<HTMLInputElement>(null);
 
-  const visibleMails = useMemo(() => {
-    const keyword = query.trim().toLowerCase()
-    const folderMails = activeFolder === '已加星标' ? mails.filter((mail) => mail.starred) : mails
-    if (!keyword) return folderMails
-    return folderMails.filter((mail) => `${mail.sender}${mail.subject}${mail.preview}`.toLowerCase().includes(keyword))
-  }, [activeFolder, mails, query])
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [mailResult, accountResult, providerResult] = await Promise.all([
+        getMails(),
+        getMailAccounts(),
+        getMailProviders(),
+      ]);
+      setMails(sortMails(mailResult.data));
+      setAccounts(accountResult.data);
+      setProviders(providerResult.data);
+      setError('');
+      return mailResult.data;
+    } catch (cause) {
+      setError(mailError(cause, '邮件加载失败，请重试。'));
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const selectedMail = visibleMails.find((mail) => mail.id === selectedId) ?? visibleMails[0] ?? mails[0]
-  const allVisibleSelected = visibleMails.length > 0 && visibleMails.every((mail) => selectedIds.includes(mail.id))
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const selectFolder = (folder: string) => {
-    setActiveFolder(folder)
-    setFoldersOpen(false)
-  }
+  const filter =
+    accountFilter === 'all' || accounts.some((item) => String(item.id) === accountFilter)
+      ? accountFilter
+      : 'all';
+  const enabledAccounts = accounts.filter(
+    (account) => account.enabled && account.credentialConfigured,
+  );
+  const defaultAccount = enabledAccounts.find((account) => account.isDefault) ?? enabledAccounts[0];
+  const filteredAccount = accounts.find((account) => String(account.id) === filter);
+  const filteredMails = useMemo(
+    () => mails.filter((item) => filter === 'all' || String(item.accountId) === filter),
+    [mails, filter],
+  );
+  const visibleMails = useMemo(
+    () =>
+      filteredMails.filter(
+        (item) =>
+          (folder === 'starred'
+            ? item.starred && item.folder !== 'trash'
+            : item.folder === folder) &&
+          `${item.sender} ${item.recipient} ${item.subject} ${item.body}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+      ),
+    [filteredMails, folder, query],
+  );
+  const selected = visibleMails.find((item) => item.id === selectedId) ?? visibleMails[0];
+  const locked = !!busy || loading;
+  const composeLocked = locked || composeStatus !== 'editable';
+  const draftIsBound =
+    !!draft?.id && mails.some((mail) => mail.id === draft.id && mail.accountId !== null);
 
-  const toggleStar = (id: number) => {
-    setMails((current) => current.map((mail) => (mail.id === id ? { ...mail, starred: !mail.starred } : mail)))
-  }
+  const replaceMail = (mail: MailItem) => {
+    setMails((items) => sortMails([mail, ...items.filter((item) => item.id !== mail.id)]));
+  };
 
-  const toggleSelected = (id: number, checked: boolean) => {
-    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selected) => selected !== id)))
-  }
+  const openComposer = (mail?: Partial<MailItem>) => {
+    const account =
+      filteredAccount?.enabled && filteredAccount.credentialConfigured
+        ? filteredAccount
+        : defaultAccount;
+    setDraft({ recipient: '', subject: '', body: '', accountId: account?.id ?? null, ...mail });
+    setComposeStatus('editable');
+    setComposeError('');
+  };
+
+  const reply = (mail: MailItem) => {
+    const account = enabledAccounts.find((item) => item.id === mail.accountId) ?? defaultAccount;
+    const replyingToSelf = emailAddress(mail.sender).toLowerCase() === account?.email.toLowerCase();
+    openComposer({
+      accountId: account?.id ?? null,
+      recipient: emailAddress(replyingToSelf ? mail.recipient : mail.sender),
+      subject: /^re:/i.test(mail.subject) ? mail.subject : `Re: ${mail.subject}`.slice(0, 200),
+      body: `\n\n--- 原邮件 ---\n发件人：${mail.sender}\n时间：${mailDate(mail.createdAt, true)}\n\n${mail.body}`.slice(
+        0,
+        200000,
+      ),
+    });
+  };
+
+  const apply = async (mail: MailItem, updates: Partial<MailItem>) => {
+    if (operation.current || mail.folder === 'sending') return;
+    operation.current = true;
+    setBusy('update');
+    try {
+      replaceMail((await updateMail(mail.id, updates)).data);
+      setError('');
+    } catch (cause) {
+      setError(mailError(cause, '邮件更新失败，请重试。'));
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
+
+  const synchronize = async () => {
+    const targets =
+      filter === 'all'
+        ? enabledAccounts
+        : enabledAccounts.filter((account) => String(account.id) === filter);
+    if (operation.current || !targets.length) return;
+    operation.current = true;
+    setBusy('sync');
+    setError('');
+    let count = 0;
+    const failures: string[] = [];
+    try {
+      for (const account of targets) {
+        try {
+          count += (await syncMailAccount(account.id)).data.syncedCount;
+        } catch (cause) {
+          failures.push(`${account.email}：${mailError(cause, '同步失败')}`);
+        }
+      }
+      const refreshed = await load();
+      if (failures.length) {
+        setError(
+          `部分邮箱同步失败。${failures.join('；')}${refreshed === null ? '；列表刷新失败，请重试。' : ''}`,
+        );
+      }
+      if (targets.length > failures.length) {
+        toast.add({
+          type: 'success',
+          title: '收件箱同步完成',
+          description: `已同步 ${targets.length - failures.length} 个邮箱，读取或更新 ${count} 封邮件。`,
+        });
+      }
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
+
+  const persistDraft = async (deliver: boolean) => {
+    if (!draft || !draft.subject?.trim() || operation.current || composeStatus !== 'editable')
+      return;
+    const account = enabledAccounts.find((item) => item.id === draft.accountId);
+    if (deliver && (!account || !draft.recipient?.trim())) {
+      setComposeError('请选择已启用的发件邮箱，并填写一个收件邮箱地址。');
+      return;
+    }
+    if (deliver && !recipientInput.current?.reportValidity()) return;
+    operation.current = true;
+    setBusy(deliver ? 'send' : 'save');
+    setComposeError('');
+    let savedId: number | undefined;
+    let sending = false;
+    try {
+      // Reuse a committed draft ID for delivery and retries after network failures.
+      const saved = (
+        await saveMail({
+          ...draft,
+          subject: draft.subject.trim(),
+          folder: 'draft',
+          sender: account?.email ?? '',
+        })
+      ).data;
+      savedId = saved.id;
+      replaceMail(saved);
+      setDraft((current) => (current ? { ...current, id: saved.id } : current));
+      if (!deliver || !account) {
+        setDraft(null);
+        setFolder('draft');
+        setAccountFilter(saved.accountId ? String(saved.accountId) : 'all');
+        setQuery('');
+        setSelectedId(saved.id);
+        toast.add({ type: 'success', title: '草稿已保存' });
+        return;
+      }
+      sending = true;
+      setComposeStatus('sending');
+      const sent = (
+        await sendMail({
+          id: saved.id,
+          accountId: account.id,
+          recipient: draft.recipient!.trim(),
+          subject: saved.subject,
+          body: saved.body,
+        })
+      ).data;
+      replaceMail(sent);
+      setDraft(null);
+      setComposeStatus('editable');
+      setFolder('sent');
+      setQuery('');
+      setAccountFilter(String(account.id));
+      setSelectedId(sent.id);
+      toast.add({
+        type: 'success',
+        title: '邮件已发送',
+        description: `已通过 ${account.email} 发出。`,
+      });
+    } catch (cause) {
+      const message = mailError(cause, deliver ? '发送失败。' : '草稿保存失败。');
+      if (sending && savedId) {
+        setComposeStatus('uncertain');
+        try {
+          const currentMails = (await getMails()).data;
+          setMails(sortMails(currentMails));
+          const current = currentMails.find((item) => item.id === savedId);
+          setComposeStatus(
+            current?.folder === 'draft'
+              ? 'editable'
+              : current?.folder === 'sent'
+                ? 'sent'
+                : current?.folder === 'sending'
+                  ? 'sending'
+                  : 'uncertain',
+          );
+          setComposeError(
+            `${message} 编辑内容已保留。${current?.folder === 'draft' ? '草稿可继续编辑或重试发送。' : current?.folder === 'sent' ? '服务器记录为已发送，请勿重复发送。' : '请先核对邮箱服务商的发件记录，暂时不能再次发送。'}`,
+          );
+        } catch {
+          setComposeError(
+            `${message} 编辑内容已保留。发送状态尚未确认，请刷新状态并核对邮箱服务商的发件记录，暂时不能再次发送。`,
+          );
+        }
+      } else {
+        setComposeError(`${message} 编辑内容已保留。`);
+      }
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
+
+  const refreshSendState = async () => {
+    if (!draft?.id || operation.current) return;
+    operation.current = true;
+    setBusy('refresh-send');
+    try {
+      const result = (await getMails()).data;
+      setMails(sortMails(result));
+      const current = result.find((item) => item.id === draft.id);
+      const status =
+        current?.folder === 'draft'
+          ? 'editable'
+          : current?.folder === 'sent'
+            ? 'sent'
+            : current?.folder === 'sending'
+              ? 'sending'
+              : 'uncertain';
+      setComposeStatus(status);
+      setComposeError(
+        status === 'editable'
+          ? '服务器记录为草稿，编辑内容已保留，可继续发送。'
+          : status === 'sent'
+            ? '服务器记录为已发送，请勿重复发送。'
+            : '发送结果尚未确认，请核对服务商发件记录。关闭此窗口后，可在“发送待确认”中核对并恢复。',
+      );
+    } catch (cause) {
+      setComposeError(mailError(cause, '发送状态刷新失败，请重试。'));
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
+
+  const saveDraft = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void persistDraft(false);
+  };
+
+  const permanentlyDelete = async () => {
+    if (!deleteTarget || operation.current) return;
+    operation.current = true;
+    setBusy('delete');
+    try {
+      await deleteMail(deleteTarget.id);
+      setMails((items) => items.filter((item) => item.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      setError('');
+    } catch (cause) {
+      setError(mailError(cause, '删除失败，请重试。'));
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
+
+  const recover = async () => {
+    if (!recoverTarget || operation.current) return;
+    operation.current = true;
+    setBusy('recover');
+    try {
+      const mail = (await recoverMailSend(recoverTarget.id)).data;
+      replaceMail(mail);
+      setRecoverTarget(null);
+      setFolder('draft');
+      setAccountFilter(mail.accountId ? String(mail.accountId) : 'all');
+      setQuery('');
+      setSelectedId(mail.id);
+      setError('');
+      toast.add({ type: 'success', title: '已恢复为草稿', description: '恢复操作不会发送邮件。' });
+    } catch (cause) {
+      setError(mailError(cause, '发送状态恢复失败，请重试。'));
+    } finally {
+      operation.current = false;
+      setBusy('');
+    }
+  };
 
   return (
     <AppPage className="gap-5 bg-transparent p-0">
       <AppPageHeader
         title="邮件中心"
+        extra={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={locked} onClick={() => setAccountManagerOpen(true)}>
+              <Settings2 />
+              管理邮箱
+            </Button>
+            <Button disabled={locked} onClick={() => openComposer()}>
+              <Pencil />
+              写邮件
+            </Button>
+          </div>
+        }
       />
-      <Card className="overflow-hidden p-0">
-      <AppWorkspace className="flex flex-col rounded-none bg-card">
-        <div className="flex items-center justify-between border-b p-3 lg:hidden">
-          <Button aria-label="打开邮件文件夹" onClick={() => setFoldersOpen(true)} size="icon" variant="outline">
-            <Menu />
+      <p className="text-sm text-muted-foreground">
+        连接邮箱后同步收件箱，通过所选邮箱真实发送邮件。收件邮件的已读和星标会同步到邮箱服务；归档、回收站和删除仅影响工作台本地缓存。
+      </p>
+      {error && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/30 p-3 text-sm text-destructive"
+        >
+          <span className="min-w-0 break-words">{error}</span>
+          <Button disabled={locked} onClick={() => void load()} size="sm" variant="outline">
+            刷新列表
           </Button>
-          <Button onClick={() => selectFolder('新建邮件')} size="sm"><Pencil />新建邮件</Button>
         </div>
-        <div className="flex min-h-0 flex-1">
-          <aside className="hidden w-56 shrink-0 border-r lg:block">
-            <MailFolders activeFolder={activeFolder} onSelect={selectFolder} />
-          </aside>
-
-          <Sheet onOpenChange={setFoldersOpen} open={foldersOpen}>
-            <SheetContent className="w-72 p-0" showCloseButton={false} side="left">
-              <SheetTitle className="sr-only">邮件文件夹</SheetTitle>
-              <MailFolders activeFolder={activeFolder} onSelect={selectFolder} />
-            </SheetContent>
-          </Sheet>
-
-          <section
-            aria-label="邮件列表"
-            className={cn(
-              'min-w-0 w-full flex-1 border-r md:flex md:w-auto xl:max-w-[390px]',
-              mobileDetailOpen ? 'hidden md:flex' : 'flex',
-            )}
-          >
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="space-y-3 border-b p-3">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input aria-label="搜索邮件" className="pl-9!" onChange={(event) => setQuery(event.target.value)} placeholder="搜索邮件…" value={query} />
-                </div>
-                <div className="flex items-center gap-3 px-1 text-xs text-muted-foreground">
-                  <Checkbox
-                    aria-label="选择全部可见邮件"
-                    checked={allVisibleSelected}
-                    onCheckedChange={(checked) => setSelectedIds(checked ? visibleMails.map((mail) => mail.id) : [])}
-                  />
-                  <span>{selectedIds.length ? `已选择 ${selectedIds.length} 封` : `${visibleMails.length} 封邮件`}</span>
-                </div>
-              </div>
-
-              <ScrollArea className="min-h-0 flex-1">
-                {visibleMails.length ? (
-                  <motion.div
-                    animate="show"
-                    initial="hidden"
-                    variants={mailListVariants}
+      )}
+      {!loading && !error && !accounts.length && (
+        <Empty className="border bg-card">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Mail />
+            </EmptyMedia>
+            <EmptyTitle>连接你的第一个邮箱</EmptyTitle>
+            <EmptyDescription>
+              支持 QQ、163、Gmail、Outlook 和自定义 IMAP / SMTP 邮箱。添加邮箱并测试连接后即可同步。
+            </EmptyDescription>
+          </EmptyHeader>
+          <Button variant="outline" disabled={locked} onClick={() => setAccountManagerOpen(true)}>
+            添加邮箱
+          </Button>
+        </Empty>
+      )}
+      <Card className="overflow-hidden py-0">
+        <div className="flex flex-wrap items-center gap-3 border-b p-3">
+          <div className="min-w-0 w-full sm:w-64">
+            <MailSelect
+              label="筛选邮箱"
+              value={filter}
+              options={[
+                { value: 'all', label: '全部邮箱' },
+                ...accounts.map((account) => ({
+                  value: String(account.id),
+                  label: `${account.displayName || account.email}${account.enabled ? '' : '（已停用）'}`,
+                })),
+              ]}
+              onChange={(value) => {
+                setAccountFilter(value);
+                setSelectedId(null);
+              }}
+            />
+          </div>
+          {filteredAccount && (
+            <span className="min-w-0 flex-1 break-all text-xs text-muted-foreground">
+              {filteredAccount.email} · 最近同步 {mailDate(filteredAccount.lastSyncAt, true)}
+            </span>
+          )}
+          <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="ghost" disabled={locked} onClick={() => void load()}>
+              <RefreshCw />
+              刷新
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={
+                locked ||
+                (filter === 'all'
+                  ? !enabledAccounts.length
+                  : !enabledAccounts.some((account) => String(account.id) === filter))
+              }
+              onClick={() => void synchronize()}
+            >
+              {busy === 'sync' ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              {busy === 'sync' ? '同步中…' : filter === 'all' ? '同步全部邮箱' : '同步此邮箱'}
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1 border-b p-3">
+          {folders.map((item) => (
+            <Button
+              key={item.id}
+              variant={folder === item.id ? 'secondary' : 'ghost'}
+              onClick={() => {
+                setFolder(item.id);
+                setSelectedId(null);
+              }}
+            >
+              <item.icon />
+              {item.label}
+              <span className="text-xs text-muted-foreground">
+                {
+                  filteredMails.filter((mail) =>
+                    item.id === 'starred'
+                      ? mail.starred && mail.folder !== 'trash'
+                      : mail.folder === item.id,
+                  ).length
+                }
+              </span>
+            </Button>
+          ))}
+        </div>
+        <div className="grid min-h-[560px] grid-cols-1 md:grid-cols-[minmax(240px,340px)_1fr]">
+          <section className="border-b md:border-b-0 md:border-r" aria-label="邮件列表">
+            <div className="p-3">
+              <Input
+                aria-label="搜索邮件"
+                placeholder="搜索标题、地址或内容"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+            <ScrollArea className="h-[500px]">
+              {loading ? (
+                <p className="p-5 text-sm text-muted-foreground">正在加载邮件…</p>
+              ) : !visibleMails.length ? (
+                <p className="p-5 text-center text-sm text-muted-foreground">
+                  当前文件夹暂无邮件
+                  {folder === 'inbox' && accounts.length > 0 ? '，可同步邮箱收件箱。' : '。'}
+                </p>
+              ) : (
+                visibleMails.map((mail) => (
+                  <div
+                    className={cn(
+                      'flex items-start border-t p-3',
+                      mail.id === selected?.id && 'bg-muted/50',
+                    )}
+                    key={mail.id}
                   >
-                  <ItemGroup className="gap-0 overflow-hidden">
-                    {visibleMails.map((mail) => (
-                    <motion.div key={mail.id} role="listitem" variants={mailItemVariants}>
-                    <Item
-                      className={cn(
-                        'cursor-pointer flex-nowrap gap-3 rounded-none border-x-0 border-t-0 px-3 py-3 hover:bg-muted/60',
-                        selectedMail.id === mail.id && 'bg-muted',
-                        mail.unread && 'bg-primary/[0.035]',
-                      )}
+                    <button
+                      className="min-w-0 flex-1 text-left"
+                      type="button"
                       onClick={() => {
-                        setSelectedId(mail.id)
-                        setMobileDetailOpen(true)
+                        setSelectedId(mail.id);
+                        if (mail.unread && !locked && mail.folder !== 'sending')
+                          void apply(mail, { unread: false });
                       }}
-                      render={<article />}
                     >
-                      <div className="pt-1" onClick={(event) => event.stopPropagation()}>
-                        <Checkbox
-                          aria-label={`选择来自 ${mail.sender} 的邮件`}
-                          checked={selectedIds.includes(mail.id)}
-                          onCheckedChange={(checked) => toggleSelected(mail.id, checked)}
-                        />
+                      <p className={cn('truncate text-sm', mail.unread && 'font-semibold')}>
+                        {mail.subject || '（无主题）'}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {['draft', 'sent', 'sending'].includes(mail.folder)
+                          ? `收件人：${mail.recipient || '未填写'}`
+                          : mail.sender || '工作台'}
+                      </p>
+                      <p className="mt-2 truncate text-xs text-muted-foreground">
+                        {mail.body || '暂无正文'}
+                      </p>
+                      <div className="mt-2 flex min-w-0 items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                        <span className="truncate">
+                          {accounts.find((account) => account.id === mail.accountId)?.displayName ||
+                            accounts.find((account) => account.id === mail.accountId)?.email ||
+                            '未关联邮箱'}
+                        </span>
+                        <span className="shrink-0">{mailDate(mail.createdAt)}</span>
                       </div>
-                      <ItemContent className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className={cn('min-w-0 flex-1 truncate text-sm', mail.unread && 'font-semibold')}>{mail.sender}</p>
-                          <time className="shrink-0 text-xs text-muted-foreground">{mail.time}</time>
-                        </div>
-                        <p className={cn('mt-1 truncate text-sm', mail.unread && 'font-medium')}>{mail.subject}</p>
-                        <p className="mt-1 truncate text-xs leading-5 text-muted-foreground">{mail.preview}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Badge className={cn('border-0 text-[11px]', categoryClasses[mail.category])} variant="outline">
-                            {mail.category}
-                          </Badge>
+                    </button>
+                    <Button
+                      aria-label={mail.starred ? '取消星标' : '添加星标'}
+                      size="icon-sm"
+                      variant="ghost"
+                      disabled={locked || mail.folder === 'sending'}
+                      onClick={() => void apply(mail, { starred: !mail.starred })}
+                    >
+                      <Star className={cn(mail.starred && 'fill-amber-400 text-amber-400')} />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </ScrollArea>
+          </section>
+          <section aria-label="邮件详情" className="min-w-0">
+            {selected ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 border-b p-3">
+                  {selected.folder === 'draft' && (
+                    <Button
+                      disabled={locked}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openComposer(selected)}
+                    >
+                      <Pencil />
+                      编辑 / 发送
+                    </Button>
+                  )}
+                  {selected.folder !== 'draft' && selected.folder !== 'sending' && (
+                    <Button
+                      disabled={locked}
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        openComposer({
+                          accountId: selected.accountId,
+                          recipient: selected.recipient,
+                          subject: selected.subject,
+                          body: selected.body,
+                        })
+                      }
+                    >
+                      <Copy />
+                      复制为新草稿
+                    </Button>
+                  )}
+                  {selected.folder !== 'draft' && selected.folder !== 'sending' && (
+                    <Button
+                      disabled={locked}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => reply(selected)}
+                    >
+                      <Reply />
+                      回复
+                    </Button>
+                  )}
+                  {selected.folder === 'sending' ? (
+                    <Button
+                      disabled={locked}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRecoverTarget(selected)}
+                    >
+                      <RotateCcw />
+                      核对后恢复草稿
+                    </Button>
+                  ) : (
+                    <>
+                      {selected.folder !== 'archive' &&
+                        selected.folder !== 'trash' &&
+                        selected.folder !== 'draft' && (
                           <Button
-                            aria-label={mail.starred ? '取消星标' : '添加星标'}
-                            className="ml-auto text-muted-foreground hover:text-amber-500"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              toggleStar(mail.id)
-                            }}
-                            size="icon-sm"
-                            type="button"
+                            disabled={locked}
+                            size="sm"
                             variant="ghost"
+                            onClick={() => void apply(selected, { folder: 'archive' })}
                           >
-                            <Star className={cn('size-4', mail.starred && 'fill-amber-400 text-amber-400')} />
+                            <Archive />
+                            本地归档
                           </Button>
-                        </div>
-                      </ItemContent>
-                    </Item>
-                    </motion.div>
-                    ))}
-                  </ItemGroup>
-                  </motion.div>
-                ) : (
-                  <div className="flex h-full min-h-72 flex-col items-center justify-center px-6 text-center">
-                    <Search className="size-7 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-medium">没有找到匹配的邮件</p>
-                    <p className="mt-1 text-xs text-muted-foreground">换个关键词试试</p>
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          </section>
-
-          <section className="hidden min-w-0 flex-1 flex-col md:flex" aria-label="邮件详情">
-            <div className="flex min-h-16 items-center gap-1 border-b px-4 sm:px-6">
-              <Button aria-label="归档邮件" size="icon-sm" variant="ghost"><Archive /></Button>
-              <Button aria-label="删除邮件" size="icon-sm" variant="ghost"><Trash2 /></Button>
-              <Button aria-label="更多操作" className="ml-auto" size="icon-sm" variant="ghost"><MoreHorizontal /></Button>
-            </div>
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="mx-auto max-w-3xl p-6 sm:p-8">
-                <div className="flex items-start gap-4">
-                  <Avatar size="lg">
-                    <AvatarFallback>{selectedMail.initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <p className="font-semibold">{selectedMail.sender}</p>
-                      <Badge className={cn('border-0 text-[11px]', categoryClasses[selectedMail.category])} variant="outline">
-                        {selectedMail.category}
-                      </Badge>
+                        )}
+                      {(selected.folder === 'archive' || selected.folder === 'trash') && (
+                        <Button
+                          disabled={locked}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => void apply(selected, { folder: 'inbox' })}
+                        >
+                          <RotateCcw />
+                          恢复到收件箱
+                        </Button>
+                      )}
+                      <Button
+                        disabled={locked}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void apply(selected, { unread: !selected.unread })}
+                      >
+                        {selected.unread ? '标为已读' : '标为未读'}
+                      </Button>
+                      <Button
+                        disabled={locked}
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto text-destructive"
+                        onClick={() =>
+                          selected.folder === 'trash'
+                            ? setDeleteTarget(selected)
+                            : void apply(selected, { folder: 'trash' })
+                        }
+                      >
+                        <Trash2 />
+                        {selected.folder === 'trash' ? '删除本地缓存' : '移入本地回收站'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+                <CardContent className="space-y-5 p-6">
+                  {selected.folder === 'sending' && (
+                    <div
+                      role="status"
+                      className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm leading-6"
+                    >
+                      此邮件正在发送，或发送结果尚未确认。请先刷新列表并核对邮箱服务商的发件记录；暂时不能编辑、删除或重复发送。发送开始至少
+                      5 分钟后，可在确认未发出时恢复草稿。
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">发送给 我 · {selectedMail.date} {selectedMail.time}</p>
+                  )}
+                  <h2 className="break-words text-xl font-semibold">
+                    {selected.subject || '（无主题）'}
+                  </h2>
+                  <div className="text-xs leading-6 text-muted-foreground">
+                    <p className="break-all">发件人：{selected.sender || '未填写'}</p>
+                    <p className="break-all">收件人：{selected.recipient || '未填写'}</p>
+                    <p className="break-all">
+                      所属邮箱：
+                      {accounts.find((account) => account.id === selected.accountId)?.email ||
+                        '未关联邮箱'}
+                    </p>
+                    <p>时间：{mailDate(selected.createdAt, true)}</p>
+                    <Badge variant="outline">
+                      {folders.find((item) => item.id === selected.folder)?.label}
+                    </Badge>
                   </div>
-                  <Button aria-label="添加星标" onClick={() => toggleStar(selectedMail.id)} size="icon-sm" variant="ghost">
-                    <Star className={cn('size-4', selectedMail.starred && 'fill-amber-400 text-amber-400')} />
-                  </Button>
-                </div>
-
-                <div className="mt-8 border-b pb-6">
-                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{selectedMail.subject}</h2>
-                </div>
-
-                <div className="space-y-4 pt-6 text-sm leading-7 text-foreground/85">
-                  {selectedMail.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </div>
-
-                <Item className="mt-8 flex-nowrap bg-muted/30 text-xs text-muted-foreground" size="sm" variant="outline">
-                  <Paperclip className="size-4" />
-                  <span className="flex-1 truncate">本周迭代安排.pdf</span>
-                  <span>1.2 MB</span>
-                </Item>
-
-                <div className="mt-8 flex flex-wrap gap-2">
-                  <Button size="sm"><ChevronLeft className="rotate-180" />回复</Button>
-                  <Button size="sm" variant="outline">转发</Button>
-                </div>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                    {selected.body || '暂无正文'}
+                  </p>
+                </CardContent>
+              </>
+            ) : (
+              <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                <Mail />
+                选择一封邮件或写邮件
               </div>
-            </ScrollArea>
-          </section>
-
-          <section
-            aria-label="移动端邮件详情"
-            className={cn('min-w-0 flex-1 flex-col md:hidden', mobileDetailOpen ? 'flex' : 'hidden')}
-          >
-            <div className="flex items-center gap-2 border-b px-3 py-3">
-              <Button aria-label="返回邮件列表" onClick={() => setMobileDetailOpen(false)} size="icon-sm" variant="ghost"><ChevronLeft /></Button>
-              <p className="min-w-0 flex-1 truncate text-sm font-medium">{selectedMail.subject}</p>
-              <Button aria-label="更多操作" size="icon-sm" variant="ghost"><MoreHorizontal /></Button>
-            </div>
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="p-5">
-                <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarFallback>{selectedMail.initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{selectedMail.sender}</p>
-                      <Badge className={cn('border-0 text-[11px]', categoryClasses[selectedMail.category])} variant="outline">
-                        {selectedMail.category}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">发送给 我 · {selectedMail.date} {selectedMail.time}</p>
-                  </div>
-                </div>
-                <h2 className="mt-7 text-xl font-semibold tracking-tight">{selectedMail.subject}</h2>
-                <div className="mt-6 space-y-4 text-sm leading-7 text-foreground/85">
-                  {selectedMail.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </div>
-                <Item className="mt-7 flex-nowrap bg-muted/30 text-xs text-muted-foreground" size="sm" variant="outline">
-                  <Paperclip className="size-4" />
-                  <span className="flex-1 truncate">本周迭代安排.pdf</span>
-                  <span>1.2 MB</span>
-                </Item>
-                <div className="mt-6 flex gap-2">
-                  <Button size="sm"><ChevronLeft className="rotate-180" />回复</Button>
-                  <Button size="sm" variant="outline">转发</Button>
-                </div>
-              </div>
-            </ScrollArea>
+            )}
           </section>
         </div>
-      </AppWorkspace>
       </Card>
+      <AccountManager
+        open={accountManagerOpen}
+        onOpenChange={setAccountManagerOpen}
+        accounts={accounts}
+        providers={providers}
+        onChanged={async () => {
+          await load();
+        }}
+        externalBusy={locked}
+      />
+      <Dialog
+        open={draft !== null}
+        onOpenChange={(open) => {
+          if (!open && !locked) setDraft(null);
+        }}
+      >
+        <DialogContent
+          className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+          showCloseButton={!locked}
+        >
+          <DialogHeader>
+            <DialogTitle>{draft?.id ? '编辑邮件草稿' : '写邮件'}</DialogTitle>
+            <DialogDescription>
+              保存草稿不会发件；点击发送后将通过所选邮箱发送真实邮件。
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={saveDraft} noValidate className="space-y-4">
+            <fieldset disabled={composeLocked} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mail-from-account">发件邮箱</Label>
+                <MailSelect
+                  id="mail-from-account"
+                  label="发件邮箱"
+                  value={draft?.accountId ? String(draft.accountId) : 'none'}
+                  disabled={composeLocked}
+                  options={[
+                    ...(!draftIsBound
+                      ? [{ value: 'none', label: '暂不关联邮箱（仅保存草稿）' }]
+                      : []),
+                    ...accounts.map((account) => ({
+                      value: String(account.id),
+                      label: `${account.displayName ? `${account.displayName} · ` : ''}${account.email}${!account.enabled ? '（已停用）' : !account.credentialConfigured ? '（未配置凭据）' : ''}`,
+                    })),
+                  ]}
+                  onChange={(value) => {
+                    setDraft({ ...draft, accountId: value === 'none' ? null : Number(value) });
+                    setComposeError('');
+                  }}
+                />
+                {!enabledAccounts.length && (
+                  <p className="text-xs text-muted-foreground">
+                    先在“管理邮箱”添加已启用的邮箱和授权凭据，即可发送。当前仍可保存草稿。
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recipient">收件邮箱</Label>
+                <Input
+                  ref={recipientInput}
+                  id="recipient"
+                  type="email"
+                  required
+                  maxLength={254}
+                  placeholder="recipient@example.com（一次发送给一个地址）"
+                  value={draft?.recipient ?? ''}
+                  onChange={(event) => setDraft({ ...draft, recipient: event.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="subject">主题</Label>
+                <Input
+                  id="subject"
+                  required
+                  maxLength={200}
+                  value={draft?.subject ?? ''}
+                  onChange={(event) => setDraft({ ...draft, subject: event.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="body">正文</Label>
+                <Textarea
+                  id="body"
+                  rows={10}
+                  maxLength={200000}
+                  value={draft?.body ?? ''}
+                  onChange={(event) => setDraft({ ...draft, body: event.target.value })}
+                />
+              </div>
+            </fieldset>
+            {composeError && (
+              <p role="alert" className="rounded-lg bg-muted p-3 text-sm leading-6">
+                {composeError}
+              </p>
+            )}
+            <DialogFooter className="flex-wrap">
+              <Button
+                type="button"
+                disabled={locked}
+                variant="outline"
+                onClick={() => setDraft(null)}
+              >
+                关闭
+              </Button>
+              {composeStatus !== 'editable' ? (
+                <Button
+                  type="button"
+                  disabled={locked}
+                  variant="outline"
+                  onClick={() => void refreshSendState()}
+                >
+                  <RefreshCw />
+                  刷新发送状态
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    disabled={composeLocked || !draft?.subject?.trim()}
+                    variant="outline"
+                    type="submit"
+                  >
+                    {busy === 'save' ? <Loader2 className="animate-spin" /> : <File />}
+                    {busy === 'save' ? '保存中…' : '保存草稿'}
+                  </Button>
+                  <Button
+                    disabled={
+                      composeLocked ||
+                      !draft?.subject?.trim() ||
+                      !draft.recipient?.trim() ||
+                      !enabledAccounts.some((account) => account.id === draft.accountId)
+                    }
+                    type="button"
+                    onClick={() => void persistDraft(true)}
+                  >
+                    {busy === 'send' ? <Loader2 className="animate-spin" /> : <Send />}
+                    {busy === 'send' ? '发送中…' : '发送邮件'}
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !locked) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent showCloseButton={!locked}>
+          <DialogHeader>
+            <DialogTitle>删除本地邮件缓存</DialogTitle>
+            <DialogDescription>
+              “{deleteTarget?.subject}”将在工作台中永久删除。邮箱服务商中的原始邮件不会被删除。
+            </DialogDescription>
+          </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button disabled={locked} variant="outline" onClick={() => setDeleteTarget(null)}>
+              取消
+            </Button>
+            <Button
+              disabled={locked}
+              variant="destructive"
+              onClick={() => void permanentlyDelete()}
+            >
+              {busy === 'delete' ? '删除中…' : '确认删除本地缓存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={recoverTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !locked) setRecoverTarget(null);
+        }}
+      >
+        <DialogContent showCloseButton={!locked}>
+          <DialogHeader>
+            <DialogTitle>核对发送结果</DialogTitle>
+            <DialogDescription>
+              请先到邮箱服务商检查“{recoverTarget?.subject}
+              ”是否已经发出。只有确认未发出，且发送开始至少 5
+              分钟后，才可恢复草稿。如果已经发出，请保留当前记录，避免再次发送。
+            </DialogDescription>
+          </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button disabled={locked} variant="outline" onClick={() => setRecoverTarget(null)}>
+              取消
+            </Button>
+            <Button disabled={locked} onClick={() => void recover()}>
+              {busy === 'recover' ? '恢复中…' : '已核对未发出，恢复草稿'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppPage>
-  )
+  );
 }

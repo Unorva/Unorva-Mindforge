@@ -20,8 +20,7 @@ let SettingsData: AccountSettingsData = {
     temperature: 0.7,
     maxTokens: 4096,
     language: '简体中文',
-    systemPrompt:
-      '你是 Mindforge 工作区的 AI 助手，回答保持简洁、专业，优先使用中文。',
+    systemPrompt: '你是 Mindforge 工作区的 AI 助手，回答保持简洁、专业，优先使用中文。',
     features: {
       smartSummary: true,
       autoTag: true,
@@ -134,8 +133,7 @@ let SettingsData: AccountSettingsData = {
 
 let nextEmailId = SettingsData.emails.length + 1;
 
-const success = () =>
-  HttpResponse.json({ status: 200, msg: 'Success', data: SettingsData });
+const success = () => HttpResponse.json({ status: 200, msg: 'Success', data: SettingsData });
 
 const failure = (error: unknown) =>
   HttpResponse.json({ status: 400, msg: 'Internal server error', error });
@@ -204,7 +202,7 @@ export const SettingsHandlers = [
       SettingsData = {
         ...SettingsData,
         emails: SettingsData.emails.map((item) =>
-          item.id === id ? { ...item, verified: true } : item
+          item.id === id ? { ...item, verified: true } : item,
         ),
       };
       return success();
@@ -239,7 +237,7 @@ export const SettingsHandlers = [
         // HTTP 400 会由 global-fetcher 统一弹出错误提示
         return HttpResponse.json(
           { status: 400, message: '主要邮箱不能解绑，请先切换主要邮箱。' },
-          { status: 400 }
+          { status: 400 },
         );
       }
       SettingsData = {

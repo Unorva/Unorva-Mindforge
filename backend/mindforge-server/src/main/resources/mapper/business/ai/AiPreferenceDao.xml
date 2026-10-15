@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd"[]>
+<mapper namespace="com.unorva.mindforge.module.business.ai.dao.AiPreferenceDao">
+    <select id="findJson" resultType="java.lang.String">SELECT ai_json FROM mf_user_setting WHERE user_id = #{userId}</select>
+    <insert id="save">INSERT INTO mf_user_setting (user_id, ai_json) VALUES (#{userId}, #{json}) ON DUPLICATE KEY UPDATE ai_json = VALUES(ai_json), updated_at = CURRENT_TIMESTAMP</insert>
+</mapper>

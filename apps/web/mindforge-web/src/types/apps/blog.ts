@@ -1,6 +1,3 @@
-
-
-
 export type Profile = {
   id?: string | number;
   avatar?: string;

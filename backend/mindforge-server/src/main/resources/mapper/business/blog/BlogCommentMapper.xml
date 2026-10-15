@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.blog.dao.BlogCommentDao">
+    <resultMap id="BlogCommentBO" type="com.unorva.mindforge.module.business.blog.domain.bo.BlogCommentBO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="postId" column="post_id" javaType="_long"/>
+            <arg name="parentId" column="parent_id" javaType="java.lang.Long"/>
+            <arg name="content" column="content" javaType="java.lang.String"/>
+            <arg name="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <select id="listComments" resultMap="BlogCommentBO">
+        SELECT id, post_id, parent_id, content, created_at FROM mf_blog_comment WHERE user_id = #{userId} ORDER BY id ASC LIMIT 5000
+    </select>
+    <select id="countComment" resultType="long">
+        SELECT COUNT(1) FROM mf_blog_comment WHERE user_id = #{userId} AND post_id = #{postId} AND id = #{id}
+    </select>
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+        INSERT INTO mf_blog_comment (user_id, post_id, parent_id, content) VALUES (#{entity.userId}, #{entity.postId}, #{entity.parentId}, #{entity.content})
+    </insert>
+    <delete id="deletePostComments">
+        DELETE FROM mf_blog_comment WHERE user_id = #{userId} AND post_id = #{postId}
+    </delete>
+</mapper>

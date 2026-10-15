@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils";
-import { ChevronRight } from "lucide-react";
-import { ChildItem } from "../sidebaritems";
-import { motion, AnimatePresence } from "motion/react";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { cn } from '@/lib/utils';
+import { ChevronRight } from 'lucide-react';
+import { ChildItem } from '../sidebaritems';
+import { motion, AnimatePresence } from 'motion/react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface NavItemProps {
   item: ChildItem;
@@ -12,23 +12,20 @@ interface NavItemProps {
   isActive?: boolean;
 }
 
-export default function NavItem({
-  item,
-  hasChildren,
-  className,
-  isActive,
-}: NavItemProps) {
+export default function NavItem({ item, hasChildren, className, isActive }: NavItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-
-    <motion.div className={cn("flex items-center gap-3 w-full group relative group-data-[state=collapsed]:px-2.5 px-3 py-2 my-0.5 transition-all duration-200 rounded-md",
-      isActive && "bg-primary text-background font-medium", className)}
+    <motion.div
+      className={cn(
+        'flex items-center gap-3 w-full group relative group-data-[state=collapsed]:px-2.5 px-3 py-2 my-0.5 transition-all duration-200 rounded-md',
+        isActive && 'bg-primary text-background font-medium',
+        className,
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <AnimatePresence>
-
         {isHovered && (
           <motion.div
             layoutId="nav-hover-bg"
@@ -36,16 +33,14 @@ export default function NavItem({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 35 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 35 }}
           />
         )}
       </AnimatePresence>
 
-      <span className={"relative flex items-center gap-2 w-full  rounded-md "}>
+      <span className={'relative flex items-center gap-2 w-full  rounded-md '}>
         {/* Icon */}
-        {item.icon && (
-          <item.icon className={`h-4 w-4 ${item.color ?? ""}`} />
-        )}
+        {item.icon && <item.icon className={`h-4 w-4 ${item.color ?? ''}`} />}
 
         {/* Name */}
         <span className="font-medium hide-menu">{item.name}</span>
@@ -54,12 +49,12 @@ export default function NavItem({
         {item.badge && (
           <Badge
             className={cn(
-              "ms-auto hide-menu",
-              item.badgeType === "filled"
-                ? "bg-primary text-white dark:text-black"
-                : "border-primary text-primary",
+              'ms-auto hide-menu',
+              item.badgeType === 'filled'
+                ? 'bg-primary text-white dark:text-black'
+                : 'border-primary text-primary',
             )}
-            variant={item.badgeType === "filled" ? "default" : "outline"}
+            variant={item.badgeType === 'filled' ? 'default' : 'outline'}
           >
             {item.badgeContent}
           </Badge>
@@ -77,6 +72,6 @@ export default function NavItem({
           <ChevronRight className="ms-auto h-4 w-4 transition-transform duration-200 group-data-open/nav:rotate-90 hide-menu" />
         )}
       </span>
-    </motion.div >
+    </motion.div>
   );
 }

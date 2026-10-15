@@ -1,36 +1,26 @@
 import { ApiResult } from '@/types/api.ts';
-import {
-  getFetcher,
-  putFetcher,
-  deleteFetcher,
-} from '@/api/global-fetcher.ts';
+import { getFetcher, putFetcher, deleteFetcher } from '@/api/global-fetcher.ts';
 import { DailyReviewUpdateParams } from 'src/types/apps/daily-review';
 
 /**
  * 获取指定日期复盘笔记
  */
 export function getDailyReview(date: string) {
-  return getFetcher(
-    '/daily-reviews', { date },
-  ) as Promise<ApiResult<string>>;
+  return getFetcher('/daily-reviews', { date }) as Promise<ApiResult<string>>;
 }
 
 /**
  * 更新指定日期复盘笔记
  */
 export function updateDailyReview(params: DailyReviewUpdateParams) {
-  return putFetcher(
-    '/daily-reviews', params,
-  ) as Promise<ApiResult<void>>;
+  return putFetcher('/daily-reviews', params) as Promise<ApiResult<void>>;
 }
 
 /**
  * 获取指定月份有复盘笔记的日期
  */
 export function getDailyReviewCalendar(month: string) {
-  return getFetcher(
-    '/daily-reviews/calendar', { month },
-  ) as Promise<ApiResult<string[]>>;
+  return getFetcher('/daily-reviews/calendar', { month }) as Promise<ApiResult<string[]>>;
 }
 
 /**
@@ -39,3 +29,14 @@ export function getDailyReviewCalendar(month: string) {
 export function deleteDailyReview(date: string) {
   return deleteFetcher(`/daily-reviews/${date}`) as Promise<ApiResult<void>>;
 }
+
+export interface DailyReviewReport {
+  startDate: string;
+  endDate: string;
+  entries: { date: string; content: string }[];
+}
+
+export const getDailyReviewReport = (
+  type: 'weekly' | 'monthly' | 'yearly',
+  date: string,
+): Promise<ApiResult<DailyReviewReport>> => getFetcher('/daily-reviews/report', { type, date });

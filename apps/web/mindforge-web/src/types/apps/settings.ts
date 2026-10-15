@@ -1,9 +1,12 @@
 /**
- * 账户设置相关类型定义（当前全部由 MSW 模拟数据驱动）。
+ * 账户设置相关类型定义。
  */
 
 /** AI 配置 */
 export interface AiSettings {
+  baseUrl?: string;
+  apiKey?: string;
+  configured?: boolean;
   provider: string;
   model: string;
   temperature: number;

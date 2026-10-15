@@ -1,25 +1,23 @@
-
-
 import {
   Sheet,
   SheetTrigger,
   SheetContent,
   SheetFooter,
   SheetClose,
-} from "src/components/ui/sheet";
-import { Avatar, AvatarImage, AvatarFallback } from "src/components/ui/avatar";
-import { Button } from "src/components/ui/button";
-import { Badge } from "src/components/ui/badge";
-import { Icon } from "@iconify/react";
+} from 'src/components/ui/sheet';
+import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar';
+import { Button } from 'src/components/ui/button';
+import { Badge } from 'src/components/ui/badge';
+import { Icon } from '@iconify/react';
 
-import { cn } from "src/lib/utils";
+import { cn } from 'src/lib/utils';
 import { Mailbox } from 'lucide-react';
 
-import { profileDD } from "./data";
-import { Link, useNavigate } from "react-router";
+import { profileDD } from './data';
+import { Link, useNavigate } from 'react-router';
 import avatar from '@/assets/images/profile/avtar.webp';
-import Buynow from '@/assets/images/backgrounds/sidebarbuynow.svg';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getCurrentUser, type UserProfile } from '@/api/system/users/users';
 import { toast } from '@/components/ui/toast';
 import { logout } from '@/api/system/auth/auth';
 import { clearAccessToken } from '@/utils/auth';
@@ -32,6 +30,18 @@ export default function ProfileSheet() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const loadProfile = () => {
+      void getCurrentUser()
+        .then((result) => setProfile(result.data))
+        .catch(() => {});
+    };
+    loadProfile();
+    window.addEventListener('mindforge-profile-updated', loadProfile);
+    return () => window.removeEventListener('mindforge-profile-updated', loadProfile);
+  }, []);
 
   /**
    * Profile / Account Settings 均为弹窗展示：先收起侧边抽屉，再打开对应 Dialog。
@@ -69,148 +79,121 @@ export default function ProfileSheet() {
 
   return (
     <>
-    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-      {/* Trigger Button */}
-      <SheetTrigger className="cursor-pointer hover:bg-primary/5 flex items-center justify-center rounded-full h-10 w-10">
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={avatar} alt="profile" />
-          <AvatarFallback>CM</AvatarFallback>
-        </Avatar>
-      </SheetTrigger>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        {/* Trigger Button */}
+        <SheetTrigger className="cursor-pointer hover:bg-primary/5 flex items-center justify-center rounded-full h-10 w-10">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={profile?.avatar || avatar} alt="个人头像" />
+            <AvatarFallback>{profile?.nickname?.slice(0, 1) || '我'}</AvatarFallback>
+          </Avatar>
+        </SheetTrigger>
 
-      {/* Drawer Panel */}
-      <SheetContent
-        showCloseButton={false}
-        side="right"
-        className="border-s-0 w-full sm:max-w-80 max-w-60"
-      >
-        <SheetClose className="absolute top-5 end-5 p-2 hover:bg-primary/5 hover:text-primary rounded-full">
-          <Icon icon="tabler:x" width={20} height={20} />
-        </SheetClose>
-        {/* Top Profile Section */}
-        <div className="p-6 py-6">
-          <div className="flex flex-col gap-4 justify-center items-center pt-10">
-            <Avatar className="h-16 w-16">
-              <AvatarImage
-                src={avatar}
-                alt="Profile"
-                width={30}
-                height={30}
-              />
-              <AvatarFallback>CM</AvatarFallback>
-            </Avatar>
-
-            <div className="text-center">
-              <h6 className="text-lg font-semibold">Cameron</h6>
-              <div className="flex items-center gap-2 justify-center">
-                <Mailbox
-                  size={18} className="text-muted-foreground"
-                />
-                <span className="text-sm font-normal text-muted-foreground">
-                  info@shadcndashboard.com
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Menu List */}
-        <div className="border-t  border-border">
-          <ul className="flex flex-col gap-2 p-6">
-            {profileDD.map((item) => (
-              <li key={item.title} className="group">
-                {item.action ? (
-                  <Button
-                    type="button"
-                    onClick={() => handleMenuAction(item.action!)}
-                    variant="ghost"
-                    className={cn(
-                      "h-auto w-full cursor-pointer justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5"
-                    )}
-                  >
-                    <item.avatar
-                      width={20}
-                      height={20}
-                      className="group-hover:text-primary"
-                    />
-
-                    <div className="flex gap-3 items-center">
-                      <h6 className="text-sm group-hover:text-primary">
-                        {item.title}
-                      </h6>
-                    </div>
-                  </Button>
-                ) : (
-                  <Button
-                    render={<Link to={item.href ?? '/'} />}
-                    variant="ghost"
-                    className={cn(
-                      "h-auto w-full justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5"
-                    )}
-                  >
-                    <item.avatar
-                      width={20}
-                      height={20}
-                      className="group-hover:text-primary"
-                    />
-
-                    <div className="flex gap-3 items-center">
-                      <h6 className="text-sm group-hover:text-primary">
-                        {item.title}
-                      </h6>
-
-                      {item.badge && (
-                        <Badge className="h-5 min-w-6 bg-primary/5 text-primary" variant="secondary">
-                          4
-                        </Badge>
-                      )}
-                    </div>
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Footer */}
-        <SheetFooter className="px-0 pb-6">
-          <div className="border-t border-border w-full">
-            <div className="rounded-sm pt-6 flex flex-col justify-center items-center gap-3">
-              <div>
-                <img
-                  src={Buynow}
-                  alt="login-bg"
-                />
-              </div>
+        {/* Drawer Panel */}
+        <SheetContent
+          showCloseButton={false}
+          side="right"
+          className="border-s-0 w-full sm:max-w-80 max-w-60"
+        >
+          <SheetClose className="absolute top-5 end-5 p-2 hover:bg-primary/5 hover:text-primary rounded-full">
+            <Icon icon="tabler:x" width={20} height={20} />
+          </SheetClose>
+          {/* Top Profile Section */}
+          <div className="p-6 py-6">
+            <div className="flex flex-col gap-4 justify-center items-center pt-10">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={profile?.avatar || avatar} alt="Profile" width={30} height={30} />
+                <AvatarFallback>{profile?.nickname?.slice(0, 1) || '我'}</AvatarFallback>
+              </Avatar>
 
               <div className="text-center">
-                <h5 className="text-xl font-semibold">
-                  Grab ShadcnDashboard Admin
-                </h5>
-                <p className="text-sm text-muted-foreground">
-                  Customize your dashboard
-                </p>
+                <h6 className="text-lg font-semibold">{profile?.nickname || '我的工作台'}</h6>
+                <div className="flex items-center gap-2 justify-center">
+                  <Mailbox size={18} className="text-muted-foreground" />
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {profile?.email || '个人 AI 工作台'}
+                  </span>
+                </div>
               </div>
-
-              <Button
-                variant="secondary"
-                className="text-primary"
-                disabled={loggingOut}
-                onClick={handleLogout}
-              >
-                {loggingOut ? '退出中...' : '退出登录'}
-              </Button>
             </div>
           </div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
 
-    {/* 个人资料弹窗（原 Pages > User Profile 页面） */}
-    <ProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
+          {/* Menu List */}
+          <div className="border-t  border-border">
+            <ul className="flex flex-col gap-2 p-6">
+              {profileDD.map((item) => (
+                <li key={item.title} className="group">
+                  {item.action ? (
+                    <Button
+                      type="button"
+                      onClick={() => handleMenuAction(item.action!)}
+                      variant="ghost"
+                      className={cn(
+                        'h-auto w-full cursor-pointer justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5',
+                      )}
+                    >
+                      <item.avatar width={20} height={20} className="group-hover:text-primary" />
 
-    {/* 账户设置弹窗（AI 配置 / 应用配置 / 邮箱绑定 / 通知 / 偏好 / 安全） */}
-    <AccountSettingsDialog open={accountSettingsOpen} onOpenChange={setAccountSettingsOpen} />
+                      <div className="flex gap-3 items-center">
+                        <h6 className="text-sm group-hover:text-primary">{item.title}</h6>
+                      </div>
+                    </Button>
+                  ) : (
+                    <Button
+                      render={<Link to={item.href ?? '/'} />}
+                      variant="ghost"
+                      className={cn(
+                        'h-auto w-full justify-start gap-3 px-3 py-2 text-muted-foreground group-hover:bg-primary/5',
+                      )}
+                    >
+                      <item.avatar width={20} height={20} className="group-hover:text-primary" />
+
+                      <div className="flex gap-3 items-center">
+                        <h6 className="text-sm group-hover:text-primary">{item.title}</h6>
+
+                        {item.badge && (
+                          <Badge
+                            className="h-5 min-w-6 bg-primary/5 text-primary"
+                            variant="secondary"
+                          >
+                            4
+                          </Badge>
+                        )}
+                      </div>
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Footer */}
+          <SheetFooter className="px-0 pb-6">
+            <div className="border-t border-border w-full">
+              <div className="rounded-sm pt-6 flex flex-col justify-center items-center gap-3">
+                <div className="text-center">
+                  <h5 className="text-xl font-semibold">Mindforge</h5>
+                  <p className="text-sm text-muted-foreground">记录、思考、推进每一天</p>
+                </div>
+
+                <Button
+                  variant="secondary"
+                  className="text-primary"
+                  disabled={loggingOut}
+                  onClick={handleLogout}
+                >
+                  {loggingOut ? '退出中...' : '退出登录'}
+                </Button>
+              </div>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* 个人资料弹窗（原 Pages > User Profile 页面） */}
+      <ProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
+
+      {/* 账户设置弹窗（AI 配置 / 应用配置 / 邮箱绑定 / 通知 / 偏好 / 安全） */}
+      <AccountSettingsDialog open={accountSettingsOpen} onOpenChange={setAccountSettingsOpen} />
     </>
   );
 }

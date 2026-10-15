@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.notes.dao.NoteFolderDao">
+    <resultMap id="FolderVO" type="com.unorva.mindforge.module.business.notes.domain.vo.FolderVO">
+        <constructor>
+            <arg name="id" column="id" javaType="java.lang.String"/>
+            <arg name="name" column="name" javaType="java.lang.String"/>
+            <arg name="parentId" column="parent_id" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <select id="listFolders" resultMap="FolderVO">
+        SELECT id, name, parent_id FROM mf_note_folder WHERE user_id = #{userId} ORDER BY created_at, id
+    </select>
+    <select id="countFolder" resultType="long">
+        SELECT COUNT(1) FROM mf_note_folder WHERE user_id = #{userId} AND id = #{id}
+    </select>
+    <insert id="insertFolder">
+        INSERT INTO mf_note_folder (user_id, id, name, parent_id) VALUES (#{entity.userId}, #{entity.id}, #{entity.name}, #{entity.parentId})
+    </insert>
+    <delete id="deleteFolder">
+        DELETE FROM mf_note_folder WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+</mapper>

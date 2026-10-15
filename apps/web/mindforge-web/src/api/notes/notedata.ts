@@ -17,7 +17,8 @@ export let NotesData: notesType[] = [
     id: 1,
     color: 'primary',
     title: '本周重点',
-    content: '## 本周目标\n\n完成项目规划，整理下一阶段里程碑，并为最重要的三个任务预留不被打扰的时间。\n\n### 关键任务\n\n- 明确产品范围和优先级\n- 完成第一版里程碑拆分\n- 为深度工作预留三个时间块',
+    content:
+      '## 本周目标\n\n完成项目规划，整理下一阶段里程碑，并为最重要的三个任务预留不被打扰的时间。\n\n### 关键任务\n\n- 明确产品范围和优先级\n- 完成第一版里程碑拆分\n- 为深度工作预留三个时间块',
     folderId: 'product',
     datef: '2023-06-03T23:28:56.782Z',
     deleted: false,
@@ -26,7 +27,8 @@ export let NotesData: notesType[] = [
     id: 2,
     color: 'destructive',
     title: '知识管理的价值',
-    content: '真正有用的知识管理，不是收藏更多信息，而是在需要时能够快速找到并转化为行动。\n\n> 笔记的价值，发生在再次使用它的那一刻。\n\n可以尝试把每条阅读笔记都关联到一个正在推进的项目。',
+    content:
+      '真正有用的知识管理，不是收藏更多信息，而是在需要时能够快速找到并转化为行动。\n\n> 笔记的价值，发生在再次使用它的那一刻。\n\n可以尝试把每条阅读笔记都关联到一个正在推进的项目。',
     folderId: 'reading',
     datef: '2023-06-02T23:28:56.782Z',
     deleted: false,
@@ -35,7 +37,8 @@ export let NotesData: notesType[] = [
     id: 3,
     color: 'chart-4',
     title: '灵感清单',
-    content: '- 尝试用更短的句子记录想法\n- 每条笔记只聚焦一个主题\n- 在一天结束前补充相关标签\n- 每周回顾一次未整理的灵感',
+    content:
+      '- 尝试用更短的句子记录想法\n- 每条笔记只聚焦一个主题\n- 在一天结束前补充相关标签\n- 每周回顾一次未整理的灵感',
     folderId: 'ideas',
     datef: '2023-06-01T23:28:56.782Z',
     deleted: false,
@@ -44,7 +47,8 @@ export let NotesData: notesType[] = [
     id: 4,
     color: 'chart-2',
     title: '产品例会 · 6 月 3 日',
-    content: '## 会议结论\n\n确认需求范围与交付时间，风险项由负责人在周三前更新，下一次同步安排在周五下午。\n\n### 待办\n\n- [ ] 更新需求边界\n- [ ] 补充风险负责人\n- [ ] 准备周五演示',
+    content:
+      '## 会议结论\n\n确认需求范围与交付时间，风险项由负责人在周三前更新，下一次同步安排在周五下午。\n\n### 待办\n\n- [ ] 更新需求边界\n- [ ] 补充风险负责人\n- [ ] 准备周五演示',
     folderId: 'meetings',
     datef: '2023-06-03T23:28:56.782Z',
     deleted: false,
@@ -55,7 +59,12 @@ export const NotesHandlers = [
   // GET request to retrieve Notes data
   http.get('/api/data/notes/NotesData', () => {
     try {
-      return HttpResponse.json({ status: 200, msg: '获取成功', data: NotesData, folders: NotesFolders });
+      return HttpResponse.json({
+        status: 200,
+        msg: '获取成功',
+        data: NotesData,
+        folders: NotesFolders,
+      });
     } catch (error) {
       return HttpResponse.json({
         status: 400,
@@ -69,9 +78,14 @@ export const NotesHandlers = [
   http.delete('/api/notes/delete', async ({ request }) => {
     try {
       const { id } = (await request.json()) as { id: string | number };
-      const remainingNotes = NotesData.filter(note => note.id !== id);
+      const remainingNotes = NotesData.filter((note) => note.id !== id);
       NotesData = remainingNotes;
-      return HttpResponse.json({ status: 200, msg: '删除成功', data: NotesData, folders: NotesFolders });
+      return HttpResponse.json({
+        status: 200,
+        msg: '删除成功',
+        data: NotesData,
+        folders: NotesFolders,
+      });
     } catch (error) {
       return HttpResponse.json({
         status: 400,
@@ -155,7 +169,12 @@ export const NotesHandlers = [
       };
 
       NotesData.push(newNote);
-      return HttpResponse.json({ status: 200, msg: '添加成功', data: NotesData, folders: NotesFolders });
+      return HttpResponse.json({
+        status: 200,
+        msg: '添加成功',
+        data: NotesData,
+        folders: NotesFolders,
+      });
     } catch (error) {
       return HttpResponse.json({
         status: 400,

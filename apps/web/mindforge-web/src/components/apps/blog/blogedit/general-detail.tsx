@@ -1,22 +1,21 @@
-
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { useContext, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { BlogContext } from "src/context/blog-context";
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { useContext, useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { BlogContext } from 'src/context/blog-context';
 
 const GeneralDetail = () => {
   const { posts } = useContext(BlogContext);
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
 
   useEffect(() => {
     if (posts.length > 0) {
       const firstPost = posts[0];
-      setTitle(firstPost.title || "");
-      setContent(firstPost.content || "");
+      setTitle(firstPost.title || '');
+      setContent(firstPost.content || '');
     }
   }, [posts]);
   console.log(title);

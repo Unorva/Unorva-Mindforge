@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { createColumnHelper } from '@tanstack/react-table'
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { createColumnHelper } from '@tanstack/react-table';
 import {
   Archive,
   ArrowLeft,
@@ -13,11 +13,11 @@ import {
   Settings,
   Search,
   Trash2,
-} from 'lucide-react'
+} from 'lucide-react';
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Empty,
   EmptyContent,
@@ -43,27 +43,31 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
-import { Field, FieldLabel } from '@/components/ui/field'
+} from '@/components/ui/empty';
+import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { DataTable } from '@/components/data-table/data-table'
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { DataTable } from '@/components/data-table/data-table';
 import {
   SegmentedMultipleBarChart,
   type SegmentedBarChartDatum,
   type SegmentedBarChartSeries,
-} from '@/components/charts/segmented-multiple-bar-chart'
-import { APP_WORKSPACE_HEIGHT_CLASS, AppPage, AppPageHeader } from '@/components/shared/app-workspace'
-import { cn } from '@/lib/utils'
-import Spinner from '@/views/spinner/Spinner'
+} from '@/components/charts/segmented-multiple-bar-chart';
+import {
+  APP_WORKSPACE_HEIGHT_CLASS,
+  AppPage,
+  AppPageHeader,
+} from '@/components/shared/app-workspace';
+import { cn } from '@/lib/utils';
+import Spinner from '@/views/spinner/Spinner';
 import {
   archiveProject as archiveProjectRequest,
   createDefect,
@@ -85,33 +89,37 @@ import {
   type Requirement,
   type RequirementStatus,
   type Severity,
-} from '@/api/project-manager/project-manager'
-import { ProjectDatePicker } from './data-picker'
+} from '@/api/project-manager/project-manager';
+import { ProjectDatePicker } from './data-picker';
 
-const projectStatuses: ProjectStatus[] = ['规划中', '进行中', '已完成', '已归档']
-const requirementStatuses: RequirementStatus[] = ['待处理', '进行中', '已完成']
-const defectStatuses: DefectStatus[] = ['待修复', '修复中', '待验证', '已关闭']
-const priorities: Priority[] = ['低', '中', '高']
-const severities: Severity[] = ['轻微', '一般', '严重', '阻断']
+const projectStatuses: ProjectStatus[] = ['规划中', '进行中', '已完成', '已归档'];
+const requirementStatuses: RequirementStatus[] = ['待处理', '进行中', '已完成'];
+const defectStatuses: DefectStatus[] = ['待修复', '修复中', '待验证', '已关闭'];
+const priorities: Priority[] = ['低', '中', '高'];
+const severities: Severity[] = ['轻微', '一般', '严重', '阻断'];
 
 const projectStatusSeries: SegmentedBarChartSeries[] = [
   { key: 'planning', label: '规划中', color: 'var(--muted-foreground)' },
   { key: 'inProgress', label: '进行中', color: 'var(--foreground)' },
   { key: 'completed', label: '已完成', color: 'var(--border)' },
-]
+];
 
 const requirementStatusSeries: SegmentedBarChartSeries[] = [
   { key: 'pending', label: '待处理', color: 'var(--foreground)' },
   { key: 'inProgress', label: '进行中', color: 'var(--muted-foreground)' },
   { key: 'completed', label: '已完成', color: 'var(--border)' },
-]
+];
 
 const defectStatusSeries: SegmentedBarChartSeries[] = [
   { key: 'pending', label: '待修复', color: 'var(--foreground)' },
-  { key: 'fixing', label: '修复中', color: 'color-mix(in srgb, var(--foreground) 72%, var(--background))' },
+  {
+    key: 'fixing',
+    label: '修复中',
+    color: 'color-mix(in srgb, var(--foreground) 72%, var(--background))',
+  },
   { key: 'verifying', label: '待验证', color: 'var(--muted-foreground)' },
   { key: 'closed', label: '已关闭', color: 'var(--border)' },
-]
+];
 
 const emptyProjectForm = () => ({
   name: '',
@@ -120,7 +128,7 @@ const emptyProjectForm = () => ({
   owner: '我',
   startDate: new Date().toISOString().slice(0, 10),
   endDate: '',
-})
+});
 
 const emptyRequirementForm = () => ({
   title: '',
@@ -129,7 +137,7 @@ const emptyRequirementForm = () => ({
   status: '待处理' as RequirementStatus,
   owner: '我',
   dueDate: '',
-})
+});
 
 const emptyDefectForm = () => ({
   title: '',
@@ -141,23 +149,31 @@ const emptyDefectForm = () => ({
   owner: '我',
   dueDate: '',
   requirementId: '',
-})
+});
 
 function statusClass(status: string) {
-  if (status === '已完成' || status === '已关闭') return 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400'
-  if (status === '进行中' || status === '修复中' || status === '待验证') return 'bg-blue-500/12 text-blue-700 dark:text-blue-400'
-  if (status === '已归档') return 'bg-muted text-muted-foreground'
-  return 'bg-amber-500/12 text-amber-700 dark:text-amber-400'
+  if (status === '已完成' || status === '已关闭')
+    return 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-400';
+  if (status === '进行中' || status === '修复中' || status === '待验证')
+    return 'bg-blue-500/12 text-blue-700 dark:text-blue-400';
+  if (status === '已归档') return 'bg-muted text-muted-foreground';
+  return 'bg-amber-500/12 text-amber-700 dark:text-amber-400';
 }
 
 function priorityClass(priority: Priority | Severity) {
-  if (priority === '高' || priority === '严重' || priority === '阻断') return 'bg-red-500/12 text-red-700 dark:text-red-400'
-  if (priority === '中' || priority === '一般') return 'bg-amber-500/12 text-amber-700 dark:text-amber-400'
-  return 'bg-slate-500/12 text-slate-700 dark:text-slate-300'
+  if (priority === '高' || priority === '严重' || priority === '阻断')
+    return 'bg-red-500/12 text-red-700 dark:text-red-400';
+  if (priority === '中' || priority === '一般')
+    return 'bg-amber-500/12 text-amber-700 dark:text-amber-400';
+  return 'bg-slate-500/12 text-slate-700 dark:text-slate-300';
 }
 
 function Pill({ children, className }: { children: React.ReactNode; className: string }) {
-  return <Badge className={cn('rounded-md', className)} variant="secondary">{children}</Badge>
+  return (
+    <Badge className={cn('rounded-md', className)} variant="secondary">
+      {children}
+    </Badge>
+  );
 }
 
 function OptionSelect<T extends string>({
@@ -168,225 +184,339 @@ function OptionSelect<T extends string>({
   onValueChange,
   value,
 }: {
-  ariaLabel: string
-  className?: string
-  disabled?: boolean
-  items: readonly T[]
-  onValueChange: (value: T) => void
-  value: T
+  ariaLabel: string;
+  className?: string;
+  disabled?: boolean;
+  items: readonly T[];
+  onValueChange: (value: T) => void;
+  value: T;
 }) {
   return (
-    <Select disabled={disabled} value={value} onValueChange={(nextValue) => nextValue && onValueChange(nextValue as T)}>
+    <Select
+      disabled={disabled}
+      value={value}
+      onValueChange={(nextValue) => nextValue && onValueChange(nextValue as T)}
+    >
       <SelectTrigger aria-label={ariaLabel} className={cn('w-full cursor-pointer', className)}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {items.map((item) => <SelectItem className="cursor-pointer" key={item} value={item}>{item}</SelectItem>)}
+        {items.map((item) => (
+          <SelectItem className="cursor-pointer" key={item} value={item}>
+            {item}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
-  )
+  );
 }
 
 export default function Projects() {
-  const navigate = useNavigate()
-  const { projectId } = useParams()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
-  const [requirementDialogOpen, setRequirementDialogOpen] = useState(false)
-  const [defectDialogOpen, setDefectDialogOpen] = useState(false)
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [editingRequirementId, setEditingRequirementId] = useState<number | null>(null)
-  const [editingDefectId, setEditingDefectId] = useState<number | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type: 'requirement' | 'defect' } | null>(null)
-  const [requirementDetailsTarget, setRequirementDetailsTarget] = useState<Pick<Requirement, 'description' | 'title'> | null>(null)
-  const [reproductionStepsTarget, setReproductionStepsTarget] = useState<Pick<Defect, 'description' | 'reproductionSteps' | 'title'> | null>(null)
-  const [projectForm, setProjectForm] = useState(emptyProjectForm)
-  const [projectSearch, setProjectSearch] = useState('')
-  const [requirementForm, setRequirementForm] = useState(emptyRequirementForm)
-  const [defectForm, setDefectForm] = useState(emptyDefectForm)
+  const navigate = useNavigate();
+  const { projectId } = useParams();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mutating, setMutating] = useState(false);
+  const mutatingRef = useRef(false);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [requirementDialogOpen, setRequirementDialogOpen] = useState(false);
+  const [defectDialogOpen, setDefectDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [editingRequirementId, setEditingRequirementId] = useState<number | null>(null);
+  const [editingDefectId, setEditingDefectId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    title: string;
+    type: 'requirement' | 'defect';
+  } | null>(null);
+  const [requirementDetailsTarget, setRequirementDetailsTarget] = useState<Pick<
+    Requirement,
+    'description' | 'title'
+  > | null>(null);
+  const [reproductionStepsTarget, setReproductionStepsTarget] = useState<Pick<
+    Defect,
+    'description' | 'reproductionSteps' | 'title'
+  > | null>(null);
+  const [projectForm, setProjectForm] = useState(emptyProjectForm);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [requirementForm, setRequirementForm] = useState(emptyRequirementForm);
+  const [defectForm, setDefectForm] = useState(emptyDefectForm);
 
   const loadProjects = async () => {
     try {
-      const result = await getProjects()
+      const result = await getProjects();
       if (result.success) {
-        setProjects(result.data)
+        setProjects(result.data);
       }
     } catch {
       // 请求层已统一提示失败原因；这里仅结束加载状态，保留空列表供用户重试。
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    void loadProjects()
-  }, [])
+    void loadProjects();
+  }, []);
 
-  const activeProject = projects.find((project) => project.id === Number(projectId))
-  const activeProjects = useMemo(() => projects.filter((project) => project.status !== '已归档'), [projects])
-  const visibleProjects = activeProjects.filter((project) => `${project.name} ${project.description} ${project.owner}`.toLocaleLowerCase().includes(projectSearch.toLocaleLowerCase()))
+  const activeProject = projects.find((project) => project.id === Number(projectId));
+  const activeProjects = useMemo(
+    () => projects.filter((project) => project.status !== '已归档'),
+    [projects],
+  );
+  const visibleProjects = activeProjects.filter((project) =>
+    `${project.name} ${project.description} ${project.owner}`
+      .toLocaleLowerCase()
+      .includes(projectSearch.toLocaleLowerCase()),
+  );
 
   const updateActiveProject = (updater: (project: Project) => Project) => {
-    if (!activeProject) return
-    setProjects((current) => current.map((project) => project.id === activeProject.id ? updater(project) : project))
-  }
+    if (!activeProject) return;
+    setProjects((current) =>
+      current.map((project) => (project.id === activeProject.id ? updater(project) : project)),
+    );
+  };
 
   const createProject = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!projectForm.name.trim()) return
-    const result = await createProjectRequest({
-      name: projectForm.name.trim(),
-      description: projectForm.description.trim(),
-      status: projectForm.status,
-      startDate: projectForm.startDate || null,
-      endDate: projectForm.endDate || null,
-    })
-    if (!result.success) return
-    setProjects((current) => [result.data, ...current])
-    setProjectDialogOpen(false)
-    setProjectForm(emptyProjectForm())
-    navigate(`/apps/projects/${result.data.id}`)
-  }
+    event.preventDefault();
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      if (!projectForm.name.trim()) return;
+      const result = await createProjectRequest({
+        name: projectForm.name.trim(),
+        description: projectForm.description.trim(),
+        status: projectForm.status,
+        startDate: projectForm.startDate || null,
+        endDate: projectForm.endDate || null,
+      });
+      if (!result.success) return;
+      setProjects((current) => [result.data, ...current]);
+      setProjectDialogOpen(false);
+      setProjectForm(emptyProjectForm());
+      navigate(`/apps/projects/${result.data.id}`);
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
+    }
+  };
 
   const saveRequirement = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!activeProject || !requirementForm.title.trim()) return
-    const params = {
-      title: requirementForm.title.trim(),
-      description: requirementForm.description.trim(),
-      priority: requirementForm.priority,
-      status: requirementForm.status,
-      dueDate: requirementForm.dueDate || null,
+    event.preventDefault();
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      if (!activeProject || !requirementForm.title.trim()) return;
+      const params = {
+        title: requirementForm.title.trim(),
+        description: requirementForm.description.trim(),
+        priority: requirementForm.priority,
+        status: requirementForm.status,
+        dueDate: requirementForm.dueDate || null,
+        version: activeProject.requirements.find((item) => item.id === editingRequirementId)
+          ?.version,
+      };
+      const result =
+        editingRequirementId === null
+          ? await createRequirement(activeProject.id, params)
+          : await updateRequirement(activeProject.id, editingRequirementId, params);
+      if (!result.success) return;
+      updateActiveProject((project) => ({
+        ...project,
+        requirements:
+          editingRequirementId === null
+            ? [result.data, ...project.requirements]
+            : project.requirements.map((item) =>
+                item.id === editingRequirementId ? result.data : item,
+              ),
+      }));
+      setRequirementDialogOpen(false);
+      setEditingRequirementId(null);
+      setRequirementForm(emptyRequirementForm());
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
     }
-    const result = editingRequirementId === null
-      ? await createRequirement(activeProject.id, params)
-      : await updateRequirement(activeProject.id, editingRequirementId, params)
-    if (!result.success) return
-    updateActiveProject((project) => ({
-      ...project,
-      requirements: editingRequirementId === null
-        ? [result.data, ...project.requirements]
-        : project.requirements.map((item) => item.id === editingRequirementId ? result.data : item),
-    }))
-    setRequirementDialogOpen(false)
-    setEditingRequirementId(null)
-    setRequirementForm(emptyRequirementForm())
-  }
+  };
 
   const saveDefect = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!activeProject || !defectForm.title.trim()) return
-    const params = {
-      title: defectForm.title.trim(),
-      description: defectForm.description.trim(),
-      reproductionSteps: defectForm.reproductionSteps.trim(),
-      severity: defectForm.severity,
-      priority: defectForm.priority,
-      status: defectForm.status,
-      dueDate: defectForm.dueDate || null,
-      requirementId: defectForm.requirementId ? Number(defectForm.requirementId) : null,
+    event.preventDefault();
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      if (!activeProject || !defectForm.title.trim()) return;
+      const params = {
+        title: defectForm.title.trim(),
+        description: defectForm.description.trim(),
+        reproductionSteps: defectForm.reproductionSteps.trim(),
+        severity: defectForm.severity,
+        priority: defectForm.priority,
+        status: defectForm.status,
+        dueDate: defectForm.dueDate || null,
+        requirementId: defectForm.requirementId ? Number(defectForm.requirementId) : null,
+        version: activeProject.defects.find((item) => item.id === editingDefectId)?.version,
+      };
+      const result =
+        editingDefectId === null
+          ? await createDefect(activeProject.id, params)
+          : await updateDefect(activeProject.id, editingDefectId, params);
+      if (!result.success) return;
+      updateActiveProject((project) => ({
+        ...project,
+        defects:
+          editingDefectId === null
+            ? [result.data, ...project.defects]
+            : project.defects.map((item) => (item.id === editingDefectId ? result.data : item)),
+      }));
+      setDefectDialogOpen(false);
+      setEditingDefectId(null);
+      setDefectForm(emptyDefectForm());
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
     }
-    const result = editingDefectId === null
-      ? await createDefect(activeProject.id, params)
-      : await updateDefect(activeProject.id, editingDefectId, params)
-    if (!result.success) return
-    updateActiveProject((project) => ({
-      ...project,
-      defects: editingDefectId === null
-        ? [result.data, ...project.defects]
-        : project.defects.map((item) => item.id === editingDefectId ? result.data : item),
-    }))
-    setDefectDialogOpen(false)
-    setEditingDefectId(null)
-    setDefectForm(emptyDefectForm())
-  }
+  };
 
   const editRequirement = (requirement: Requirement) => {
-    const { id, ...form } = requirement
-    setEditingRequirementId(id)
-    setRequirementForm(form)
-    setRequirementDialogOpen(true)
-  }
+    const { id, ...form } = requirement;
+    setEditingRequirementId(id);
+    setRequirementForm(form);
+    setRequirementDialogOpen(true);
+  };
 
   const editDefect = (defect: Defect) => {
-    const { id, ...form } = defect
-    setEditingDefectId(id)
-    setDefectForm({ ...form, requirementId: form.requirementId === undefined ? '' : String(form.requirementId) })
-    setDefectDialogOpen(true)
-  }
+    const { id, ...form } = defect;
+    setEditingDefectId(id);
+    setDefectForm({
+      ...form,
+      requirementId: form.requirementId === undefined ? '' : String(form.requirementId),
+    });
+    setDefectDialogOpen(true);
+  };
 
   const deleteWorkItem = async () => {
-    if (!activeProject || !deleteTarget) return
-    const result = deleteTarget.type === 'requirement'
-      ? await deleteRequirement(activeProject.id, deleteTarget.id)
-      : await deleteDefect(activeProject.id, deleteTarget.id)
-    if (!result.success) return
-    updateActiveProject((project) => deleteTarget.type === 'requirement' ? {
-      ...project,
-      requirements: project.requirements.filter((item) => item.id !== deleteTarget.id),
-      defects: project.defects.map((item) => item.requirementId === deleteTarget.id ? { ...item, requirementId: undefined } : item),
-    } : {
-      ...project,
-      defects: project.defects.filter((item) => item.id !== deleteTarget.id),
-    })
-    setDeleteTarget(null)
-  }
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      if (!activeProject || !deleteTarget) return;
+      const result =
+        deleteTarget.type === 'requirement'
+          ? await deleteRequirement(activeProject.id, deleteTarget.id)
+          : await deleteDefect(activeProject.id, deleteTarget.id);
+      if (!result.success) return;
+      updateActiveProject((project) =>
+        deleteTarget.type === 'requirement'
+          ? {
+              ...project,
+              requirements: project.requirements.filter((item) => item.id !== deleteTarget.id),
+              defects: project.defects.map((item) =>
+                item.requirementId === deleteTarget.id
+                  ? { ...item, requirementId: undefined }
+                  : item,
+              ),
+            }
+          : {
+              ...project,
+              defects: project.defects.filter((item) => item.id !== deleteTarget.id),
+            },
+      );
+      setDeleteTarget(null);
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
+    }
+  };
 
-  const projectStats = useMemo(() => ({
-    projects: activeProjects.length,
-    requirements: activeProjects.reduce((count, project) => count + project.requirements.length, 0),
-    openDefects: activeProjects.reduce((count, project) => count + project.defects.filter((defect) => defect.status !== '已关闭').length, 0),
-  }), [activeProjects])
+  const projectStats = useMemo(
+    () => ({
+      projects: activeProjects.length,
+      requirements: activeProjects.reduce(
+        (count, project) => count + project.requirements.length,
+        0,
+      ),
+      openDefects: activeProjects.reduce(
+        (count, project) =>
+          count + project.defects.filter((defect) => defect.status !== '已关闭').length,
+        0,
+      ),
+    }),
+    [activeProjects],
+  );
 
   const overviewCharts = useMemo(() => {
-    const requirements = activeProjects.flatMap((project) => project.requirements)
-    const defects = activeProjects.flatMap((project) => project.defects)
+    const requirements = activeProjects.flatMap((project) => project.requirements);
+    const defects = activeProjects.flatMap((project) => project.defects);
 
     return {
-      projects: [{
-        category: '项目',
-        planning: activeProjects.filter((project) => project.status === '规划中').length,
-        inProgress: activeProjects.filter((project) => project.status === '进行中').length,
-        completed: activeProjects.filter((project) => project.status === '已完成').length,
-      }] satisfies SegmentedBarChartDatum[],
-      requirements: [{
-        category: '需求',
-        pending: requirements.filter((requirement) => requirement.status === '待处理').length,
-        inProgress: requirements.filter((requirement) => requirement.status === '进行中').length,
-        completed: requirements.filter((requirement) => requirement.status === '已完成').length,
-      }] satisfies SegmentedBarChartDatum[],
-      defects: [{
-        category: '缺陷',
-        pending: defects.filter((defect) => defect.status === '待修复').length,
-        fixing: defects.filter((defect) => defect.status === '修复中').length,
-        verifying: defects.filter((defect) => defect.status === '待验证').length,
-        closed: defects.filter((defect) => defect.status === '已关闭').length,
-      }] satisfies SegmentedBarChartDatum[],
-    }
-  }, [activeProjects])
+      projects: [
+        {
+          category: '项目',
+          planning: activeProjects.filter((project) => project.status === '规划中').length,
+          inProgress: activeProjects.filter((project) => project.status === '进行中').length,
+          completed: activeProjects.filter((project) => project.status === '已完成').length,
+        },
+      ] satisfies SegmentedBarChartDatum[],
+      requirements: [
+        {
+          category: '需求',
+          pending: requirements.filter((requirement) => requirement.status === '待处理').length,
+          inProgress: requirements.filter((requirement) => requirement.status === '进行中').length,
+          completed: requirements.filter((requirement) => requirement.status === '已完成').length,
+        },
+      ] satisfies SegmentedBarChartDatum[],
+      defects: [
+        {
+          category: '缺陷',
+          pending: defects.filter((defect) => defect.status === '待修复').length,
+          fixing: defects.filter((defect) => defect.status === '修复中').length,
+          verifying: defects.filter((defect) => defect.status === '待验证').length,
+          closed: defects.filter((defect) => defect.status === '已关闭').length,
+        },
+      ] satisfies SegmentedBarChartDatum[],
+    };
+  }, [activeProjects]);
 
   if (loading) {
-    return <Spinner />
+    return <Spinner />;
   }
 
   if (projectId && !activeProject) {
     return (
       <Empty className="min-h-72 border">
-        <EmptyHeader><EmptyMedia variant="icon"><FolderKanban /></EmptyMedia><EmptyTitle>项目不存在</EmptyTitle><EmptyDescription>它可能已被归档或链接已失效。</EmptyDescription></EmptyHeader>
-        <EmptyContent><Button onClick={() => navigate('/apps/projects')} variant="outline"><ArrowLeft />返回项目列表</Button></EmptyContent>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FolderKanban />
+          </EmptyMedia>
+          <EmptyTitle>项目不存在</EmptyTitle>
+          <EmptyDescription>它可能已被归档或链接已失效。</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={() => navigate('/apps/projects')} variant="outline">
+            <ArrowLeft />
+            返回项目列表
+          </Button>
+        </EmptyContent>
       </Empty>
-    )
+    );
   }
 
   if (!activeProject) {
     return (
       <>
         <AppPage className="gap-5 bg-transparent p-0">
-          <AppPageHeader
-            showHome={false}
-            title="项目管理"
-          />
+          <AppPageHeader showHome={false} title="项目管理" />
           <section aria-label="项目概览" className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <StatCard
               chartData={overviewCharts.projects}
@@ -414,17 +544,32 @@ export default function Projects() {
                 <CardContent className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="font-semibold">我的项目</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">集中查看项目进度、需求和待处理缺陷。</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      集中查看项目进度、需求和待处理缺陷。
+                    </p>
                   </div>
                   <div className="flex w-full flex-col-reverse gap-3 sm:w-auto sm:flex-row">
-                    <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none"><Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9!" onChange={(event) => setProjectSearch(event.target.value)} placeholder="搜索项目…" value={projectSearch} /></div>
-                    <Button onClick={() => setProjectDialogOpen(true)}><Plus />新建项目</Button>
+                    <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
+                      <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        className="pl-9!"
+                        onChange={(event) => setProjectSearch(event.target.value)}
+                        placeholder="搜索项目…"
+                        value={projectSearch}
+                      />
+                    </div>
+                    <Button onClick={() => setProjectDialogOpen(true)}>
+                      <Plus />
+                      新建项目
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {visibleProjects.map((project) => {
-                  const openDefects = project.defects.filter((defect) => defect.status !== '已关闭').length
+                  const openDefects = project.defects.filter(
+                    (defect) => defect.status !== '已关闭',
+                  ).length;
                   return (
                     <button
                       className="group text-left"
@@ -434,126 +579,331 @@ export default function Projects() {
                     >
                       <Card className="h-full transition-transform duration-200 group-hover:-translate-y-0.5">
                         <CardHeader className="pb-4">
-                          <div className="flex items-start justify-between gap-3"><div className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary"><FolderKanban className="size-4" /></div><Pill className={statusClass(project.status)}>{project.status}</Pill></div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <FolderKanban className="size-4" />
+                            </div>
+                            <Pill className={statusClass(project.status)}>{project.status}</Pill>
+                          </div>
                           <CardTitle className="mt-3 line-clamp-1">{project.name}</CardTitle>
-                          <CardDescription className="line-clamp-2 min-h-10">{project.description || '暂无项目简介'}</CardDescription>
+                          <CardDescription className="line-clamp-2 min-h-10">
+                            {project.description || '暂无项目简介'}
+                          </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4"><div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/45 p-3 text-sm"><div><p className="text-xs text-muted-foreground">需求</p><p className="mt-1 font-semibold">{project.requirements.length} 条</p></div><div><p className="text-xs text-muted-foreground">待处理缺陷</p><p className="mt-1 font-semibold">{openDefects} 个</p></div></div><div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><span className="truncate">负责人：{project.owner}</span><span className="shrink-0">{project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}</span></div></CardContent>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/45 p-3 text-sm">
+                            <div>
+                              <p className="text-xs text-muted-foreground">需求</p>
+                              <p className="mt-1 font-semibold">{project.requirements.length} 条</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">待处理缺陷</p>
+                              <p className="mt-1 font-semibold">{openDefects} 个</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                            <span className="truncate">负责人：{project.owner}</span>
+                            <span className="shrink-0">
+                              {project.endDate ? `至 ${project.endDate}` : '未设置结束日期'}
+                            </span>
+                          </div>
+                        </CardContent>
                       </Card>
                     </button>
-                  )
+                  );
                 })}
               </div>
-              {visibleProjects.length === 0 && <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">没有找到匹配的项目。</CardContent></Card>}
+              {visibleProjects.length === 0 && (
+                <Card>
+                  <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                    没有找到匹配的项目。
+                  </CardContent>
+                </Card>
+              )}
             </section>
-          ) : <Card className="p-6"><EmptyState icon={FolderKanban} title="还没有项目" description="新建一个项目，开始梳理需求和待解决的问题。" action={() => setProjectDialogOpen(true)} actionLabel="新建项目" disabled={false} /></Card>}
+          ) : (
+            <Card className="p-6">
+              <EmptyState
+                icon={FolderKanban}
+                title="还没有项目"
+                description="新建一个项目，开始梳理需求和待解决的问题。"
+                action={() => setProjectDialogOpen(true)}
+                actionLabel="新建项目"
+                disabled={false}
+              />
+            </Card>
+          )}
         </AppPage>
-        <ProjectDialog form={projectForm} onFormChange={setProjectForm} onOpenChange={setProjectDialogOpen} onSubmit={createProject} open={projectDialogOpen} />
+        <ProjectDialog
+          busy={mutating}
+          form={projectForm}
+          onFormChange={setProjectForm}
+          onOpenChange={setProjectDialogOpen}
+          onSubmit={createProject}
+          open={projectDialogOpen}
+        />
       </>
-    )
+    );
   }
 
-  const linkedRequirement = (requirementId?: number) => activeProject.requirements.find((item) => item.id === requirementId)
+  const linkedRequirement = (requirementId?: number) =>
+    activeProject.requirements.find((item) => item.id === requirementId);
   const archiveProject = async () => {
-    const result = await archiveProjectRequest(activeProject.id)
-    if (!result.success) return
-    updateActiveProject((project) => ({ ...project, status: '已归档' }))
-    setArchiveDialogOpen(false)
-    navigate('/apps/projects')
-  }
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      const result = await archiveProjectRequest(activeProject.id);
+      if (!result.success) return;
+      updateActiveProject((project) => ({ ...project, status: '已归档' }));
+      setArchiveDialogOpen(false);
+      navigate('/apps/projects');
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
+    }
+  };
 
   const saveProjectSettings = async (details: ProjectSettingsForm) => {
-    const result = await updateProject(activeProject.id, {
-      name: details.name,
-      description: details.description,
-      status: details.status,
-      startDate: details.startDate || null,
-      endDate: details.endDate || null,
-    })
-    if (result.success) {
-      updateActiveProject(() => result.data)
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      const result = await updateProject(activeProject.id, {
+        version: activeProject.version,
+        name: details.name,
+        description: details.description,
+        status: details.status,
+        startDate: details.startDate || null,
+        endDate: details.endDate || null,
+      });
+      if (result.success) {
+        updateActiveProject(() => result.data);
+      }
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
     }
-  }
+  };
 
   const changeRequirementStatus = async (requirementId: number, status: RequirementStatus) => {
-    const result = await updateRequirementStatus(activeProject.id, requirementId, status)
-    if (result.success) {
-      updateActiveProject((project) => ({ ...project, requirements: project.requirements.map((item) => item.id === requirementId ? { ...item, status } : item) }))
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      const result = await updateRequirementStatus(
+        activeProject.id,
+        requirementId,
+        status,
+        activeProject.requirements.find((item) => item.id === requirementId)?.version,
+      );
+      if (result.success) {
+        await loadProjects();
+      }
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
     }
-  }
+  };
 
   const changeDefectStatus = async (defectId: number, status: DefectStatus) => {
-    const result = await updateDefectStatus(activeProject.id, defectId, status)
-    if (result.success) {
-      updateActiveProject((project) => ({ ...project, defects: project.defects.map((item) => item.id === defectId ? { ...item, status } : item) }))
+    if (mutatingRef.current) return;
+    mutatingRef.current = true;
+    setMutating(true);
+    try {
+      const result = await updateDefectStatus(
+        activeProject.id,
+        defectId,
+        status,
+        activeProject.defects.find((item) => item.id === defectId)?.version,
+      );
+      if (result.success) {
+        await loadProjects();
+      }
+    } catch {
+      // 请求层显示错误，保留当前编辑内容。
+    } finally {
+      mutatingRef.current = false;
+      setMutating(false);
     }
-  }
+  };
 
   return (
     <>
       <AppPage className="gap-5 bg-transparent p-0">
         <AppPageHeader
-          items={[
-            { title: '项目管理', to: '/apps/projects' },
-          ]}
+          items={[{ title: '项目管理', to: '/apps/projects' }]}
           showHome={false}
           title={activeProject.name}
         />
 
         <Tabs
-          className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]')}
+          className={cn(
+            APP_WORKSPACE_HEIGHT_CLASS,
+            'grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]',
+          )}
           defaultValue="requirements"
           orientation="vertical"
         >
           <Card className="h-full p-2 lg:sticky lg:top-4">
             <CardContent className="p-0">
-              <TabsList aria-label="项目工作项" className="flex h-auto! w-full flex-col! items-stretch! gap-1 bg-transparent p-0">
-                <TabsTrigger aria-label="需求管理" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="requirements"><ListTodo /><span className="sr-only sm:not-sr-only">需求管理</span><span className="ml-auto hidden text-xs text-muted-foreground sm:inline">{activeProject.requirements.length}</span></TabsTrigger>
-                <TabsTrigger aria-label="缺陷管理" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="defects"><Bug /><span className="sr-only sm:not-sr-only">缺陷管理</span><span className="ml-auto hidden text-xs text-muted-foreground sm:inline">{activeProject.defects.length}</span></TabsTrigger>
-                <TabsTrigger aria-label="项目设置" className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3" value="settings"><Settings /><span className="sr-only sm:not-sr-only">项目设置</span></TabsTrigger>
+              <TabsList
+                aria-label="项目工作项"
+                className="flex h-auto! w-full flex-col! items-stretch! gap-1 bg-transparent p-0"
+              >
+                <TabsTrigger
+                  aria-label="需求管理"
+                  className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
+                  value="requirements"
+                >
+                  <ListTodo />
+                  <span className="sr-only sm:not-sr-only">需求管理</span>
+                  <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
+                    {activeProject.requirements.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  aria-label="缺陷管理"
+                  className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
+                  value="defects"
+                >
+                  <Bug />
+                  <span className="sr-only sm:not-sr-only">缺陷管理</span>
+                  <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
+                    {activeProject.defects.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  aria-label="项目设置"
+                  className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
+                  value="settings"
+                >
+                  <Settings />
+                  <span className="sr-only sm:not-sr-only">项目设置</span>
+                </TabsTrigger>
               </TabsList>
             </CardContent>
           </Card>
 
           <Card className="h-full min-h-0 overflow-auto p-5 sm:p-6">
-          <TabsContent className="h-full min-h-0 w-full" value="requirements">
-            <ManagementPanel
-              action={() => { setEditingRequirementId(null); setRequirementForm(emptyRequirementForm()); setRequirementDialogOpen(true) }}
-              actionLabel="添加需求"
-              description="跟踪项目需要交付的工作项，并及时更新处理状态。"
-              disabled={activeProject.status === '已归档'}
-              title="需求管理"
-            >
-              <RequirementsTable disabled={activeProject.status === '已归档'} onDelete={(requirement) => setDeleteTarget({ id: requirement.id, title: requirement.title, type: 'requirement' })} onDetails={(requirement) => setRequirementDetailsTarget(requirement)} onEdit={editRequirement} requirements={activeProject.requirements} onStatusChange={changeRequirementStatus} />
-            </ManagementPanel>
-          </TabsContent>
+            <TabsContent className="h-full min-h-0 w-full" value="requirements">
+              <ManagementPanel
+                action={() => {
+                  setEditingRequirementId(null);
+                  setRequirementForm(emptyRequirementForm());
+                  setRequirementDialogOpen(true);
+                }}
+                actionLabel="添加需求"
+                description="跟踪项目需要交付的工作项，并及时更新处理状态。"
+                disabled={mutating || activeProject.status === '已归档'}
+                title="需求管理"
+              >
+                <RequirementsTable
+                  disabled={mutating || activeProject.status === '已归档'}
+                  onDelete={(requirement) =>
+                    setDeleteTarget({
+                      id: requirement.id,
+                      title: requirement.title,
+                      type: 'requirement',
+                    })
+                  }
+                  onDetails={(requirement) => setRequirementDetailsTarget(requirement)}
+                  onEdit={editRequirement}
+                  requirements={activeProject.requirements}
+                  onStatusChange={changeRequirementStatus}
+                />
+              </ManagementPanel>
+            </TabsContent>
 
-          <TabsContent className="h-full min-h-0 w-full" value="defects">
-            <ManagementPanel
-              action={() => { setEditingDefectId(null); setDefectForm(emptyDefectForm()); setDefectDialogOpen(true) }}
-              actionLabel="添加缺陷"
-              description="记录问题、关联需求并持续跟踪修复进度。"
-              disabled={activeProject.status === '已归档'}
-              title="缺陷管理"
-            >
-              <DefectsTable defects={activeProject.defects} disabled={activeProject.status === '已归档'} linkedRequirement={linkedRequirement} onDelete={(defect) => setDeleteTarget({ id: defect.id, title: defect.title, type: 'defect' })} onDetails={(defect) => setReproductionStepsTarget(defect)} onEdit={editDefect} onStatusChange={changeDefectStatus} />
-            </ManagementPanel>
-          </TabsContent>
+            <TabsContent className="h-full min-h-0 w-full" value="defects">
+              <ManagementPanel
+                action={() => {
+                  setEditingDefectId(null);
+                  setDefectForm(emptyDefectForm());
+                  setDefectDialogOpen(true);
+                }}
+                actionLabel="添加缺陷"
+                description="记录问题、关联需求并持续跟踪修复进度。"
+                disabled={mutating || activeProject.status === '已归档'}
+                title="缺陷管理"
+              >
+                <DefectsTable
+                  defects={activeProject.defects}
+                  disabled={mutating || activeProject.status === '已归档'}
+                  linkedRequirement={linkedRequirement}
+                  onDelete={(defect) =>
+                    setDeleteTarget({ id: defect.id, title: defect.title, type: 'defect' })
+                  }
+                  onDetails={(defect) => setReproductionStepsTarget(defect)}
+                  onEdit={editDefect}
+                  onStatusChange={changeDefectStatus}
+                />
+              </ManagementPanel>
+            </TabsContent>
 
-          <TabsContent className="h-full min-h-0 w-full" value="settings">
-            <ProjectSettings onArchive={() => setArchiveDialogOpen(true)} onSave={saveProjectSettings} project={activeProject} />
-          </TabsContent>
+            <TabsContent className="h-full min-h-0 w-full" value="settings">
+              <ProjectSettings
+                busy={mutating}
+                onArchive={() => setArchiveDialogOpen(true)}
+                onSave={saveProjectSettings}
+                project={activeProject}
+              />
+            </TabsContent>
           </Card>
         </Tabs>
       </AppPage>
-      <RequirementDialog editing={editingRequirementId !== null} form={requirementForm} onFormChange={setRequirementForm} onOpenChange={setRequirementDialogOpen} onSubmit={saveRequirement} open={requirementDialogOpen} />
-      <DefectDialog editing={editingDefectId !== null} form={defectForm} onFormChange={setDefectForm} onOpenChange={setDefectDialogOpen} onSubmit={saveDefect} open={defectDialogOpen} requirements={activeProject.requirements} />
-      <ArchiveProjectDialog onArchive={archiveProject} onOpenChange={setArchiveDialogOpen} open={archiveDialogOpen} projectName={activeProject.name} />
-      <DeleteWorkItemDialog onDelete={deleteWorkItem} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }} target={deleteTarget} />
-      <RequirementDetailsDialog onOpenChange={(open) => { if (!open) setRequirementDetailsTarget(null) }} target={requirementDetailsTarget} />
-      <ReproductionStepsDialog onOpenChange={(open) => { if (!open) setReproductionStepsTarget(null) }} target={reproductionStepsTarget} />
+      <RequirementDialog
+        busy={mutating}
+        editing={editingRequirementId !== null}
+        form={requirementForm}
+        onFormChange={setRequirementForm}
+        onOpenChange={setRequirementDialogOpen}
+        onSubmit={saveRequirement}
+        open={requirementDialogOpen}
+      />
+      <DefectDialog
+        busy={mutating}
+        editing={editingDefectId !== null}
+        form={defectForm}
+        onFormChange={setDefectForm}
+        onOpenChange={setDefectDialogOpen}
+        onSubmit={saveDefect}
+        open={defectDialogOpen}
+        requirements={activeProject.requirements}
+      />
+      <ArchiveProjectDialog
+        onArchive={archiveProject}
+        onOpenChange={setArchiveDialogOpen}
+        open={archiveDialogOpen}
+        projectName={activeProject.name}
+      />
+      <DeleteWorkItemDialog
+        onDelete={deleteWorkItem}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        target={deleteTarget}
+      />
+      <RequirementDetailsDialog
+        onOpenChange={(open) => {
+          if (!open) setRequirementDetailsTarget(null);
+        }}
+        target={requirementDetailsTarget}
+      />
+      <ReproductionStepsDialog
+        onOpenChange={(open) => {
+          if (!open) setReproductionStepsTarget(null);
+        }}
+        target={reproductionStepsTarget}
+      />
     </>
-  )
+  );
 }
 
 function StatCard({
@@ -562,10 +912,10 @@ function StatCard({
   label,
   value,
 }: {
-  chartData: SegmentedBarChartDatum[]
-  chartSeries: SegmentedBarChartSeries[]
-  label: string
-  value: number
+  chartData: SegmentedBarChartDatum[];
+  chartSeries: SegmentedBarChartSeries[];
+  label: string;
+  value: number;
 }) {
   return (
     <Card className="h-full">
@@ -589,14 +939,49 @@ function StatCard({
         />
       </CardContent>
     </Card>
-  )
+  );
 }
 
-function EmptyState({ action, actionLabel, description, disabled, icon: Icon, title }: { action: () => void; actionLabel: string; description: string; disabled: boolean; icon: typeof Bug; title: string }) {
-  return <Empty className="min-h-0 flex-1 border"><EmptyHeader><EmptyMedia variant="icon"><Icon /></EmptyMedia><EmptyTitle>{title}</EmptyTitle><EmptyDescription>{description}</EmptyDescription></EmptyHeader>{!disabled && <EmptyContent><Button onClick={action} size="sm"><Plus />{actionLabel}</Button></EmptyContent>}</Empty>
+function EmptyState({
+  action,
+  actionLabel,
+  description,
+  disabled,
+  icon: Icon,
+  title,
+}: {
+  action: () => void;
+  actionLabel: string;
+  description: string;
+  disabled: boolean;
+  icon: typeof Bug;
+  title: string;
+}) {
+  return (
+    <Empty className="min-h-0 flex-1 border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Icon />
+        </EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+      {!disabled && (
+        <EmptyContent>
+          <Button onClick={action} size="sm">
+            <Plus />
+            {actionLabel}
+          </Button>
+        </EmptyContent>
+      )}
+    </Empty>
+  );
 }
 
-type ProjectSettingsForm = Pick<Project, 'description' | 'endDate' | 'name' | 'owner' | 'startDate' | 'status'>
+type ProjectSettingsForm = Pick<
+  Project,
+  'description' | 'endDate' | 'name' | 'owner' | 'startDate' | 'status'
+>;
 
 function projectSettingsFrom(project: Project): ProjectSettingsForm {
   return {
@@ -606,155 +991,808 @@ function projectSettingsFrom(project: Project): ProjectSettingsForm {
     owner: project.owner,
     startDate: project.startDate,
     endDate: project.endDate,
-  }
+  };
 }
 
-function ProjectSettings({ onArchive, onSave, project }: { onArchive: () => void; onSave: (details: ProjectSettingsForm) => void; project: Project }) {
-  const [form, setForm] = useState<ProjectSettingsForm>(() => projectSettingsFrom(project))
+function ProjectSettings({
+  busy,
+  onArchive,
+  onSave,
+  project,
+}: {
+  busy: boolean;
+  onArchive: () => void;
+  onSave: (details: ProjectSettingsForm) => void;
+  project: Project;
+}) {
+  const [form, setForm] = useState<ProjectSettingsForm>(() => projectSettingsFrom(project));
 
   useEffect(() => {
     // 项目数据在其他区域更新后，同步设置表单，避免保存时覆盖最新状态。
-    setForm(projectSettingsFrom(project))
-  }, [project])
+    setForm(projectSettingsFrom(project));
+  }, [project]);
 
   const saveSettings = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!form.name.trim()) return
-    onSave({ ...form, name: form.name.trim(), description: form.description.trim(), owner: form.owner.trim() || '我' })
-  }
+    event.preventDefault();
+    if (!form.name.trim()) return;
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      owner: form.owner.trim() || '我',
+    });
+  };
 
   return (
     <section className="min-h-full">
       <header className="border-b pb-5">
         <h2 className="font-semibold">项目设置</h2>
-        <p className="mt-1 text-sm text-muted-foreground">修改项目基础信息，这些内容会同步显示在项目列表与概览中。</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          修改项目基础信息，这些内容会同步显示在项目列表与概览中。
+        </p>
       </header>
       <form className="grid max-w-3xl gap-5 py-6" onSubmit={saveSettings}>
-        <div><h3 className="font-medium">基础信息</h3><p className="mt-1 text-sm text-muted-foreground">更新项目名称、负责人、时间范围与当前状态。</p></div>
-        <Field><FieldLabel>项目名称 *</FieldLabel><Input onChange={(event) => setForm({ ...form, name: event.target.value })} value={form.name} /></Field>
-        <Field><FieldLabel>项目简介</FieldLabel><Textarea className="min-h-28" onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="用一句话说明项目要解决什么问题" value={form.description} /></Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field><FieldLabel>项目状态</FieldLabel><OptionSelect ariaLabel="项目状态" items={projectStatuses.filter((status) => status !== '已归档')} onValueChange={(status) => setForm({ ...form, status })} value={form.status} /></Field>
-          <Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field>
-          <Field><FieldLabel>开始日期</FieldLabel><ProjectDatePicker onChange={(startDate) => setForm({ ...form, startDate })} value={form.startDate} /></Field>
-          <Field><FieldLabel>结束日期</FieldLabel><ProjectDatePicker onChange={(endDate) => setForm({ ...form, endDate })} value={form.endDate} /></Field>
+        <div>
+          <h3 className="font-medium">基础信息</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            更新项目名称、负责人、时间范围与当前状态。
+          </p>
         </div>
-        <div className="flex pt-5"><Button disabled={!form.name.trim()} type="submit">保存修改</Button></div>
+        <Field>
+          <FieldLabel>项目名称 *</FieldLabel>
+          <Input
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
+            value={form.name}
+          />
+        </Field>
+        <Field>
+          <FieldLabel>项目简介</FieldLabel>
+          <Textarea
+            className="min-h-28"
+            onChange={(event) => setForm({ ...form, description: event.target.value })}
+            placeholder="用一句话说明项目要解决什么问题"
+            value={form.description}
+          />
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel>项目状态</FieldLabel>
+            <OptionSelect
+              ariaLabel="项目状态"
+              items={projectStatuses.filter((status) => status !== '已归档')}
+              onValueChange={(status) => setForm({ ...form, status })}
+              value={form.status}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>负责人</FieldLabel>
+            <Input disabled value="当前登录用户" />
+          </Field>
+          <Field>
+            <FieldLabel>开始日期</FieldLabel>
+            <ProjectDatePicker
+              onChange={(startDate) => setForm({ ...form, startDate })}
+              value={form.startDate}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>结束日期</FieldLabel>
+            <ProjectDatePicker
+              onChange={(endDate) => setForm({ ...form, endDate })}
+              value={form.endDate}
+            />
+          </Field>
+        </div>
+        <div className="flex pt-5">
+          <Button disabled={busy || !form.name.trim()} type="submit">
+            保存修改
+          </Button>
+        </div>
       </form>
-      <section className="max-w-3xl border-t py-6"><h3 className="font-medium">归档项目</h3><p className="mt-1 text-sm text-muted-foreground">归档后，项目会从项目列表中隐藏；需求与缺陷记录会保留。</p><Button className="mt-4" disabled={project.status === '已归档'} onClick={onArchive} type="button" variant="destructive"><Archive />归档项目</Button></section>
+      <section className="max-w-3xl border-t py-6">
+        <h3 className="font-medium">归档项目</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          归档后，项目会从项目列表中隐藏；需求与缺陷记录会保留。
+        </p>
+        <Button
+          className="mt-4"
+          disabled={project.status === '已归档'}
+          onClick={onArchive}
+          type="button"
+          variant="destructive"
+        >
+          <Archive />
+          归档项目
+        </Button>
+      </section>
     </section>
-  )
+  );
 }
 
-function ArchiveProjectDialog({ onArchive, onOpenChange, open, projectName }: { onArchive: () => void; onOpenChange: (open: boolean) => void; open: boolean; projectName: string }) {
-  return <AlertDialog onOpenChange={onOpenChange} open={open}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认归档项目？</AlertDialogTitle><AlertDialogDescription>“{projectName}”将从项目列表中隐藏。该项目的需求与缺陷记录会继续保留在本地。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={onArchive} variant="destructive"><Archive />确认归档</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+function ArchiveProjectDialog({
+  onArchive,
+  onOpenChange,
+  open,
+  projectName,
+}: {
+  onArchive: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  projectName: string;
+}) {
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认归档项目？</AlertDialogTitle>
+          <AlertDialogDescription>
+            “{projectName}”将从项目列表中隐藏。该项目的需求与缺陷记录会继续保留在数据库中。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction onClick={onArchive} variant="destructive">
+            <Archive />
+            确认归档
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
-function DeleteWorkItemDialog({ onDelete, onOpenChange, target }: { onDelete: () => void; onOpenChange: (open: boolean) => void; target: { id: number; title: string; type: 'requirement' | 'defect' } | null }) {
-  const itemType = target?.type === 'requirement' ? '需求' : '缺陷'
-  const description = target?.type === 'requirement'
-    ? `“${target.title}”将被删除；关联缺陷会保留，但会解除与该需求的关联。`
-    : `“${target?.title}”将被永久删除。`
+function DeleteWorkItemDialog({
+  onDelete,
+  onOpenChange,
+  target,
+}: {
+  onDelete: () => void;
+  onOpenChange: (open: boolean) => void;
+  target: { id: number; title: string; type: 'requirement' | 'defect' } | null;
+}) {
+  const itemType = target?.type === 'requirement' ? '需求' : '缺陷';
+  const description =
+    target?.type === 'requirement'
+      ? `“${target.title}”将被删除；关联缺陷会保留，但会解除与该需求的关联。`
+      : `“${target?.title}”将被永久删除。`;
 
-  return <AlertDialog onOpenChange={onOpenChange} open={target !== null}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除{itemType}？</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={onDelete} variant="destructive"><Trash2 />确认删除</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={target !== null}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认删除{itemType}？</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} variant="destructive">
+            <Trash2 />
+            确认删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
-function ReproductionStepsDialog({ onOpenChange, target }: { onOpenChange: (open: boolean) => void; target: Pick<Defect, 'description' | 'reproductionSteps' | 'title'> | null }) {
-  return <Dialog onOpenChange={onOpenChange} open={target !== null}><DialogContent aria-label="缺陷详情" className="max-w-lg"><div className="grid gap-4 text-sm"><div className="grid gap-1.5"><p className="font-medium">缺陷标题</p><p className="whitespace-pre-wrap text-muted-foreground">{target?.title}</p></div><div className="grid gap-1.5"><p className="font-medium">问题描述</p><p className="whitespace-pre-wrap text-muted-foreground">{target?.description || '暂未记录问题描述。'}</p></div><div className="grid gap-1.5"><p className="font-medium">复现步骤</p><div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 leading-6">{target?.reproductionSteps || '暂未记录复现步骤。'}</div></div></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button">知道了</Button></DialogFooter></DialogContent></Dialog>
+function ReproductionStepsDialog({
+  onOpenChange,
+  target,
+}: {
+  onOpenChange: (open: boolean) => void;
+  target: Pick<Defect, 'description' | 'reproductionSteps' | 'title'> | null;
+}) {
+  return (
+    <Dialog onOpenChange={onOpenChange} open={target !== null}>
+      <DialogContent aria-label="缺陷详情" className="max-w-lg">
+        <div className="grid gap-4 text-sm">
+          <div className="grid gap-1.5">
+            <p className="font-medium">缺陷标题</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{target?.title}</p>
+          </div>
+          <div className="grid gap-1.5">
+            <p className="font-medium">问题描述</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">
+              {target?.description || '暂未记录问题描述。'}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <p className="font-medium">复现步骤</p>
+            <div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 leading-6">
+              {target?.reproductionSteps || '暂未记录复现步骤。'}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button">
+            知道了
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function RequirementDetailsDialog({ onOpenChange, target }: { onOpenChange: (open: boolean) => void; target: Pick<Requirement, 'description' | 'title'> | null }) {
-  return <Dialog onOpenChange={onOpenChange} open={target !== null}><DialogContent aria-label="需求详情" className="max-w-lg"><div className="grid gap-4 text-sm"><div className="grid gap-1.5"><p className="font-medium">需求标题</p><p className="whitespace-pre-wrap text-muted-foreground">{target?.title}</p></div><div className="grid gap-1.5"><p className="font-medium">需求详情</p><div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 leading-6">{target?.description || '暂未记录需求详情。'}</div></div></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button">知道了</Button></DialogFooter></DialogContent></Dialog>
+function RequirementDetailsDialog({
+  onOpenChange,
+  target,
+}: {
+  onOpenChange: (open: boolean) => void;
+  target: Pick<Requirement, 'description' | 'title'> | null;
+}) {
+  return (
+    <Dialog onOpenChange={onOpenChange} open={target !== null}>
+      <DialogContent aria-label="需求详情" className="max-w-lg">
+        <div className="grid gap-4 text-sm">
+          <div className="grid gap-1.5">
+            <p className="font-medium">需求标题</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{target?.title}</p>
+          </div>
+          <div className="grid gap-1.5">
+            <p className="font-medium">需求详情</p>
+            <div className="max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 leading-6">
+              {target?.description || '暂未记录需求详情。'}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button">
+            知道了
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function ManagementPanel({ action, actionLabel, children, description, disabled, title }: { action: () => void; actionLabel: string; children: React.ReactNode; description: string; disabled: boolean; title: string }) {
-  return <section className="flex h-full min-h-0 flex-col gap-4"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">{title}</h2><p className="mt-0.5 text-sm text-muted-foreground">{description}</p></div>{!disabled && <Button onClick={action} size="sm"><Plus />{actionLabel}</Button>}</div><div className="flex min-h-0 flex-1 flex-col">{children}</div></section>
+function ManagementPanel({
+  action,
+  actionLabel,
+  children,
+  description,
+  disabled,
+  title,
+}: {
+  action: () => void;
+  actionLabel: string;
+  children: React.ReactNode;
+  description: string;
+  disabled: boolean;
+  title: string;
+}) {
+  return (
+    <section className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-semibold">{title}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        </div>
+        {!disabled && (
+          <Button onClick={action} size="sm">
+            <Plus />
+            {actionLabel}
+          </Button>
+        )}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+    </section>
+  );
 }
 
-function RequirementsTable({ disabled, onDelete, onDetails, onEdit, onStatusChange, requirements }: { disabled: boolean; onDelete: (requirement: Requirement) => void; onDetails: (requirement: Requirement) => void; onEdit: (requirement: Requirement) => void; onStatusChange: (requirementId: number, status: RequirementStatus) => void; requirements: Requirement[] }) {
+function RequirementsTable({
+  disabled,
+  onDelete,
+  onDetails,
+  onEdit,
+  onStatusChange,
+  requirements,
+}: {
+  disabled: boolean;
+  onDelete: (requirement: Requirement) => void;
+  onDetails: (requirement: Requirement) => void;
+  onEdit: (requirement: Requirement) => void;
+  onStatusChange: (requirementId: number, status: RequirementStatus) => void;
+  requirements: Requirement[];
+}) {
   const columns = useMemo(() => {
-    const columnHelper = createColumnHelper<Requirement>()
+    const columnHelper = createColumnHelper<Requirement>();
     return [
-    columnHelper.accessor('title', {
-      header: '标题',
-      cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
-    }),
-    columnHelper.accessor('priority', {
-      header: '优先级',
-      cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
-    }),
-    columnHelper.accessor('status', {
-      header: '状态',
-      cell: ({ row }) => <OptionSelect ariaLabel={`${row.original.title} 的状态`} className="min-w-28" disabled={disabled} items={requirementStatuses} onValueChange={(status) => onStatusChange(row.original.id, status)} value={row.original.status} />,
-    }),
-    columnHelper.accessor('owner', { header: '负责人' }),
-    columnHelper.accessor('dueDate', {
-      header: '截止日期',
-      cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() || '未设置'}</span>,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '操作',
-      enableHiding: false,
-      cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看需求详情：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑需求：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除需求：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
-    }),
-    ]
-  }, [disabled, onDelete, onDetails, onEdit, onStatusChange])
+      columnHelper.accessor('title', {
+        header: '标题',
+        cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
+      }),
+      columnHelper.accessor('priority', {
+        header: '优先级',
+        cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
+      }),
+      columnHelper.accessor('status', {
+        header: '状态',
+        cell: ({ row }) => (
+          <OptionSelect
+            ariaLabel={`${row.original.title} 的状态`}
+            className="min-w-28"
+            disabled={disabled}
+            items={requirementStatuses}
+            onValueChange={(status) => onStatusChange(row.original.id, status)}
+            value={row.original.status}
+          />
+        ),
+      }),
+      columnHelper.accessor('owner', { header: '负责人' }),
+      columnHelper.accessor('dueDate', {
+        header: '截止日期',
+        cell: ({ getValue }) => (
+          <span className="text-muted-foreground">{getValue() || '未设置'}</span>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: '操作',
+        enableHiding: false,
+        cell: ({ row }) => (
+          <div className="flex justify-center gap-1">
+            <Button
+              aria-label={`查看需求详情：${row.original.title}`}
+              onClick={() => onDetails(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <FileText />
+            </Button>
+            <Button
+              aria-label={`编辑需求：${row.original.title}`}
+              disabled={disabled}
+              onClick={() => onEdit(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <Pencil />
+            </Button>
+            <Button
+              aria-label={`删除需求：${row.original.title}`}
+              disabled={disabled}
+              onClick={() => onDelete(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 className="text-destructive" />
+            </Button>
+          </div>
+        ),
+      }),
+    ];
+  }, [disabled, onDelete, onDetails, onEdit, onStatusChange]);
 
-  return <DataTable centered columns={columns} data={requirements} fillHeight={false} searchPlaceholder="搜索需求…" />
+  return (
+    <DataTable
+      centered
+      columns={columns}
+      data={requirements}
+      fillHeight={false}
+      searchPlaceholder="搜索需求…"
+    />
+  );
 }
 
-function DefectsTable({ defects, disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange }: { defects: Defect[]; disabled: boolean; linkedRequirement: (requirementId?: number) => Requirement | undefined; onDelete: (defect: Defect) => void; onDetails: (defect: Defect) => void; onEdit: (defect: Defect) => void; onStatusChange: (defectId: number, status: DefectStatus) => void }) {
+function DefectsTable({
+  defects,
+  disabled,
+  linkedRequirement,
+  onDelete,
+  onDetails,
+  onEdit,
+  onStatusChange,
+}: {
+  defects: Defect[];
+  disabled: boolean;
+  linkedRequirement: (requirementId?: number) => Requirement | undefined;
+  onDelete: (defect: Defect) => void;
+  onDetails: (defect: Defect) => void;
+  onEdit: (defect: Defect) => void;
+  onStatusChange: (defectId: number, status: DefectStatus) => void;
+}) {
   const columns = useMemo(() => {
-    const columnHelper = createColumnHelper<Defect>()
+    const columnHelper = createColumnHelper<Defect>();
     return [
-    columnHelper.accessor('title', {
-      header: '标题',
-      cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
-    }),
-    columnHelper.accessor('requirementId', {
-      header: '关联需求',
-      cell: ({ getValue }) => <span className="block max-w-40 truncate text-primary">{linkedRequirement(getValue())?.title || '未关联'}</span>,
-    }),
-    columnHelper.accessor('severity', {
-      header: '严重程度',
-      cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
-    }),
-    columnHelper.accessor('priority', {
-      header: '优先级',
-      cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
-    }),
-    columnHelper.accessor('status', {
-      header: '状态',
-      cell: ({ row }) => <OptionSelect ariaLabel={`${row.original.title} 的状态`} className="min-w-28" disabled={disabled} items={defectStatuses} onValueChange={(status) => onStatusChange(row.original.id, status)} value={row.original.status} />,
-    }),
-    columnHelper.accessor('owner', { header: '负责人' }),
-    columnHelper.accessor('dueDate', {
-      header: '预计解决',
-      cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() || '未设置'}</span>,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '操作',
-      enableHiding: false,
-      cell: ({ row }) => <div className="flex justify-center gap-1"><Button aria-label={`查看缺陷复现步骤：${row.original.title}`} onClick={() => onDetails(row.original)} size="icon" variant="ghost"><FileText /></Button><Button aria-label={`编辑缺陷：${row.original.title}`} disabled={disabled} onClick={() => onEdit(row.original)} size="icon" variant="ghost"><Pencil /></Button><Button aria-label={`删除缺陷：${row.original.title}`} disabled={disabled} onClick={() => onDelete(row.original)} size="icon" variant="ghost"><Trash2 className="text-destructive" /></Button></div>,
-    }),
-    ]
-  }, [disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange])
+      columnHelper.accessor('title', {
+        header: '标题',
+        cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
+      }),
+      columnHelper.accessor('requirementId', {
+        header: '关联需求',
+        cell: ({ getValue }) => (
+          <span className="block max-w-40 truncate text-primary">
+            {linkedRequirement(getValue())?.title || '未关联'}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('severity', {
+        header: '严重程度',
+        cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
+      }),
+      columnHelper.accessor('priority', {
+        header: '优先级',
+        cell: ({ getValue }) => <Pill className={priorityClass(getValue())}>{getValue()}</Pill>,
+      }),
+      columnHelper.accessor('status', {
+        header: '状态',
+        cell: ({ row }) => (
+          <OptionSelect
+            ariaLabel={`${row.original.title} 的状态`}
+            className="min-w-28"
+            disabled={disabled}
+            items={defectStatuses}
+            onValueChange={(status) => onStatusChange(row.original.id, status)}
+            value={row.original.status}
+          />
+        ),
+      }),
+      columnHelper.accessor('owner', { header: '负责人' }),
+      columnHelper.accessor('dueDate', {
+        header: '预计解决',
+        cell: ({ getValue }) => (
+          <span className="text-muted-foreground">{getValue() || '未设置'}</span>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: '操作',
+        enableHiding: false,
+        cell: ({ row }) => (
+          <div className="flex justify-center gap-1">
+            <Button
+              aria-label={`查看缺陷复现步骤：${row.original.title}`}
+              onClick={() => onDetails(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <FileText />
+            </Button>
+            <Button
+              aria-label={`编辑缺陷：${row.original.title}`}
+              disabled={disabled}
+              onClick={() => onEdit(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <Pencil />
+            </Button>
+            <Button
+              aria-label={`删除缺陷：${row.original.title}`}
+              disabled={disabled}
+              onClick={() => onDelete(row.original)}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 className="text-destructive" />
+            </Button>
+          </div>
+        ),
+      }),
+    ];
+  }, [disabled, linkedRequirement, onDelete, onDetails, onEdit, onStatusChange]);
 
-  return <DataTable centered columns={columns} data={defects} fillHeight={false} searchPlaceholder="搜索缺陷…" />
+  return (
+    <DataTable
+      centered
+      columns={columns}
+      data={defects}
+      fillHeight={false}
+      searchPlaceholder="搜索缺陷…"
+    />
+  );
 }
 
-function ProjectDialog({ form, onFormChange, onOpenChange, onSubmit, open }: { form: ReturnType<typeof emptyProjectForm>; onFormChange: (value: ReturnType<typeof emptyProjectForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean }) {
-  return <AlertDialog onOpenChange={onOpenChange} open={open}><AlertDialogContent className="max-w-lg"><AlertDialogHeader><AlertDialogTitle>新建项目</AlertDialogTitle><AlertDialogDescription>先定义项目目标和时间范围，需求与缺陷会归属在这个项目下。</AlertDialogDescription></AlertDialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>项目名称 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, name: event.target.value })} placeholder="例如：个人知识库升级" value={form.name} /></Field><Field><FieldLabel>项目简介</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="用一句话说明项目要解决什么问题" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>项目状态</FieldLabel><OptionSelect ariaLabel="项目状态" items={projectStatuses.filter((status) => status !== '已归档')} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>开始日期</FieldLabel><ProjectDatePicker onChange={(startDate) => onFormChange({ ...form, startDate })} value={form.startDate} /></Field><Field><FieldLabel>结束日期</FieldLabel><ProjectDatePicker onChange={(endDate) => onFormChange({ ...form, endDate })} value={form.endDate} /></Field></div><AlertDialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.name.trim()} type="submit"><Plus />创建项目</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
+function ProjectDialog({
+  busy,
+  form,
+  onFormChange,
+  onOpenChange,
+  onSubmit,
+  open,
+}: {
+  busy: boolean;
+  form: ReturnType<typeof emptyProjectForm>;
+  onFormChange: (value: ReturnType<typeof emptyProjectForm>) => void;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  open: boolean;
+}) {
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent className="max-w-lg">
+        <AlertDialogHeader>
+          <AlertDialogTitle>新建项目</AlertDialogTitle>
+          <AlertDialogDescription>
+            先定义项目目标和时间范围，需求与缺陷会归属在这个项目下。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Field>
+            <FieldLabel>项目名称 *</FieldLabel>
+            <Input
+              autoFocus
+              required
+              maxLength={200}
+              onChange={(event) => onFormChange({ ...form, name: event.target.value })}
+              placeholder="例如：个人知识库升级"
+              value={form.name}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>项目简介</FieldLabel>
+            <Textarea
+              maxLength={10000}
+              onChange={(event) => onFormChange({ ...form, description: event.target.value })}
+              placeholder="用一句话说明项目要解决什么问题"
+              value={form.description}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>项目状态</FieldLabel>
+              <OptionSelect
+                ariaLabel="项目状态"
+                items={projectStatuses.filter((status) => status !== '已归档')}
+                onValueChange={(status) => onFormChange({ ...form, status })}
+                value={form.status}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>负责人</FieldLabel>
+              <Input disabled value="当前登录用户" />
+            </Field>
+            <Field>
+              <FieldLabel>开始日期</FieldLabel>
+              <ProjectDatePicker
+                onChange={(startDate) => onFormChange({ ...form, startDate })}
+                value={form.startDate}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>结束日期</FieldLabel>
+              <ProjectDatePicker
+                onChange={(endDate) => onFormChange({ ...form, endDate })}
+                value={form.endDate}
+              />
+            </Field>
+          </div>
+          <AlertDialogFooter>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+              取消
+            </Button>
+            <Button disabled={busy || !form.name.trim()} type="submit">
+              <Plus />
+              创建项目
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
-function RequirementDialog({ editing, form, onFormChange, onOpenChange, onSubmit, open }: { editing: boolean; form: ReturnType<typeof emptyRequirementForm>; onFormChange: (value: ReturnType<typeof emptyRequirementForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean }) {
-  const actionLabel = editing ? '保存修改' : '添加需求'
-  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑需求' : '添加需求'}</DialogTitle><DialogDescription>需求应描述可交付的结果，后续可以关联相关缺陷。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>需求标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="例如：支持按标签筛选笔记" value={form.title} /></Field><Field><FieldLabel>需求描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="描述目标、范围或验收标准" value={form.description} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="需求优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>状态</FieldLabel><OptionSelect ariaLabel="需求状态" items={requirementStatuses} onValueChange={(status) => onFormChange({ ...form, status })} value={form.status} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>截止日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
+function RequirementDialog({
+  busy,
+  editing,
+  form,
+  onFormChange,
+  onOpenChange,
+  onSubmit,
+  open,
+}: {
+  busy: boolean;
+  editing: boolean;
+  form: ReturnType<typeof emptyRequirementForm>;
+  onFormChange: (value: ReturnType<typeof emptyRequirementForm>) => void;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  open: boolean;
+}) {
+  const actionLabel = editing ? '保存修改' : '添加需求';
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{editing ? '编辑需求' : '添加需求'}</DialogTitle>
+          <DialogDescription>需求应描述可交付的结果，后续可以关联相关缺陷。</DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Field>
+            <FieldLabel>需求标题 *</FieldLabel>
+            <Input
+              autoFocus
+              required
+              maxLength={200}
+              onChange={(event) => onFormChange({ ...form, title: event.target.value })}
+              placeholder="例如：支持按标签筛选笔记"
+              value={form.title}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>需求描述</FieldLabel>
+            <Textarea
+              maxLength={10000}
+              onChange={(event) => onFormChange({ ...form, description: event.target.value })}
+              placeholder="描述目标、范围或验收标准"
+              value={form.description}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>优先级</FieldLabel>
+              <OptionSelect
+                ariaLabel="需求优先级"
+                items={priorities}
+                onValueChange={(priority) => onFormChange({ ...form, priority })}
+                value={form.priority}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>状态</FieldLabel>
+              <OptionSelect
+                ariaLabel="需求状态"
+                items={requirementStatuses}
+                onValueChange={(status) => onFormChange({ ...form, status })}
+                value={form.status}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>负责人</FieldLabel>
+              <Input disabled value="当前登录用户" />
+            </Field>
+            <Field>
+              <FieldLabel>截止日期</FieldLabel>
+              <ProjectDatePicker
+                onChange={(dueDate) => onFormChange({ ...form, dueDate })}
+                value={form.dueDate}
+              />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+              取消
+            </Button>
+            <Button disabled={busy || !form.title.trim()} type="submit">
+              <Pencil />
+              {actionLabel}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function DefectDialog({ editing, form, onFormChange, onOpenChange, onSubmit, open, requirements }: { editing: boolean; form: ReturnType<typeof emptyDefectForm>; onFormChange: (value: ReturnType<typeof emptyDefectForm>) => void; onOpenChange: (open: boolean) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; open: boolean; requirements: Requirement[] }) {
-  const actionLabel = editing ? '保存修改' : '添加缺陷'
-  return <Dialog onOpenChange={onOpenChange} open={open}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? '编辑缺陷' : '添加缺陷'}</DialogTitle><DialogDescription>缺陷可以独立记录，也可以关联到已有需求。</DialogDescription></DialogHeader><form className="grid gap-4" onSubmit={onSubmit}><Field><FieldLabel>缺陷标题 *</FieldLabel><Input autoFocus onChange={(event) => onFormChange({ ...form, title: event.target.value })} placeholder="简明描述遇到的问题" value={form.title} /></Field><Field><FieldLabel>问题描述</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, description: event.target.value })} placeholder="说明实际表现和预期表现" value={form.description} /></Field><Field><FieldLabel>复现步骤</FieldLabel><Textarea onChange={(event) => onFormChange({ ...form, reproductionSteps: event.target.value })} placeholder="例如：1. 打开… 2. 点击… 3. 观察…" value={form.reproductionSteps} /></Field><Field><FieldLabel>关联需求（可选）</FieldLabel><Select value={form.requirementId || 'unlinked'} onValueChange={(requirementId) => onFormChange({ ...form, requirementId: requirementId === 'unlinked' ? '' : requirementId || '' })}><SelectTrigger aria-label="关联需求" className="w-full cursor-pointer"><SelectValue /></SelectTrigger><SelectContent><SelectItem className="cursor-pointer" value="unlinked">不关联需求</SelectItem>{requirements.map((requirement) => <SelectItem className="cursor-pointer" key={requirement.id} value={String(requirement.id)}>{requirement.title}</SelectItem>)}</SelectContent></Select></Field><div className="grid gap-4 sm:grid-cols-2"><Field><FieldLabel>严重程度</FieldLabel><OptionSelect ariaLabel="缺陷严重程度" items={severities} onValueChange={(severity) => onFormChange({ ...form, severity })} value={form.severity} /></Field><Field><FieldLabel>优先级</FieldLabel><OptionSelect ariaLabel="缺陷优先级" items={priorities} onValueChange={(priority) => onFormChange({ ...form, priority })} value={form.priority} /></Field><Field><FieldLabel>负责人</FieldLabel><Input disabled value="当前登录用户" /></Field><Field><FieldLabel>预计解决日期</FieldLabel><ProjectDatePicker onChange={(dueDate) => onFormChange({ ...form, dueDate })} value={form.dueDate} /></Field></div><DialogFooter><Button onClick={() => onOpenChange(false)} type="button" variant="outline">取消</Button><Button disabled={!form.title.trim()} type="submit"><Pencil />{actionLabel}</Button></DialogFooter></form></DialogContent></Dialog>
+function DefectDialog({
+  busy,
+  editing,
+  form,
+  onFormChange,
+  onOpenChange,
+  onSubmit,
+  open,
+  requirements,
+}: {
+  busy: boolean;
+  editing: boolean;
+  form: ReturnType<typeof emptyDefectForm>;
+  onFormChange: (value: ReturnType<typeof emptyDefectForm>) => void;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  open: boolean;
+  requirements: Requirement[];
+}) {
+  const actionLabel = editing ? '保存修改' : '添加缺陷';
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{editing ? '编辑缺陷' : '添加缺陷'}</DialogTitle>
+          <DialogDescription>缺陷可以独立记录，也可以关联到已有需求。</DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Field>
+            <FieldLabel>缺陷标题 *</FieldLabel>
+            <Input
+              autoFocus
+              required
+              maxLength={200}
+              onChange={(event) => onFormChange({ ...form, title: event.target.value })}
+              placeholder="简明描述遇到的问题"
+              value={form.title}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>问题描述</FieldLabel>
+            <Textarea
+              maxLength={10000}
+              onChange={(event) => onFormChange({ ...form, description: event.target.value })}
+              placeholder="说明实际表现和预期表现"
+              value={form.description}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>复现步骤</FieldLabel>
+            <Textarea
+              maxLength={10000}
+              onChange={(event) => onFormChange({ ...form, reproductionSteps: event.target.value })}
+              placeholder="例如：1. 打开… 2. 点击… 3. 观察…"
+              value={form.reproductionSteps}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>关联需求（可选）</FieldLabel>
+            <Select
+              value={form.requirementId || 'unlinked'}
+              onValueChange={(requirementId) =>
+                onFormChange({
+                  ...form,
+                  requirementId: requirementId === 'unlinked' ? '' : requirementId || '',
+                })
+              }
+            >
+              <SelectTrigger aria-label="关联需求" className="w-full cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem className="cursor-pointer" value="unlinked">
+                  不关联需求
+                </SelectItem>
+                {requirements.map((requirement) => (
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={requirement.id}
+                    value={String(requirement.id)}
+                  >
+                    {requirement.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>严重程度</FieldLabel>
+              <OptionSelect
+                ariaLabel="缺陷严重程度"
+                items={severities}
+                onValueChange={(severity) => onFormChange({ ...form, severity })}
+                value={form.severity}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>优先级</FieldLabel>
+              <OptionSelect
+                ariaLabel="缺陷优先级"
+                items={priorities}
+                onValueChange={(priority) => onFormChange({ ...form, priority })}
+                value={form.priority}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>负责人</FieldLabel>
+              <Input disabled value="当前登录用户" />
+            </Field>
+            <Field>
+              <FieldLabel>预计解决日期</FieldLabel>
+              <ProjectDatePicker
+                onChange={(dueDate) => onFormChange({ ...form, dueDate })}
+                value={form.dueDate}
+              />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+              取消
+            </Button>
+            <Button disabled={busy || !form.title.trim()} type="submit">
+              <Pencil />
+              {actionLabel}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }

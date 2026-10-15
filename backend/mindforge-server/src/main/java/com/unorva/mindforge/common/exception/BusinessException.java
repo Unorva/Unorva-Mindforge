@@ -1,11 +1,6 @@
 package com.unorva.mindforge.common.exception;
 
-/**
- * 业务异常
- *
- * @Author yanshijie
- * @Date 2026/8/25 11:01
- */
+/** 业务异常 @Author yanshijie @Date 2026/8/25 11:01 */
 public class BusinessException extends BaseException {
 
     public BusinessException(ErrorCode errorCode) {
@@ -19,5 +14,4 @@ public class BusinessException extends BaseException {
     public BusinessException(String message, Throwable cause, ErrorCode errorCode) {
         super(message, cause, errorCode);
     }
-
 }

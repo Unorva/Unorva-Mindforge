@@ -1,6 +1,6 @@
-import BlogDetailData from "@/components/apps/blog/detail";
-import { BlogProvider } from "src/context/blog-context";
-import { AppPage, AppPageHeader } from "@/components/shared/app-workspace";
+import BlogDetailData from '@/components/apps/blog/detail';
+import { BlogProvider } from 'src/context/blog-context';
+import { AppPage, AppPageHeader } from '@/components/shared/app-workspace';
 
 const BlogDetail = () => {
   return (

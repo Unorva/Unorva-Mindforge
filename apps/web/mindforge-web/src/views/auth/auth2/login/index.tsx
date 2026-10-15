@@ -4,10 +4,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import FullLogo from 'src/layouts/full/shared/logo/FullLogo';
-import SocialButtons from '../../authforms/social-buttons';
 import { useState, type SubmitEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { login } from '@/api/system/auth/auth';
+import { login, register } from '@/api/system/auth/auth';
 import { saveAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
 
@@ -20,6 +19,9 @@ const BoxedLogin = () => {
   const [remember, setRemember] = useState(false);
   // 页面交互状态
   const [submitting, setSubmitting] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   /**
    * 提交登录表单
@@ -33,6 +35,18 @@ const BoxedLogin = () => {
     }
     try {
       setSubmitting(true);
+      if (registering) {
+        if (password !== confirmPassword) {
+          toast.add({ type: 'error', title: '两次输入的密码不一致' });
+          return;
+        }
+        await register({ nickname: nickname.trim(), email: email.trim(), password });
+        toast.add({ type: 'success', title: '账户已创建，请登录' });
+        setRegistering(false);
+        setPassword('');
+        setConfirmPassword('');
+        return;
+      }
       // 页面只调用认证 API，不直接关心 URL、POST 或 JSON 序列化
       const result = await login({
         email: email.trim(),
@@ -44,7 +58,11 @@ const BoxedLogin = () => {
         return;
       }
       if (!result.data?.token) {
-        toast.add({ type: 'error', title: '登录失败', description: result.message || '登录失败，请检查邮箱和密码。' });
+        toast.add({
+          type: 'error',
+          title: '登录失败',
+          description: result.message || '登录失败，请检查邮箱和密码。',
+        });
         return;
       }
       // 保存后端签发的 Bearer Token
@@ -69,14 +87,27 @@ const BoxedLogin = () => {
           <div className="mx-auto  w-fit">
             <FullLogo />
           </div>
-          <SocialButtons />
+          <h1 className="text-center text-xl font-semibold">
+            {registering ? '创建个人工作台' : '登录个人工作台'}
+          </h1>
           <form className="space-y-6 w-full" onSubmit={handleSubmit}>
             <div className="space-y-4">
+              {registering && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="nickname">昵称</Label>
+                  <Input
+                    id="nickname"
+                    required
+                    maxLength={100}
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
+                    placeholder="输入你的昵称"
+                    autoComplete="nickname"
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-normal text-muted-foreground"
-                >
+                <Label htmlFor="email" className="text-sm font-normal text-muted-foreground">
                   邮箱*
                 </Label>
                 <Input
@@ -91,20 +122,19 @@ const BoxedLogin = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="password"
-                  className="text-sm font-normal text-muted-foreground"
-                >
+                <Label htmlFor="password" className="text-sm font-normal text-muted-foreground">
                   密码*
                 </Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
+                  minLength={registering ? 8 : undefined}
+                  maxLength={128}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="输入你的密码"
-                  autoComplete="current-password"
+                  autoComplete={registering ? 'new-password' : 'current-password'}
                   required
                 />
               </div>
@@ -124,14 +154,37 @@ const BoxedLogin = () => {
                   </Label>
                 </div>
               </div>
+              {registering && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm-password">确认密码（8–128 位）</Label>
+                  <Input
+                    id="confirm-password"
+                    required
+                    type="password"
+                    minLength={8}
+                    maxLength={128}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+              )}
             </div>
+            <Button type="submit" size="lg" className="w-full rounded-lg" disabled={submitting}>
+              {submitting ? '提交中...' : registering ? '创建账户' : '登录'}
+            </Button>
             <Button
-              type="submit"
-              size="lg"
-              className="w-full rounded-lg"
+              type="button"
               disabled={submitting}
+              variant="ghost"
+              className="w-full"
+              onClick={() => {
+                setRegistering(!registering);
+                setPassword('');
+                setConfirmPassword('');
+              }}
             >
-              {submitting ? '登录中...' : '登录'}
+              {registering ? '已有账户，返回登录' : '没有账户，立即注册'}
             </Button>
           </form>
         </Card>

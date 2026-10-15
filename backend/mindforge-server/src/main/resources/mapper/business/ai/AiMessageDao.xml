@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd"[]>
+<mapper namespace="com.unorva.mindforge.module.business.ai.dao.AiMessageDao">
+    <resultMap id="message" type="com.unorva.mindforge.module.business.ai.domain.vo.MessageVO">
+        <constructor>
+            <idArg column="id" javaType="_long" />
+            <arg column="role" javaType="java.lang.String" />
+            <arg column="content" javaType="java.lang.String" />
+            <arg column="created_at" javaType="java.time.LocalDateTime" />
+        </constructor>
+    </resultMap>
+    <select id="newest" resultMap="message">SELECT id, role, content, created_at FROM mf_ai_message WHERE user_id = #{userId} AND conversation_id = #{conversationId} ORDER BY id DESC LIMIT #{limit}</select>
+    <select id="find" resultMap="message">SELECT id, role, content, created_at FROM mf_ai_message WHERE user_id = #{userId} AND conversation_id = #{conversationId} AND id = #{id}</select>
+    <insert id="insertMessage" useGeneratedKeys="true" keyProperty="id">INSERT INTO mf_ai_message (user_id, conversation_id, role, content) VALUES (#{userId}, #{conversationId}, #{role}, #{content})</insert>
+    <delete id="deleteConversation">DELETE FROM mf_ai_message WHERE user_id = #{userId} AND conversation_id = #{conversationId}</delete>
+</mapper>

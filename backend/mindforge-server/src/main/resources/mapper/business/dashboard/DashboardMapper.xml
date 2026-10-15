@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.dashboard.dao.DashboardDao">
+    <select id="selectMetrics" resultType="com.unorva.mindforge.module.business.dashboard.domain.bo.DashboardMetricsBO">
+        SELECT
+            (SELECT COUNT(*) FROM project WHERE user_id = #{query.userId} AND deleted = 0) AS projects,
+            (SELECT COUNT(*) FROM project WHERE user_id = #{query.userId} AND deleted = 0 AND status = #{query.activeProjectStatus}) AS active_projects,
+            (SELECT COUNT(*) FROM project_requirement JOIN project ON project.id = project_requirement.project_id
+                WHERE project.user_id = #{query.userId} AND project.deleted = 0 AND project_requirement.deleted = 0) AS requirements,
+            (SELECT COUNT(*) FROM project_defect JOIN project ON project.id = project_defect.project_id
+                WHERE project.user_id = #{query.userId} AND project.deleted = 0 AND project_defect.deleted = 0 AND project_defect.status &lt;&gt; #{query.closedDefectStatus}) AS defects,
+            (SELECT COUNT(*) FROM mf_note WHERE user_id = #{query.userId} AND deleted = 0) AS notes,
+            (SELECT COUNT(*) FROM mf_blog_post WHERE user_id = #{query.userId}) AS blogs,
+            (SELECT COUNT(*) FROM daily_review WHERE user_id = #{query.userId} AND deleted = 0) AS reviews,
+            (SELECT COUNT(*) FROM mf_ai_conversation WHERE user_id = #{query.userId}) AS conversations,
+            (SELECT COUNT(*) FROM mf_mail WHERE user_id = #{query.userId} AND folder = #{query.inboxFolder} AND unread = 1) AS unread,
+            (SELECT COALESCE(SUM(opening_balance), 0) FROM mf_finance_account WHERE user_id = #{query.userId}) +
+                (SELECT COALESCE(SUM(CASE WHEN transaction_type = #{query.incomeType} THEN amount ELSE -amount END), 0)
+                    FROM mf_finance_transaction WHERE user_id = #{query.userId}) AS assets,
+            (SELECT COALESCE(SUM(amount), 0) FROM mf_finance_transaction WHERE user_id = #{query.userId}
+                AND transaction_date &gt;= #{query.monthStart} AND transaction_date &lt; #{query.nextMonth} AND transaction_type = #{query.incomeType}) AS income,
+            (SELECT COALESCE(SUM(amount), 0) FROM mf_finance_transaction WHERE user_id = #{query.userId}
+                AND transaction_date &gt;= #{query.monthStart} AND transaction_date &lt; #{query.nextMonth} AND transaction_type = #{query.expenseType}) AS expense
+    </select>
+    <select id="selectRecentProjects" resultType="com.unorva.mindforge.module.business.dashboard.domain.vo.DashboardVO$RecentProjectVO">
+        SELECT id, name, status, updated_time FROM project WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY updated_time DESC, id DESC LIMIT 5
+    </select>
+    <select id="selectRecentReviews" resultType="com.unorva.mindforge.module.business.dashboard.domain.vo.DashboardVO$RecentReviewVO">
+        SELECT id, review_date, LEFT(content, 160) AS preview FROM daily_review WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY review_date DESC LIMIT 5
+    </select>
+</mapper>

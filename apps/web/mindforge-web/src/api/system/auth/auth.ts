@@ -8,18 +8,18 @@ import { postFetcher } from '@/api/global-fetcher.ts';
  * @param params 登录参数
  */
 export function login(params: LoginParams) {
-  return postFetcher(
-    '/auth/login',
-    params,
-  ) as Promise<ApiResult<LoginData>>;
+  return postFetcher('/auth/login', params) as Promise<ApiResult<LoginData>>;
 }
 
 /**
  * 登出接口
  */
 export function logout() {
-  return postFetcher(
-    '/auth/logout',
-    undefined
-  ) as Promise<ApiResult<void>>;
+  return postFetcher('/auth/logout', undefined) as Promise<ApiResult<void>>;
 }
+
+export const register = (params: {
+  nickname: string;
+  email: string;
+  password: string;
+}): Promise<ApiResult<void>> => postFetcher('/auth/register', params);

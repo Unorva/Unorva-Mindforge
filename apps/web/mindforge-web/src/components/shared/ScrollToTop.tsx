@@ -1,5 +1,5 @@
 import { useEffect, ReactElement } from 'react';
-import { useLocation } from "react-router";
+import { useLocation } from 'react-router';
 
 export default function ScrollToTop({ children }: { children: ReactElement | null }) {
   const { pathname } = useLocation();

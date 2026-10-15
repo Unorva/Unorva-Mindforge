@@ -4,8 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * @Author yanshijie
- * @Date 2026/8/25 11:25
+ * @Author yanshijie @Date 2026/8/25 11:25
  */
 @Getter
 @Setter
@@ -27,5 +26,4 @@ public abstract class BaseException extends RuntimeException {
         super(message, cause);
         this.errorCode = errorCode;
     }
-
 }

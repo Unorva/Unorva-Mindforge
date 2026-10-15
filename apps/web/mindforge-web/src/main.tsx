@@ -8,6 +8,9 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { ThemeProvider } from './context/shadcntheme/ThemeContext.tsx';
 
 async function deferRender() {
+  if (import.meta.env.VITE_ENABLE_MOCKS !== 'true') {
+    return;
+  }
   const { worker } = await import('./api/mocks/browser.ts');
   return worker.start({
     onUnhandledRequest: 'bypass',

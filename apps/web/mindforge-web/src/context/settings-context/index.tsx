@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import useSWR from 'swr';
-import {
-  deleteFetcher,
-  getFetcher,
-  postFetcher,
-  putFetcher,
-} from 'src/api/global-fetcher';
+import type { ApiResult } from '@/types/api';
+import { deleteFetcher, getFetcher, postFetcher, putFetcher } from 'src/api/global-fetcher';
 import type {
   AccountSettingsData,
   AiSettings,
@@ -15,12 +11,7 @@ import type {
   SecuritySettings,
 } from 'src/types/apps/settings';
 
-/** MSW 模拟接口的统一响应结构 */
-interface SettingsResponse {
-  status: number;
-  msg: string;
-  data: AccountSettingsData;
-}
+type SettingsResponse = ApiResult<AccountSettingsData>;
 
 export interface SettingsContextType {
   settings: AccountSettingsData | null;
@@ -37,19 +28,12 @@ export interface SettingsContextType {
   saveSecurity: (security: SecuritySettings) => Promise<void>;
 }
 
-export const SettingsContext = createContext<SettingsContextType>(
-  {} as SettingsContextType
-);
+export const SettingsContext = createContext<SettingsContextType>({} as SettingsContextType);
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AccountSettingsData | null>(null);
 
-  const { data, isLoading, error, mutate } = useSWR(
-    '/api/data/settings/SettingsData',
-    getFetcher
-  );
+  const { data, isLoading, error, mutate } = useSWR('/api/data/settings/SettingsData', getFetcher);
 
   useEffect(() => {
     if (data) {
@@ -62,12 +46,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
    * 失败时由 global-fetcher 统一弹出错误提示，异常继续向上抛给调用方。
    */
   const applyUpdate = async (request: Promise<unknown>) => {
-    const result = (await mutate(request, { revalidate: false })) as SettingsResponse;
+    const result = (await request) as SettingsResponse;
+    if (!result.success) throw new Error(result.message);
+    await mutate(result, { revalidate: false });
     setSettings(result.data);
   };
 
-  const saveAiSettings = (ai: AiSettings) =>
-    applyUpdate(putFetcher('/api/data/settings/ai', ai));
+  const saveAiSettings = (ai: AiSettings) => applyUpdate(putFetcher('/api/data/settings/ai', ai));
 
   const saveApps = (apps: AppIntegration[]) =>
     applyUpdate(putFetcher('/api/data/settings/apps', apps));

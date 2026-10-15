@@ -1,10 +1,10 @@
-create database mind_forge;
+CREATE DATABASE IF NOT EXISTS mind_forge;
 
 USE mind_forge;
 
-DROP TABLE IF EXISTS user;
 
-CREATE TABLE user
+
+CREATE TABLE IF NOT EXISTS user
 (
     id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '用户ID',
     nickname     VARCHAR(100)          DEFAULT NULL COMMENT '昵称',
@@ -17,14 +17,14 @@ CREATE TABLE user
     created_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_phone_deleted (phone, deleted), # 解决逻辑删除唯一索引问题
-        UNIQUE KEY uk_email_deleted (email, deleted)  # 解决逻辑删除唯一索引问题
+    UNIQUE KEY uk_phone_deleted (phone, deleted),
+        UNIQUE KEY uk_email_deleted (email, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '用户表';
 
-CREATE TABLE daily_review
+CREATE TABLE IF NOT EXISTS daily_review
 (
     id           BIGINT     NOT NULL AUTO_INCREMENT COMMENT '主键',
     user_id      BIGINT     NOT NULL COMMENT '所属用户 ID',
@@ -42,11 +42,11 @@ CREATE TABLE daily_review
   COLLATE=utf8mb4_unicode_ci
   COMMENT='每日复盘';
 
-CREATE DATABASE IF NOT EXISTS project_manager;
 
-USE project_manager;
 
-CREATE TABLE project
+
+
+CREATE TABLE IF NOT EXISTS project
 (
     id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '项目ID',
     user_id      BIGINT       NOT NULL COMMENT '项目创建人/所属用户ID',
@@ -68,7 +68,7 @@ CREATE TABLE project
   COLLATE=utf8mb4_unicode_ci
   COMMENT='项目表';
 
-CREATE TABLE requirement
+CREATE TABLE IF NOT EXISTS project_requirement
 (
     id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '需求ID',
     project_id   BIGINT       NOT NULL COMMENT '所属项目ID',
@@ -91,7 +91,7 @@ CREATE TABLE requirement
   COLLATE=utf8mb4_unicode_ci
   COMMENT='项目需求表';
 
-CREATE TABLE defect
+CREATE TABLE IF NOT EXISTS project_defect
 (
     id                 BIGINT       NOT NULL AUTO_INCREMENT COMMENT '缺陷ID',
     project_id         BIGINT       NOT NULL COMMENT '所属项目ID',

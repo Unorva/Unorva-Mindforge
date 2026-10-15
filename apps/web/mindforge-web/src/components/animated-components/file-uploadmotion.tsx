@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils";
-import React, { useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { CloudUpload } from "lucide-react";
-import { useDropzone } from "react-dropzone";
-import { Input } from "@/components/ui/input";
+import { cn } from '@/lib/utils';
+import React, { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { CloudUpload } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import { Input } from '@/components/ui/input';
 
 const mainVariant = {
   initial: { x: 0, y: 0 },
@@ -41,8 +41,7 @@ export const FileUploadStruc: React.FC<FileUploadProps> = ({ onChange }) => {
 
   const formatFileSize = (size: number) => (size / (1024 * 1024)).toFixed(2);
 
-  const formatDate = (timestamp: number) =>
-    new Date(timestamp).toLocaleDateString();
+  const formatDate = (timestamp: number) => new Date(timestamp).toLocaleDateString();
 
   return (
     <div className="w-full" {...getRootProps()}>
@@ -93,16 +92,11 @@ interface FileItemProps {
   formatDate: (timestamp: number) => string;
   isFirst: boolean;
 }
-const FileItem: React.FC<FileItemProps> = ({
-  file,
-  formatFileSize,
-  formatDate,
-  isFirst,
-}) => (
+const FileItem: React.FC<FileItemProps> = ({ file, formatFileSize, formatDate, isFirst }) => (
   <motion.div
-    layoutId={isFirst ? "file-upload" : `file-upload-${file.name}`}
+    layoutId={isFirst ? 'file-upload' : `file-upload-${file.name}`}
     className={cn(
-      "relative overflow-hidden z-40 bg-white dark:bg-white/10 flex flex-col items-start justify-start md:h-24 p-4 mt-4 w-full mx-auto rounded-md shadow-sm",
+      'relative overflow-hidden z-40 bg-white dark:bg-white/10 flex flex-col items-start justify-start md:h-24 p-4 mt-4 w-full mx-auto rounded-md shadow-sm',
     )}
   >
     <div className="flex justify-between w-full items-center gap-4">
@@ -132,12 +126,7 @@ const FileItem: React.FC<FileItemProps> = ({
       >
         {file.type}
       </motion.p>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        layout
-        className="text-sm"
-      >
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} layout className="text-sm">
         修改于 {formatDate(file.lastModified)}
       </motion.p>
     </div>
@@ -154,12 +143,12 @@ const EmptyState: React.FC<EmptyStateProps> = ({ isDragActive }) => (
       layoutId="file-upload"
       variants={mainVariant}
       transition={{
-        type: "spring",
+        type: 'spring',
         stiffness: 300,
         damping: 20,
       }}
       className={cn(
-        "relative group-hover/file:shadow-2xl z-40 bg-card dark:bg-white/10 flex items-center justify-center h-28 mt-4 w-full max-w-32 mx-auto rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]",
+        'relative group-hover/file:shadow-2xl z-40 bg-card dark:bg-white/10 flex items-center justify-center h-28 mt-4 w-full max-w-32 mx-auto rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]',
       )}
     >
       {isDragActive ? (

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.mail.dao.MailDao">
+<resultMap id="entity" type="com.unorva.mindforge.module.business.mail.domain.entity.MailEntity">
+    <id property="id" column="id"/>
+    <result property="userId" column="user_id"/>
+    <result property="accountId" column="account_id"/>
+    <result property="sender" column="sender"/>
+    <result property="recipient" column="recipient"/>
+    <result property="subject" column="subject"/>
+    <result property="body" column="body"/>
+    <result property="folder" column="folder"/>
+    <result property="starred" column="starred"/>
+    <result property="unread" column="unread"/>
+    <result property="flagsVersion" column="flags_version"/>
+    <result property="sendAttemptToken" column="send_attempt_token"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="updatedAt" column="updated_at"/>
+</resultMap>
+<sql id="columns">id, user_id, account_id, sender, recipient, subject, body, folder, starred, unread, flags_version, send_attempt_token, created_at, updated_at</sql>
+<select id="listOwned" resultMap="entity">
+ SELECT <include refid="columns"/> FROM mf_mail WHERE user_id = #{userId}
+ <if test="accountId != null">AND account_id = #{accountId}</if>
+ ORDER BY created_at DESC, id DESC LIMIT 1000
+</select>
+<select id="selectFlagVersions" resultType="com.unorva.mindforge.module.business.mail.domain.bo.MailFlagsVersionBO">
+ SELECT id, flags_version AS flagsVersion FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId}
+</select>
+<select id="selectOwned" resultMap="entity">SELECT <include refid="columns"/> FROM mf_mail WHERE user_id = #{userId} AND id = #{id}</select>
+<insert id="insertOwned" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+ INSERT INTO mf_mail (user_id, account_id, sender, recipient, subject, body, folder, starred, unread
+ <if test="entity.createdAt != null">, created_at</if>)
+ VALUES (#{entity.userId}, #{entity.accountId}, #{entity.sender}, #{entity.recipient}, #{entity.subject}, #{entity.body},
+ #{entity.folder}, #{entity.starred}, #{entity.unread}<if test="entity.createdAt != null">, #{entity.createdAt}</if>)
+</insert>
+<update id="updateOwned">
+ UPDATE mf_mail SET sender = #{entity.sender}, recipient = #{entity.recipient}, subject = #{entity.subject}, body = #{entity.body},
+ folder = #{entity.folder}, starred = #{entity.starred}, unread = #{entity.unread}, account_id = #{entity.accountId}, updated_at = CURRENT_TIMESTAMP
+ WHERE user_id = #{entity.userId} AND id = #{entity.id}
+</update>
+<update id="patchOwned">
+ UPDATE mf_mail SET folder = COALESCE(#{folder}, folder), starred = COALESCE(#{starred}, starred), unread = COALESCE(#{unread}, unread),
+ <if test="starred != null or unread != null">flags_version = flags_version + 1,</if>
+ updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId} AND id = #{id}
+</update>
+<delete id="deleteOwned">DELETE FROM mf_mail WHERE user_id = #{userId} AND id = #{id}</delete>
+<update id="claim">
+ UPDATE mf_mail SET folder = 'sending', send_attempt_token = #{attemptToken}, updated_at = CURRENT_TIMESTAMP
+ WHERE user_id = #{userId} AND id = #{id} AND folder = 'draft'
+</update>
+<update id="finishSend">
+ UPDATE mf_mail SET folder = #{folder}, send_attempt_token = NULL, unread = FALSE, updated_at = CURRENT_TIMESTAMP
+ WHERE user_id = #{userId} AND id = #{id} AND folder = 'sending' AND send_attempt_token = #{attemptToken}
+</update>
+<update id="recover">
+ UPDATE mf_mail SET folder = 'draft', send_attempt_token = NULL, updated_at = CURRENT_TIMESTAMP
+ WHERE user_id = #{userId} AND id = #{id} AND folder = 'sending'
+ AND updated_at &lt;= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 5 MINUTE)
+</update>
+<select id="countSending" resultType="java.lang.Long">SELECT COUNT(*) FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId} AND folder = 'sending'</select>
+<delete id="deleteForAccount">DELETE FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId}</delete>
+<delete id="deleteRemoteCache">DELETE FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId} AND folder NOT IN ('draft', 'sent', 'sending')</delete>
+<delete id="deleteObsoleteRemote">
+ DELETE FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId} AND id = #{id} AND folder NOT IN ('draft', 'sent', 'sending')
+</delete>
+<update id="refreshRemote">
+ UPDATE mf_mail SET sender = #{entity.sender}, recipient = #{entity.recipient}, subject = #{entity.subject}, body = #{entity.body},
+ starred = #{entity.starred}, unread = #{entity.unread}, updated_at = CURRENT_TIMESTAMP
+ WHERE user_id = #{entity.userId} AND account_id = #{entity.accountId} AND id = #{entity.id}
+</update>
+</mapper>

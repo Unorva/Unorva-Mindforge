@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.unorva.mindforge.module.business.notes.dao.NoteDao">
+    <resultMap id="NoteVO" type="com.unorva.mindforge.module.business.notes.domain.vo.NoteVO">
+        <constructor>
+            <arg name="id" column="id" javaType="_long"/>
+            <arg name="title" column="title" javaType="java.lang.String"/>
+            <arg name="content" column="content" javaType="java.lang.String"/>
+            <arg name="color" column="color" javaType="java.lang.String"/>
+            <arg name="folderId" column="folder_id" javaType="java.lang.String"/>
+            <arg name="datef" column="updated_at" javaType="java.time.LocalDateTime"/>
+            <arg name="deleted" column="deleted" javaType="_boolean"/>
+        </constructor>
+    </resultMap>
+    <select id="listNotes" resultMap="NoteVO">
+        SELECT id, title, content, color, folder_id, updated_at, deleted FROM mf_note WHERE user_id = #{userId} ORDER BY id ASC LIMIT 1000
+    </select>
+    <select id="findNote" resultMap="NoteVO">
+        SELECT id, title, content, color, folder_id, updated_at, deleted FROM mf_note WHERE user_id = #{userId} AND id = #{id}
+    </select>
+    <select id="countByFolder" resultType="long">
+        SELECT COUNT(1) FROM mf_note WHERE user_id = #{userId} AND folder_id = #{folderId}
+    </select>
+    <insert id="insertNote" useGeneratedKeys="true" keyProperty="entity.id" keyColumn="id">
+        INSERT INTO mf_note (user_id, folder_id, title, content, color) VALUES (#{entity.userId}, #{entity.folderId}, #{entity.title}, #{entity.content}, #{entity.color})
+    </insert>
+    <update id="updateNote">
+        UPDATE mf_note SET title = #{entity.title}, content = #{entity.content}, color = #{entity.color}, folder_id = #{entity.folderId}, deleted = #{entity.deleted}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{entity.userId} AND id = #{entity.id}
+    </update>
+    <delete id="deleteNote">
+        DELETE FROM mf_note WHERE user_id = #{userId} AND id = #{id}
+    </delete>
+    <delete id="deleteByFolder">
+        DELETE FROM mf_note WHERE user_id = #{userId} AND folder_id = #{folderId}
+    </delete>
+</mapper>
