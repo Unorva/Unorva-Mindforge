@@ -30,10 +30,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Mindforg
    mvn dependency:build-classpath '-Dmdep.outputFile=target/runtime-classpath.txt' '-Dmdep.includeScope=runtime'
    $databaseClasspath = (Get-Content -Raw target/runtime-classpath.txt).Trim()
    java --class-path $databaseClasspath ../../scripts/DatabaseMaintenance.java src/main/resources/application-dev.yml inspect
-   java --class-path $databaseClasspath ../../scripts/DatabaseMaintenance.java src/main/resources/application-dev.yml apply sql/inti.sql sql/workspace-features.sql sql/business-locks.sql sql/mail-accounts.sql
+   java --class-path $databaseClasspath ../../scripts/DatabaseMaintenance.java src/main/resources/application-dev.yml apply sql/inti.sql sql/workspace-features.sql sql/business-locks.sql sql/mail-accounts.sql sql/appearance-settings.sql
    ```
 
-   `DatabaseMaintenance.java` 直接读取配置中的连接信息，不输出密码；`apply` 接受增量建表，以及邮件迁移中明确列出的新增字段和索引，重复执行时跳过已存在项。迁移保留现有数据，不执行清表或重建。其他已有表的字段差异需要单独检查。
+   `DatabaseMaintenance.java` 直接读取配置中的连接信息，不输出密码；`apply` 接受增量建表，以及邮件和背景偏好迁移中明确列出的新增字段和索引，重复执行时跳过已存在项。迁移保留现有数据，不执行清表或重建。其他已有表的字段差异需要单独检查。
 
 4. 在同一后端目录运行测试并启动服务：
 
@@ -61,6 +61,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Mindforg
 在账户设置的 AI 页面填写兼容接口的基础地址、模型名称和 API Key。基础地址通常包含 `/v1`；后端会追加 `/chat/completions`。保存后可以测试连接，再使用 AI 对话。API Key 在服务器使用 AES-256-GCM 加密，接口不会回传明文；提交空白 Key 会保留已有凭据，移除凭据需要使用删除操作。
 
 MSW 默认关闭，业务页面使用真实后端；只有显式设置 `VITE_ENABLE_MOCKS=true` 才启用模板演示数据。
+
+在头像菜单的「账户设置 → 背景设置」中，可选择默认纯色、斑点或用户名水印，预览后点击「保存背景」生效。默认保持当前白色背景，所有样式均自动适配深色主题；水印使用个人资料昵称，修改昵称后同步更新。选择按账户保存，刷新和重新登录后仍保留，也可通过 `/settings?tab=appearance` 直接打开。
 
 后端邮件接口支持本地草稿、账号管理、IMAP 收件同步和 SMTP 发送，使用账号配置的 TLS 连接及加密保存的凭据。结果不确定的发送保留待确认状态，避免自动重复投递。邮箱地址验证和二步验证尚未实现，设置不会将其伪装为已启用。周期复盘报告展示实际保存的记录；AI 对话回复来自配置的兼容接口。
 

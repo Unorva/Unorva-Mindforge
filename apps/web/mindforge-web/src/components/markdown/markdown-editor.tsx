@@ -431,6 +431,7 @@ export function MarkdownEditor({
 
   return (
     <section
+      data-background-surface=""
       className={cn('overflow-hidden rounded-xl border bg-background shadow-sm', className)}
       style={{ '--markdown-editor-min-height': `${minHeight}px` } as React.CSSProperties}
     >
@@ -662,6 +663,7 @@ export function MarkdownEditor({
           </div>
 
           <EditorContent
+            data-background-surface=""
             className="typeset typeset-mindforge markdown-visual-editor max-w-none flex-1 overflow-y-auto bg-background"
             editor={editor}
           />

@@ -2,6 +2,7 @@ package com.unorva.mindforge.module.system.settings.domain.vo;
 
 import com.unorva.mindforge.module.business.ai.domain.vo.AiSettingsVO;
 import com.unorva.mindforge.module.system.settings.domain.dto.AppIntegrationDTO;
+import com.unorva.mindforge.module.system.settings.domain.dto.AppearanceSettingsDTO;
 import com.unorva.mindforge.module.system.settings.domain.dto.NotificationSettingsDTO;
 import com.unorva.mindforge.module.system.settings.domain.dto.ReportSettingsDTO;
 import com.unorva.mindforge.module.system.settings.domain.dto.SecuritySettingsDTO;
@@ -14,4 +15,5 @@ public record SettingsVO(
         List<EmailBindingVO> emails,
         NotificationSettingsDTO notifications,
         ReportSettingsDTO reports,
-        SecuritySettingsDTO security) {}
+        SecuritySettingsDTO security,
+        AppearanceSettingsDTO appearance) {}

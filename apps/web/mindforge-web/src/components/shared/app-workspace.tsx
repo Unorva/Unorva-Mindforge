@@ -39,6 +39,7 @@ function AppPageDivider() {
 function AppWorkspace({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <section
+      data-background-surface=""
       className={cn(
         APP_WORKSPACE_HEIGHT_CLASS,
         'overflow-hidden rounded-none bg-background',

@@ -7,6 +7,7 @@ import com.unorva.mindforge.common.web.form.IdForm;
 import com.unorva.mindforge.common.web.vo.Result;
 import com.unorva.mindforge.module.business.ai.domain.form.AiSaveForm;
 import com.unorva.mindforge.module.system.settings.domain.form.AppIntegrationForm;
+import com.unorva.mindforge.module.system.settings.domain.form.AppearanceSettingsForm;
 import com.unorva.mindforge.module.system.settings.domain.form.EmailBindForm;
 import com.unorva.mindforge.module.system.settings.domain.form.NotificationSettingsForm;
 import com.unorva.mindforge.module.system.settings.domain.form.ReportSettingsForm;
@@ -85,6 +86,11 @@ public class SettingsController {
     @PutMapping("/api/data/settings/reports")
     public Result<SettingsVO> saveReports(@RequestBody @Valid ReportSettingsForm param) {
         return Result.success(settingsService.saveReports(CurrentUser.id(), param));
+    }
+
+    @PutMapping("/api/data/settings/appearance")
+    public Result<SettingsVO> saveAppearance(@RequestBody @Valid AppearanceSettingsForm param) {
+        return Result.success(settingsService.saveAppearance(CurrentUser.id(), param));
     }
 
     @PutMapping("/api/data/settings/security")

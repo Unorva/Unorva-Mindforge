@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { deleteFetcher, postFetcher } from '@/api/global-fetcher';
 import { changePassword } from '@/api/system/users/users';
 import { clearAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
+import AppearanceSettings from './appearance-settings';
 import {
   Bell,
   Blocks,
@@ -18,6 +19,7 @@ import {
   Mail,
   MonitorSmartphone,
   NotebookText,
+  Palette,
   Plus,
   ScrollText,
   ShieldCheck,
@@ -151,7 +153,54 @@ function SaveBar({ saving, onSave }: { saving: boolean; onSave: () => void }) {
   );
 }
 
-function AccountSettingsContent() {
+const SETTINGS_TABS = [
+  { value: 'ai', label: 'AI 配置', icon: Bot },
+  { value: 'apps', label: '应用配置', icon: Blocks },
+  { value: 'emails', label: '邮箱绑定', icon: Mail },
+  { value: 'appearance', label: '背景设置', icon: Palette },
+  { value: 'notifications', label: '通知设置', icon: Bell },
+  { value: 'reports', label: '报告设置', icon: ScrollText },
+  { value: 'security', label: '安全设置', icon: ShieldCheck },
+];
+
+function AccountSettingsTabs({
+  initialTab,
+  children,
+}: {
+  initialTab?: 'ai' | 'appearance';
+  children?: ReactNode;
+}) {
+  return (
+    <Tabs
+      defaultValue={initialTab ?? 'ai'}
+      orientation="vertical"
+      className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[11rem_minmax(0,1fr)] md:grid-cols-[13rem_minmax(0,1fr)]"
+    >
+      <TabsList className="h-auto! w-full shrink-0 flex-col! items-stretch! justify-start! gap-1 overflow-y-auto rounded-none border-r bg-muted/30 p-2">
+        {SETTINGS_TABS.map(({ value, label, icon: TabIcon }) => (
+          <TabsTrigger
+            key={value}
+            aria-label={label}
+            value={value}
+            className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
+          >
+            <TabIcon />
+            <span className="sr-only sm:not-sr-only">{label}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {children}
+      <TabsContent
+        value="appearance"
+        className="m-0 min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
+      >
+        <AppearanceSettings />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'appearance' }) {
   const navigate = useNavigate();
   const {
     settings,
@@ -192,13 +241,20 @@ function AccountSettingsContent() {
   }, [settings]);
 
   if (error) {
+    // 背景支持离线预览，账户偏好异常时仍保留背景入口。
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="font-medium">账户设置加载失败</p>
-        <p className="max-w-md text-sm text-muted-foreground">
-          请重新打开设置；如果问题持续，请检查后端服务是否正常启动。
-        </p>
-      </div>
+      <AccountSettingsTabs initialTab={initialTab}>
+        {SETTINGS_TABS.filter(({ value }) => value !== 'appearance').map(({ value }) => (
+          <TabsContent key={value} value={value} className="m-0 flex items-center justify-center">
+            <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+              <p className="font-medium">账户设置加载失败</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                请重新打开设置；如果问题持续，请检查后端服务是否正常启动。
+              </p>
+            </div>
+          </TabsContent>
+        ))}
+      </AccountSettingsTabs>
     );
   }
 
@@ -212,9 +268,13 @@ function AccountSettingsContent() {
     !securityDraft
   ) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <Spinner />
-      </div>
+      <AccountSettingsTabs initialTab={initialTab}>
+        {SETTINGS_TABS.filter(({ value }) => value !== 'appearance').map(({ value }) => (
+          <TabsContent key={value} value={value} className="m-0 flex items-center justify-center">
+            <Spinner />
+          </TabsContent>
+        ))}
+      </AccountSettingsTabs>
     );
   }
 
@@ -317,62 +377,7 @@ function AccountSettingsContent() {
   };
 
   return (
-    <Tabs
-      defaultValue="ai"
-      orientation="vertical"
-      className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[11rem_minmax(0,1fr)] md:grid-cols-[13rem_minmax(0,1fr)]"
-    >
-      <TabsList className="h-auto! w-full shrink-0 flex-col! items-stretch! justify-start! gap-1 overflow-y-auto rounded-none border-r bg-muted/30 p-2">
-        <TabsTrigger
-          aria-label="AI 配置"
-          value="ai"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <Bot />
-          <span className="sr-only sm:not-sr-only">AI 配置</span>
-        </TabsTrigger>
-        <TabsTrigger
-          aria-label="应用配置"
-          value="apps"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <Blocks />
-          <span className="sr-only sm:not-sr-only">应用配置</span>
-        </TabsTrigger>
-        <TabsTrigger
-          aria-label="邮箱绑定"
-          value="emails"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <Mail />
-          <span className="sr-only sm:not-sr-only">邮箱绑定</span>
-        </TabsTrigger>
-        <TabsTrigger
-          aria-label="通知设置"
-          value="notifications"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <Bell />
-          <span className="sr-only sm:not-sr-only">通知设置</span>
-        </TabsTrigger>
-        <TabsTrigger
-          aria-label="报告设置"
-          value="reports"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <ScrollText />
-          <span className="sr-only sm:not-sr-only">报告设置</span>
-        </TabsTrigger>
-        <TabsTrigger
-          aria-label="安全设置"
-          value="security"
-          className="h-10! w-full! flex-none justify-center gap-0 rounded-lg px-0 py-2 after:hidden hover:bg-muted/60 data-active:bg-muted data-active:shadow-none sm:justify-start sm:gap-2 sm:px-3"
-        >
-          <ShieldCheck />
-          <span className="sr-only sm:not-sr-only">安全设置</span>
-        </TabsTrigger>
-      </TabsList>
-
+    <AccountSettingsTabs initialTab={initialTab}>
       {/* AI 配置 */}
       <TabsContent
         value="ai"
@@ -1054,20 +1059,21 @@ function AccountSettingsContent() {
           onSave={() => runSave('security', () => saveSecurity(securityDraft), '安全设置已保存')}
         />
       </TabsContent>
-    </Tabs>
+    </AccountSettingsTabs>
   );
 }
 
 interface AccountSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTab?: 'ai' | 'appearance';
 }
 
 /**
  * 账户设置弹窗：由顶部头像菜单中的 Account Settings 打开，
  * 自带 SettingsProvider，读写后端保存的个人账户设置。
  */
-const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDialogProps) => {
+const AccountSettingsDialog = ({ open, onOpenChange, initialTab }: AccountSettingsDialogProps) => {
   if (!open) return null;
 
   return (
@@ -1082,9 +1088,9 @@ const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDialogProp
         >
           <DialogTitle className="sr-only">账户设置</DialogTitle>
           <DialogDescription className="sr-only">
-            管理 AI 接口、应用启用、邮箱地址、通知偏好与账号安全。
+            管理 AI 接口、应用启用、邮箱地址、背景设置、通知偏好与账号安全。
           </DialogDescription>
-          <AccountSettingsContent />
+          <AccountSettingsContent initialTab={initialTab} />
         </DialogContent>
       </Dialog>
     </SettingsProvider>

@@ -4,6 +4,7 @@ import type { ApiResult } from '@/types/api';
 import { deleteFetcher, getFetcher, postFetcher, putFetcher } from 'src/api/global-fetcher';
 import type {
   AccountSettingsData,
+  AppearanceSettings,
   AiSettings,
   AppIntegration,
   NotificationSettings,
@@ -17,6 +18,7 @@ export interface SettingsContextType {
   settings: AccountSettingsData | null;
   loading: boolean;
   error: unknown;
+  saveAppearance: (appearance: AppearanceSettings) => Promise<void>;
   saveAiSettings: (ai: AiSettings) => Promise<void>;
   saveApps: (apps: AppIntegration[]) => Promise<void>;
   bindEmail: (email: string, provider: string) => Promise<void>;
@@ -54,6 +56,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const saveAiSettings = (ai: AiSettings) => applyUpdate(putFetcher('/api/data/settings/ai', ai));
 
+  const saveAppearance = (appearance: AppearanceSettings) =>
+    applyUpdate(putFetcher('/api/data/settings/appearance', appearance));
+
   const saveApps = (apps: AppIntegration[]) =>
     applyUpdate(putFetcher('/api/data/settings/apps', apps));
 
@@ -84,6 +89,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         settings,
         loading: isLoading && !settings,
         error,
+        saveAppearance,
         saveAiSettings,
         saveApps,
         bindEmail,

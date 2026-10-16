@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type {
   AccountSettingsData,
+  AppearanceSettings,
   AiSettings,
   AppIntegration,
   EmailBinding,
@@ -14,6 +15,7 @@ import type {
  * 刷新页面后恢复为下方默认值。
  */
 let SettingsData: AccountSettingsData = {
+  appearance: { background: 'plain' },
   ai: {
     provider: 'OpenAI',
     model: 'GPT-4o',
@@ -133,12 +135,24 @@ let SettingsData: AccountSettingsData = {
 
 let nextEmailId = SettingsData.emails.length + 1;
 
-const success = () => HttpResponse.json({ status: 200, msg: 'Success', data: SettingsData });
+const success = () =>
+  HttpResponse.json({ code: 200, success: true, message: 'Success', data: SettingsData });
 
 const failure = (error: unknown) =>
   HttpResponse.json({ status: 400, msg: 'Internal server error', error });
 
 export const SettingsHandlers = [
+  http.put('/api/data/settings/appearance', async ({ request }) => {
+    const appearance = (await request.json()) as AppearanceSettings;
+    if (!['plain', 'dots', 'watermark'].includes(appearance.background)) {
+      return HttpResponse.json(
+        { success: false, message: '请选择有效的背景样式' },
+        { status: 400 },
+      );
+    }
+    SettingsData = { ...SettingsData, appearance };
+    return success();
+  }),
   // 获取全部账户设置
   http.get('/api/data/settings/SettingsData', () => {
     try {

@@ -7,12 +7,14 @@
         <result column="notifications_json" property="notificationsJson" />
         <result column="reports_json" property="reportsJson" />
         <result column="security_json" property="securityJson" />
+        <result column="appearance_json" property="appearanceJson" />
     </resultMap>
-    <select id="find" resultMap="setting">SELECT user_id, apps_json, notifications_json, reports_json, security_json FROM mf_user_setting WHERE user_id = #{userId}</select>
+    <select id="find" resultMap="setting">SELECT user_id, apps_json, notifications_json, reports_json, security_json, appearance_json FROM mf_user_setting WHERE user_id = #{userId}</select>
     <insert id="initialize">INSERT INTO mf_user_setting (user_id) VALUES (#{userId}) ON DUPLICATE KEY UPDATE user_id = user_id</insert>
     <select id="lock" resultType="java.lang.Long">SELECT user_id FROM mf_user_setting WHERE user_id = #{userId} FOR UPDATE</select>
     <update id="saveApps">UPDATE mf_user_setting SET apps_json = #{json}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}</update>
     <update id="saveNotifications">UPDATE mf_user_setting SET notifications_json = #{json}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}</update>
     <update id="saveReports">UPDATE mf_user_setting SET reports_json = #{json}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}</update>
     <update id="saveSecurity">UPDATE mf_user_setting SET security_json = #{json}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}</update>
+    <update id="saveAppearance">UPDATE mf_user_setting SET appearance_json = #{json}, updated_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}</update>
 </mapper>

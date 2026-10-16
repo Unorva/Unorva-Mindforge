@@ -2,6 +2,13 @@
  * 账户设置相关类型定义。
  */
 
+/** 工作区背景 */
+export type BackgroundStyle = 'plain' | 'dots' | 'watermark';
+
+export interface AppearanceSettings {
+  background: BackgroundStyle;
+}
+
 /** AI 配置 */
 export interface AiSettings {
   baseUrl?: string;
@@ -77,6 +84,7 @@ export interface SecuritySettings {
 
 /** 账户设置聚合数据（GET /api/data/settings/SettingsData 的 data 字段） */
 export interface AccountSettingsData {
+  appearance: AppearanceSettings;
   ai: AiSettings;
   apps: AppIntegration[];
   emails: EmailBinding[];

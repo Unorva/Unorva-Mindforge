@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS mf_user_setting (
     notifications_json TEXT NULL COMMENT 'Notification preferences',
     reports_json TEXT NULL COMMENT 'Report preferences',
     security_json TEXT NULL COMMENT 'Supported security preferences',
+    appearance_json TEXT NULL COMMENT 'Workspace background preferences',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Private workspace settings';

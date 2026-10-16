@@ -46,6 +46,7 @@ AI 配置、凭据和对话归 `ai`，通用设置归 `system.settings`。设置
 启动前按 README 执行增量脚本：
 
 - `business-locks.sql`：创建 `mf_business_lock`，按用户和业务模块锁定事务；笔记、财务、邮件不再共用用户设置表作为写锁。
+- `appearance-settings.sql`：为 `mf_user_setting` 增加 `appearance_json`，保存当前账户的工作区背景选择。旧账户空值沿用 `plain` 默认背景，维护工具重复执行时跳过已存在列。
 - `mail-accounts.sql`：创建邮件账号和远端消息标识表；向现有邮件表增加 `account_id`、`send_attempt_token` 及账号查询索引。
 
 迁移保留现有业务记录。维护脚本检查上述字段和索引是否存在，重复执行会跳过；生产环境也需要执行相同迁移。已有加密凭据继续使用原本的本地密钥及密文格式。

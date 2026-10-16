@@ -19,5 +19,6 @@ public class UserSettingEntity {
     private String notificationsJson;
     private String reportsJson;
     private String securityJson;
+    private String appearanceJson;
     private LocalDateTime updatedAt;
 }

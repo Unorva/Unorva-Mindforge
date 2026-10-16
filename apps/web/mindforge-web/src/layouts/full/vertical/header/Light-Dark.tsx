@@ -17,7 +17,7 @@ const LightDark = () => {
 
   const toggleTheme = async () => {
     const toggleMode = () => {
-      setActiveMode(activeMode === 'light' ? 'dark' : 'light');
+      setActiveMode(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
     };
 
     const viewTransitionDocument = document as ViewTransitionDocument;
@@ -55,6 +55,7 @@ const LightDark = () => {
       {/* Theme Toggle */}
       {activeMode === 'light' ? (
         <Button
+          aria-label="切换明暗主题"
           variant="ghost"
           className=" h-10 w-10  hover:bg-primary/5  rounded-full cursor-pointer"
           onClick={toggleTheme}
@@ -64,6 +65,7 @@ const LightDark = () => {
       ) : (
         // Dark Mode Button
         <Button
+          aria-label="切换明暗主题"
           variant="ghost"
           className=" h-10 w-10  hover:bg-primary/5  rounded-full cursor-pointer"
           onClick={toggleTheme}

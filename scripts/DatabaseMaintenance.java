@@ -184,6 +184,16 @@ public final class DatabaseMaintenance {
                     }
                 }
             } else if (command.matches(
+                    "(?is)^ALTER\\s+TABLE\\s+mf_user_setting\\s+ADD\\s+COLUMN\\s+appearance_json\\s+TEXT\\s+NULL\\s+COMMENT\\s+'Workspace background preferences'$")) {
+                try (ResultSet columns =
+                        connection
+                                .getMetaData()
+                                .getColumns(connection.getCatalog(), null, "mf_user_setting", "appearance_json")) {
+                    if (columns.next()) {
+                        continue;
+                    }
+                }
+            } else if (command.matches(
                     "(?is)^CREATE\\s+INDEX\\s+idx_mail_user_account\\s+ON\\s+mf_mail\\s*\\(\\s*user_id\\s*,\\s*account_id\\s*,\\s*updated_at\\s*\\)$")) {
                 boolean exists = false;
                 try (ResultSet indexes =

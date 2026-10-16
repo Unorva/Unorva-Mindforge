@@ -21,4 +21,6 @@ public interface UserSettingDao extends BaseMapper<UserSettingEntity> {
     int saveReports(@Param("userId") long userId, @Param("json") String json);
 
     int saveSecurity(@Param("userId") long userId, @Param("json") String json);
+
+    int saveAppearance(@Param("userId") long userId, @Param("json") String json);
 }

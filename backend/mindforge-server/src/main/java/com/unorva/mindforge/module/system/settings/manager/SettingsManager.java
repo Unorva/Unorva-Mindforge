@@ -37,7 +37,9 @@ public class SettingsManager {
                         "reports",
                         value(entity.getReportsJson()),
                         "security",
-                        value(entity.getSecurityJson()));
+                        value(entity.getSecurityJson()),
+                        "appearance",
+                        value(entity.getAppearanceJson()));
     }
 
     public List<EmailBindingVO> emails(long userId) {
@@ -57,6 +59,7 @@ public class SettingsManager {
             case "notifications_json" -> settings.saveNotifications(userId, json);
             case "reports_json" -> settings.saveReports(userId, json);
             case "security_json" -> settings.saveSecurity(userId, json);
+            case "appearance_json" -> settings.saveAppearance(userId, json);
             default -> throw new IllegalArgumentException("Unknown settings section");
         }
     }

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.system.settings.dao.EmailBindingDao;
 import com.unorva.mindforge.module.system.settings.dao.UserSettingDao;
+import com.unorva.mindforge.module.system.settings.domain.entity.UserSettingEntity;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,29 @@ class SettingsManagerTest {
     private final UserSettingDao settings = mock(UserSettingDao.class);
     private final EmailBindingDao emails = mock(EmailBindingDao.class);
     private final SettingsManager manager = new SettingsManager(settings, emails);
+
+    @Test
+    void includesAppearanceInOwnedSettingsAndHandlesExistingNullPreferences() {
+        UserSettingEntity existing = new UserSettingEntity();
+        existing.setAppearanceJson("{\"background\":\"watermark\"}");
+        when(settings.find(7L)).thenReturn(existing);
+        assertEquals("{\"background\":\"watermark\"}", manager.sections(7L).get("appearance"));
+        existing.setAppearanceJson(null);
+        assertEquals("", manager.sections(7L).get("appearance"));
+        assertTrue(manager.sections(8L).isEmpty());
+    }
+
+    @Test
+    void locksOwnedSettingsBeforeSavingAppearanceWithoutChangingOtherSections() {
+        String preferences = "{\"background\":\"dots\"}";
+        manager.saveSection(7L, "appearance_json", preferences);
+        var order = inOrder(settings);
+        order.verify(settings).initialize(7L);
+        order.verify(settings).lock(7L);
+        order.verify(settings).saveAppearance(7L, preferences);
+        verifyNoMoreInteractions(settings);
+        verifyNoInteractions(emails);
+    }
 
     @Test
     void refusesToRemovePrimaryEmail() {

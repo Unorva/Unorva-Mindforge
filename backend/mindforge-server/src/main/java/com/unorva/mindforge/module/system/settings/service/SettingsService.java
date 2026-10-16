@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /** Business validation and aggregation for the account settings page. */
 @Service
@@ -84,6 +85,13 @@ public class SettingsService {
         return updatePreferences(userId, "reports_json", new ReportSettingsDTO(form.weekStartsOn()));
     }
 
+    public SettingsVO saveAppearance(long userId, AppearanceSettingsForm form) {
+        if (form.background() == null || !Set.of("plain", "dots", "watermark").contains(form.background())) {
+            throw new BusinessException("请选择有效的背景样式", BusinessErrorCode.INVALID_INPUT);
+        }
+        return updatePreferences(userId, "appearance_json", new AppearanceSettingsDTO(form.background()));
+    }
+
     public SettingsVO saveSecurity(long userId, String token, SecuritySettingsForm form) {
         if (form.twoFactor()) throw new BusinessException("双重验证尚未配置，不能仅通过设置开关启用", BusinessErrorCode.NOT_CONFIGURED);
         Long timeout =
@@ -127,6 +135,8 @@ public class SettingsService {
                         new NotificationSettingsDTO(false, true, true, true, false));
         ReportSettingsDTO reports =
                 read(sections.get("reports"), ReportSettingsDTO.class, new ReportSettingsDTO("星期一"));
+        AppearanceSettingsDTO appearance =
+                read(sections.get("appearance"), AppearanceSettingsDTO.class, new AppearanceSettingsDTO("plain"));
         SecuritySettingsDTO preferences =
                 read(
                         sections.get("security"),
@@ -139,7 +149,13 @@ public class SettingsService {
                         preferences.sessionTimeout(),
                         List.of(new ActiveSessionVO(1L, "当前登录会话", "未采集", "当前会话", true)));
         return new SettingsVO(
-                aiSettingsService.get(userId), apps, settingsManager.emails(userId), notifications, reports, security);
+                aiSettingsService.get(userId),
+                apps,
+                settingsManager.emails(userId),
+                notifications,
+                reports,
+                security,
+                appearance);
     }
 
     private SettingsVO updatePreferences(long userId, String column, Object preferences) {

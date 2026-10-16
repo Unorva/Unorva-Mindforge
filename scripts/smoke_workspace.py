@@ -55,6 +55,25 @@ class Client:
         print(f"PASS {label}")
 
 
+def check_appearance(first, second):
+    original = first.request("GET", "/api/data/settings/SettingsData")
+    first.check(original["appearance"]["background"] == "plain", "default workspace background stays plain")
+    for background in ("dots", "watermark", "plain"):
+        saved = first.request("PUT", "/api/data/settings/appearance", {"background": background})
+        first.check(saved["appearance"]["background"] == background
+                    and first.request("GET", "/api/data/settings/SettingsData")["appearance"]["background"] == background,
+                    f"{background} background persists across requests")
+        first.check(second.request("GET", "/api/data/settings/SettingsData")["appearance"]["background"] == "plain",
+                    f"{background} background respects account isolation")
+    for invalid in ({}, {"background": None}, {"background": ""}, {"background": "image"}):
+        result = first.request("PUT", "/api/data/settings/appearance", invalid, False)
+        first.check(result["responseStatus"] == 400, "invalid background rejected before persistence")
+    saved = first.request("GET", "/api/data/settings/SettingsData")
+    first.check(saved["appearance"]["background"] == "plain"
+                and all(saved[section] == original[section] for section in ("apps", "notifications", "reports", "security")),
+                "background updates preserve other settings and invalid writes leave saved preference unchanged")
+
+
 def check_ai_protocol(first, second):
     provider_key = secrets.token_urlsafe(24)
     provider_requests = []
@@ -351,6 +370,7 @@ def run_checks(first, second, password, emails):
     check_mail_accounts(first, second, emails[0])
 
     settings = first.request("GET", "/api/data/settings/SettingsData")
+    check_appearance(first, second)
     first.check(not settings["ai"].get("apiKey"), "settings never reveal provider key")
     invalid_apps = first.request("PUT", "/api/data/settings/apps", [None], False)
     first.check(invalid_apps["responseStatus"] == 400, "null integration entries rejected before persistence")

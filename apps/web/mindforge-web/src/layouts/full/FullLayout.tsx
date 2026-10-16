@@ -4,6 +4,7 @@ import Header from './vertical/header/Header';
 import { SidebarInset, SidebarProvider } from 'src/components/ui/sidebar';
 import { cn } from 'src/lib/utils';
 import { Outlet } from 'react-router';
+import WorkspaceBackground from '@/components/shared/workspace-background';
 
 const FullLayout: FC = () => {
   return (
@@ -18,13 +19,13 @@ const FullLayout: FC = () => {
         <Header />
 
         {/* Body Content  */}
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <WorkspaceBackground>
           <div className={cn('w-full mx-auto', 'container')}>
             <div className=" min-h-[calc(100vh-140px)]">
               <Outlet />
             </div>
           </div>
-        </div>
+        </WorkspaceBackground>
       </SidebarInset>
     </SidebarProvider>
   );

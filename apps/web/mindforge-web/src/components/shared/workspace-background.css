@@ -1,0 +1,52 @@
+.workspace-background,
+.workspace-background-preview {
+  --workspace-image: none;
+  --workspace-pattern-size: auto;
+  --workspace-watermark-image: var(--workspace-watermark-light);
+  background-color: var(--background);
+}
+
+.dark .workspace-background,
+.dark .workspace-background-preview {
+  --workspace-watermark-image: var(--workspace-watermark-dark);
+}
+
+:is(.workspace-background, .workspace-background-preview)[data-background='dots'] {
+  --workspace-image: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--foreground) 14%, transparent) 1px,
+    transparent 1px
+  );
+  --workspace-pattern-size: 20px 20px;
+}
+
+:is(.workspace-background, .workspace-background-preview)[data-background='watermark'] {
+  --workspace-image: var(--workspace-watermark-image);
+  --workspace-pattern-size: 280px 180px;
+}
+
+/* 将相同图案绘在不透明业务表面上，输入框、弹窗和邮件原文保留各自底色。 */
+.workspace-background,
+.workspace-background:not([data-background='plain'])
+  :where([data-slot='card'], [data-background-surface]):not(.bg-transparent) {
+  background-image: var(--workspace-image);
+  background-size: var(--workspace-pattern-size);
+  background-position: left top;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+
+.workspace-background-preview {
+  background-image: var(--workspace-image);
+  background-size: var(--workspace-pattern-size);
+  background-position: center;
+  background-repeat: repeat;
+}
+
+.workspace-background-preview[data-background='dots'] {
+  --workspace-pattern-size: 14px 14px;
+}
+
+.workspace-background-preview[data-background='watermark'] {
+  --workspace-pattern-size: 180px 116px;
+}

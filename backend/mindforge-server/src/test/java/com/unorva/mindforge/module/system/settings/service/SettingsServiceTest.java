@@ -4,16 +4,23 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.business.ai.domain.vo.AiSettingsVO;
 import com.unorva.mindforge.module.business.ai.service.AiSettingsService;
 import com.unorva.mindforge.module.system.settings.domain.dto.AppOptionsDTO;
 import com.unorva.mindforge.module.system.settings.domain.dto.NotificationSettingsDTO;
+import com.unorva.mindforge.module.system.settings.domain.form.AppearanceSettingsForm;
 import com.unorva.mindforge.module.system.settings.domain.form.SecuritySettingsForm;
 import com.unorva.mindforge.module.system.settings.domain.vo.SettingsVO;
 import com.unorva.mindforge.module.system.settings.manager.SettingsManager;
 import com.unorva.mindforge.module.system.settings.manager.SettingsSessionManager;
 
+import jakarta.validation.Validation;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import tools.jackson.databind.exc.MismatchedInputException;
@@ -53,6 +60,7 @@ class SettingsServiceTest {
         assertEquals("2 小时", result.security().sessionTimeout());
         assertEquals(1, result.security().activeSessions().size());
         assertEquals(new NotificationSettingsDTO(true, false, true, true, false), result.notifications());
+        assertEquals("plain", result.appearance().background());
         verify(ai).get(7L);
     }
 
@@ -86,6 +94,44 @@ class SettingsServiceTest {
     void doesNotSilentlyCoerceExplicitPrimitiveNullInStoredPreferences() {
         when(settings.sections(7L)).thenReturn(Map.of("notifications", "{\"projectUpdates\":null}"));
         assertThrows(MismatchedInputException.class, () -> service.get(7L));
+    }
+
+    @Test
+    void defaultsAppearanceForExistingAccountsWithoutPreferences() {
+        assertEquals("plain", service.get(7L).appearance().background());
+        when(settings.sections(7L)).thenReturn(Map.of("appearance", "{}"));
+        assertEquals("plain", service.get(7L).appearance().background());
+        verify(settings, never()).saveSection(anyLong(), anyString(), anyString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"plain", "dots", "watermark"})
+    void savesAndReturnsSupportedAppearanceForTheCurrentAccount(String background) {
+        String preferences = "{\"background\":\"" + background + "\"}";
+        doAnswer(
+                        invocation -> {
+                            when(settings.sections(7L)).thenReturn(Map.of("appearance", invocation.getArgument(2)));
+                            return null;
+                        })
+                .when(settings)
+                .saveSection(eq(7L), eq("appearance_json"), anyString());
+
+        SettingsVO result = service.saveAppearance(7L, new AppearanceSettingsForm(background));
+
+        assertEquals(background, result.appearance().background());
+        verify(settings).saveSection(7L, "appearance_json", preferences);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "custom", "Dots", "dots ", "<svg>"})
+    void rejectsMissingAndUnsupportedAppearanceBeforeSaving(String background) {
+        AppearanceSettingsForm form = new AppearanceSettingsForm(background);
+        try (var validator = Validation.buildDefaultValidatorFactory()) {
+            assertFalse(validator.getValidator().validate(form).isEmpty());
+        }
+        assertThrows(BusinessException.class, () -> service.saveAppearance(7L, form));
+        verifyNoInteractions(settings);
     }
 
     @Test
