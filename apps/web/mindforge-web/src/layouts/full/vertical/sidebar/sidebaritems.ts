@@ -79,7 +79,7 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: '复盘报告',
+        name: '工作日志',
         icon: ClipboardCheck,
         url: '/apps/daily-review',
       },
