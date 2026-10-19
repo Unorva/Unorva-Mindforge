@@ -1,41 +1,25 @@
-import {
-  BookOpen,
-  Briefcase,
-  CalendarCheck,
-  CalendarClock,
-  CalendarDays,
-  HeartPulse,
-  Lightbulb,
-  LineChart,
-  ListChecks,
-  Mail,
-  Newspaper,
-  Radar,
-  Sparkles,
-  TrendingUp,
-  UtensilsCrossed,
-  type LucideIcon,
-} from 'lucide-react';
+import type { AutomationColorKey, AutomationIconKey } from './automation-icons';
 
 export interface AutomationTemplate {
   id: string;
   title: string;
   description: string;
   prompt: string;
-  icon: LucideIcon;
+  iconKey: AutomationIconKey;
+  colorKey: AutomationColorKey;
 }
 
 export interface AutomationCategory {
   name: string;
-  /** 图标底块颜色，使用静态类名以便 Tailwind 收集。 */
-  colorClass: string;
+  /** 分类默认的图标底块颜色。 */
+  colorKey: AutomationColorKey;
   templates: AutomationTemplate[];
 }
 
 export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
   {
     name: '新闻',
-    colorClass: 'bg-blue-600',
+    colorKey: 'blue',
     templates: [
       {
         id: 'morning-brief',
@@ -43,7 +27,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: "Start the day with headlines, market moves, and your week ahead.",
         prompt:
           'Give me a morning brief: top headlines, key market moves, and what is ahead in my week. Keep it under 300 words and end with three priorities for today.',
-        icon: Newspaper,
+        iconKey: 'newspaper',
+        colorKey: 'blue',
       },
       {
         id: 'ai-news-digest',
@@ -51,7 +36,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Model releases, research, and funding that actually matter.',
         prompt:
           'Summarize the most important AI news from the last 24 hours: model releases, notable research, and funding rounds. Explain why each item matters in one sentence.',
-        icon: Sparkles,
+        iconKey: 'sparkles',
+        colorKey: 'blue',
       },
       {
         id: 'x-trends-digest',
@@ -59,7 +45,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'The five most interesting conversations on X right now.',
         prompt:
           'Find the five most interesting conversations on X right now. For each one, summarize the discussion and note why it is worth following.',
-        icon: TrendingUp,
+        iconKey: 'trending',
+        colorKey: 'blue',
       },
       {
         id: 'competitor-watch',
@@ -67,13 +54,14 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Weekly digest of competitor launches, pricing, and hires.',
         prompt:
           'Prepare a weekly competitor digest covering launches, pricing changes, and notable hires. Group the findings by competitor and highlight anything that needs a response.',
-        icon: Radar,
+        iconKey: 'radar',
+        colorKey: 'blue',
       },
     ],
   },
   {
     name: '生产力',
-    colorClass: 'bg-pink-600',
+    colorKey: 'pink',
     templates: [
       {
         id: 'email-auto-responder',
@@ -81,7 +69,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Draft concise replies for important email threads each morning.',
         prompt:
           'Review my unread email threads and draft concise replies for the important ones. Keep the tone professional, ask only necessary follow-up questions, and leave anything sensitive for me to review.',
-        icon: Mail,
+        iconKey: 'mail',
+        colorKey: 'pink',
       },
       {
         id: 'weekly-review',
@@ -89,7 +78,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Wrap the week: what you did, loose ends, and next priorities.',
         prompt:
           'Write my weekly review: what I accomplished, open loops, and the top priorities for next week. Be concise and specific, and call out anything that is blocked.',
-        icon: CalendarCheck,
+        iconKey: 'calendar-check',
+        colorKey: 'pink',
       },
       {
         id: 'task-extractor',
@@ -97,7 +87,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Extract action items from recent messages and summarize them.',
         prompt:
           'Extract action items from my recent messages and summarize them. For each item include the owner, due date if mentioned, and the source message.',
-        icon: ListChecks,
+        iconKey: 'list',
+        colorKey: 'pink',
       },
       {
         id: 'daily-planner',
@@ -105,13 +96,14 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'A realistic plan for today with focus blocks and quick wins.',
         prompt:
           'Build a realistic plan for today from my open tasks. Include focus blocks, quick wins, and buffer time. Flag anything that should be deferred.',
-        icon: CalendarDays,
+        iconKey: 'calendar-days',
+        colorKey: 'pink',
       },
     ],
   },
   {
     name: '金融',
-    colorClass: 'bg-orange-500',
+    colorKey: 'orange',
     templates: [
       {
         id: 'daily-stock-tracker',
@@ -119,7 +111,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Prices, sentiment, and catalysts for your watchlist every day.',
         prompt:
           'Give me a daily update for my watchlist: price moves, market sentiment, and upcoming catalysts. Keep it factual and avoid investment advice.',
-        icon: LineChart,
+        iconKey: 'line-chart',
+        colorKey: 'orange',
       },
       {
         id: 'earnings-calendar',
@@ -127,7 +120,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Who reports this week, expectations, and what to watch.',
         prompt:
           'List the companies reporting earnings this week that matter to me, along with consensus expectations and the key metrics to watch.',
-        icon: CalendarClock,
+        iconKey: 'calendar-clock',
+        colorKey: 'orange',
       },
       {
         id: 'portfolio-news-scan',
@@ -135,13 +129,14 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Only material news for your holdings — earnings, ratings, guidance.',
         prompt:
           'Scan the news for my holdings and surface only material updates: earnings, analyst rating changes, and guidance. Summarize each in one sentence and skip routine coverage.',
-        icon: Briefcase,
+        iconKey: 'briefcase',
+        colorKey: 'orange',
       },
     ],
   },
   {
     name: '研究',
-    colorClass: 'bg-violet-600',
+    colorKey: 'violet',
     templates: [
       {
         id: 'competitor-watch-research',
@@ -149,7 +144,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Weekly digest of competitor launches, pricing, and hires.',
         prompt:
           'Research competitors weekly and summarize launches, pricing changes, and hiring signals. Note the evidence for each finding and what it could mean for our roadmap.',
-        icon: Radar,
+        iconKey: 'radar',
+        colorKey: 'violet',
       },
       {
         id: 'paper-watch',
@@ -157,7 +153,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: "The week's most interesting research, explained in plain language.",
         prompt:
           'Pick the most interesting research papers from this week and explain each in plain language: the problem, the approach, and why it matters.',
-        icon: BookOpen,
+        iconKey: 'book',
+        colorKey: 'violet',
       },
       {
         id: 'weekend-deep-dive',
@@ -165,13 +162,14 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: "One briefing memo each week on a topic you're following.",
         prompt:
           'Write a weekend deep dive on a topic I am following. Cover the background, recent developments, open questions, and a short reading list.',
-        icon: Lightbulb,
+        iconKey: 'lightbulb',
+        colorKey: 'violet',
       },
     ],
   },
   {
     name: '生活方式',
-    colorClass: 'bg-sky-600',
+    colorKey: 'sky',
     templates: [
       {
         id: 'workout-coach',
@@ -179,7 +177,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'A daily 45-minute session that rotates through the week.',
         prompt:
           'Plan a daily 45-minute workout that rotates through the week so muscle groups recover. Include warm-up, main sets, and cool-down.',
-        icon: HeartPulse,
+        iconKey: 'heart',
+        colorKey: 'sky',
       },
       {
         id: 'meal-planner',
@@ -187,7 +186,8 @@ export const AUTOMATION_CATEGORIES: AutomationCategory[] = [
         description: 'Seven weeknight dinners plus one consolidated grocery list.',
         prompt:
           'Plan seven weeknight dinners with a consolidated grocery list. Prefer simple recipes, reuse ingredients, and keep prep under 30 minutes.',
-        icon: UtensilsCrossed,
+        iconKey: 'utensils',
+        colorKey: 'sky',
       },
     ],
   },

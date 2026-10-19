@@ -11,6 +11,10 @@ export interface AutomationTask {
   time: string;
   weekDay: number;
   timeZone: string;
+  /** 图标名称，取值见 automation-icons.ts，旧数据缺省时使用闪电图标。 */
+  icon?: string;
+  /** 图标底块颜色名称，取值见 automation-icons.ts，旧数据缺省时使用蓝色。 */
+  color?: string;
   /** 生成速度偏好，旧数据缺省时按 fast 处理。 */
   speed?: AutomationSpeed;
   /** 是否推送 App 通知，旧数据缺省时开启。 */
@@ -70,6 +74,8 @@ function isAutomationTask(value: unknown): value is AutomationTask {
   )
     return false;
   if (task.speed !== undefined && !['fast', 'standard', 'deep'].includes(task.speed)) return false;
+  if (task.icon !== undefined && typeof task.icon !== 'string') return false;
+  if (task.color !== undefined && typeof task.color !== 'string') return false;
   if (task.notifyApp !== undefined && typeof task.notifyApp !== 'boolean') return false;
   if (task.notifyEmail !== undefined && typeof task.notifyEmail !== 'boolean') return false;
   try {

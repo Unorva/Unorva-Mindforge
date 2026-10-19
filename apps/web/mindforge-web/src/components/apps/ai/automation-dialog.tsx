@@ -1,15 +1,11 @@
 import { useEffect, useId, useState } from 'react';
 import {
-  Bell,
-  Cable,
   CalendarClock,
-  Grid2x2,
   Loader2,
   Mail,
   Pencil,
   Plus,
   Trash2,
-  Zap,
 } from 'lucide-react';
 import { getCurrentUser } from '@/api/system/users/users';
 import {
@@ -43,6 +39,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -57,9 +54,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import {
-  AUTOMATION_CATEGORIES,
-  type AutomationTemplate,
-} from './automation-templates';
+  AUTOMATION_COLORS,
+  AUTOMATION_ICONS,
+  automationColorClass,
+  automationIcon,
+  normalizeAutomationColorKey,
+  normalizeAutomationIconKey,
+  type AutomationColorKey,
+  type AutomationIconKey,
+} from './automation-icons';
+import { AUTOMATION_CATEGORIES, type AutomationTemplate } from './automation-templates';
 import {
   describeAutomationSchedule,
   isFutureAutomationTime,
@@ -68,15 +72,8 @@ import {
   WEEK_DAYS,
   writeAutomationTasks,
   type AutomationFrequency,
-  type AutomationSpeed,
   type AutomationTask,
 } from './automation-storage';
-
-const SPEED_OPTIONS: { value: AutomationSpeed; label: string }[] = [
-  { value: 'fast', label: 'Fast' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'deep', label: 'Deep' },
-];
 
 interface EditorDraft {
   title: string;
@@ -87,8 +84,8 @@ interface EditorDraft {
   time: string;
   weekDay: number;
   timeZone: string;
-  speed: AutomationSpeed;
-  notifyApp: boolean;
+  iconKey: AutomationIconKey;
+  colorKey: AutomationColorKey;
   notifyEmail: boolean;
 }
 
@@ -120,15 +117,21 @@ function emptyDraft(): EditorDraft {
     title: '',
     prompt: '',
     triggerEnabled: false,
-    speed: 'fast',
-    notifyApp: true,
+    iconKey: 'zap',
+    colorKey: 'blue',
     notifyEmail: true,
     ...defaultSchedule(),
   };
 }
 
 function draftFromTemplate(template: AutomationTemplate): EditorDraft {
-  return { ...emptyDraft(), title: template.title, prompt: template.prompt };
+  return {
+    ...emptyDraft(),
+    title: template.title,
+    prompt: template.prompt,
+    iconKey: template.iconKey,
+    colorKey: template.colorKey,
+  };
 }
 
 function draftFromTask(task: AutomationTask): EditorDraft {
@@ -141,8 +144,8 @@ function draftFromTask(task: AutomationTask): EditorDraft {
     time: task.time,
     weekDay: task.weekDay,
     timeZone: task.timeZone,
-    speed: task.speed ?? 'fast',
-    notifyApp: task.notifyApp ?? true,
+    iconKey: normalizeAutomationIconKey(task.icon),
+    colorKey: normalizeAutomationColorKey(task.color),
     notifyEmail: task.notifyEmail ?? true,
   };
 }
@@ -162,6 +165,7 @@ function AutomationEditorDialog({
 }) {
   const fieldId = useId();
   const [draft, setDraft] = useState<EditorDraft>(emptyDraft);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -171,6 +175,8 @@ function AutomationEditorDialog({
   const change = <K extends keyof EditorDraft>(key: K, value: EditorDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }));
   };
+
+  const Icon = automationIcon(draft.iconKey);
 
   const previewTask: AutomationTask = {
     id: 'preview',
@@ -212,8 +218,8 @@ function AutomationEditorDialog({
       time: draft.time,
       weekDay: draft.weekDay,
       timeZone: draft.timeZone,
-      speed: draft.speed,
-      notifyApp: draft.notifyApp,
+      icon: draft.iconKey,
+      color: draft.colorKey,
       notifyEmail: draft.notifyEmail,
     };
     if (onSave(next)) onOpenChange(false);
@@ -221,7 +227,7 @@ function AutomationEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-0 sm:max-w-[34rem]">
+      <DialogContent className="gap-0 p-0 sm:max-w-[34rem]">
         <div className="space-y-5 p-6">
           <DialogHeader className="pr-8">
             <DialogTitle className="text-base font-medium">
@@ -233,9 +239,61 @@ function AutomationEditorDialog({
           </DialogHeader>
 
           <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
-              <Zap className="size-5" />
-            </span>
+            <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+              <PopoverTrigger
+                aria-label="选择图标与背景颜色"
+                className={cn(
+                  'flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl text-white transition-colors',
+                  automationColorClass(draft.colorKey),
+                )}
+              >
+                <Icon className="size-5" />
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">图标</p>
+                  <div className="grid grid-cols-6 gap-1">
+                    {(Object.keys(AUTOMATION_ICONS) as AutomationIconKey[]).map((key) => {
+                      const OptionIcon = AUTOMATION_ICONS[key];
+                      return (
+                        <button
+                          key={key}
+                          aria-label={`图标 ${key}`}
+                          aria-pressed={draft.iconKey === key}
+                          className={cn(
+                            'flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                            draft.iconKey === key && 'bg-muted text-foreground',
+                          )}
+                          type="button"
+                          onClick={() => change('iconKey', key)}
+                        >
+                          <OptionIcon className="size-4" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">背景颜色</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {AUTOMATION_COLORS.map((color) => (
+                      <button
+                        key={color.key}
+                        aria-label={`背景颜色 ${color.label}`}
+                        aria-pressed={draft.colorKey === color.key}
+                        className={cn(
+                          'size-5 cursor-pointer rounded-full ring-offset-2 ring-offset-popover transition-shadow',
+                          color.className,
+                          draft.colorKey === color.key && 'ring-2 ring-foreground',
+                        )}
+                        type="button"
+                        onClick={() => change('colorKey', color.key)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Input
               aria-label="自动化名称"
               className="h-11"
@@ -359,87 +417,30 @@ function AutomationEditorDialog({
                   value={draft.prompt}
                   onChange={(event) => change('prompt', event.target.value)}
                 />
-                <div className="flex items-center gap-3 border-t px-3 py-2">
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label="添加指令组件"
-                    onClick={() =>
-                      toast.add({
-                        type: 'info',
-                        title: '更多指令组件即将开放',
-                        description: '后续可以在这里插入连接器与技能。',
-                      })
-                    }
-                  >
-                    <Plus />
-                  </Button>
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Cable className="size-3.5" />
-                    连接器 0
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Grid2x2 className="size-3.5" />
-                    技能 0
-                  </span>
-                  <div className="ml-auto w-28">
-                    <Select
-                      items={Object.fromEntries(
-                        SPEED_OPTIONS.map((option) => [option.value, option.label]),
-                      )}
-                      value={draft.speed}
-                      onValueChange={(value) => {
-                        if (value) change('speed', value as AutomationSpeed);
-                      }}
-                    >
-                      <SelectTrigger
-                        aria-label="生成速度"
-                        className="w-full"
-                        size="sm"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SPEED_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                {draft.prompt.length > 0 && (
+                  <p className="border-t px-3 py-1.5 text-right text-xs text-muted-foreground">
+                    {draft.prompt.length} / 10000
+                  </p>
+                )}
               </div>
             </Field>
 
             <Field>
               <FieldLabel>Notifications</FieldLabel>
-              <div className="overflow-hidden rounded-xl border bg-card">
-                <div className="flex items-center gap-3 border-b px-3 py-2.5">
-                  <Bell className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="flex-1 text-sm">App</span>
-                  <Switch
-                    aria-label="App 通知"
-                    checked={draft.notifyApp}
-                    onCheckedChange={(checked) => change('notifyApp', checked)}
-                  />
-                </div>
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <Mail className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="flex-1 text-sm">Email</span>
-                  <Switch
-                    aria-label="邮件通知"
-                    checked={draft.notifyEmail}
-                    onCheckedChange={(checked) => change('notifyEmail', checked)}
-                  />
-                </div>
+              <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
+                <Mail className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1 text-sm">Email</span>
+                <Switch
+                  aria-label="邮件通知"
+                  checked={draft.notifyEmail}
+                  onCheckedChange={(checked) => change('notifyEmail', checked)}
+                />
               </div>
             </Field>
           </FieldGroup>
         </div>
 
-        <DialogFooter className="border-t px-6 py-4 sm:justify-between">
+        <DialogFooter className="mx-0 mb-0 border-t bg-card px-6 py-4 sm:justify-between">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
@@ -627,38 +628,41 @@ export default function AutomationDialog({
                       <section key={category.name} className="pt-4">
                         <h3 className="pb-2 text-base font-semibold">{category.name}</h3>
                         <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
-                          {category.templates.map((template) => (
-                            <div
-                              key={template.id}
-                              className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/60"
-                            >
-                              <span
-                                className={cn(
-                                  'flex size-8 shrink-0 items-center justify-center rounded-lg text-white',
-                                  category.colorClass,
-                                )}
+                          {category.templates.map((template) => {
+                            const TemplateIcon = automationIcon(template.iconKey);
+                            return (
+                              <div
+                                key={template.id}
+                                className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/60"
                               >
-                                <template.icon className="size-4" />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium">
-                                  {template.title}
-                                </p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {template.description}
-                                </p>
+                                <span
+                                  className={cn(
+                                    'flex size-8 shrink-0 items-center justify-center rounded-lg text-white',
+                                    automationColorClass(template.colorKey),
+                                  )}
+                                >
+                                  <TemplateIcon className="size-4" />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">
+                                    {template.title}
+                                  </p>
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {template.description}
+                                  </p>
+                                </div>
+                                <Button
+                                  aria-label={`添加${template.title}自动化`}
+                                  className="shrink-0 rounded-full px-3.5"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setEditor({ open: true, template })}
+                                >
+                                  添加
+                                </Button>
                               </div>
-                              <Button
-                                aria-label={`添加${template.title}自动化`}
-                                className="shrink-0 rounded-full px-3.5"
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => setEditor({ open: true, template })}
-                              >
-                                添加
-                              </Button>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </section>
                     ))
@@ -693,42 +697,56 @@ export default function AutomationDialog({
                       </EmptyContent>
                     </Empty>
                   ) : (
-                    tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/60"
-                      >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                          <CalendarClock className="size-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{task.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {describeAutomationSchedule(task)}
-                          </p>
+                    tasks.map((task) => {
+                      const TaskIcon = automationIcon(task.icon);
+                      return (
+                        <div
+                          key={task.id}
+                          className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/60"
+                        >
+                          <span
+                            className={cn(
+                              'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                              task.icon
+                                ? cn('text-white', automationColorClass(task.color))
+                                : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            {task.icon ? (
+                              <TaskIcon className="size-4" />
+                            ) : (
+                              <CalendarClock className="size-4" />
+                            )}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{task.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {describeAutomationSchedule(task)}
+                            </p>
+                          </div>
+                          <Badge className="shrink-0" variant="secondary">
+                            待接入调度
+                          </Badge>
+                          <Button
+                            aria-label={`编辑 ${task.title}`}
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setEditor({ open: true, task })}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            aria-label={`删除 ${task.title}`}
+                            className="text-destructive hover:text-destructive"
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setDeleteTarget(task)}
+                          >
+                            <Trash2 />
+                          </Button>
                         </div>
-                        <Badge className="shrink-0" variant="secondary">
-                          待接入调度
-                        </Badge>
-                        <Button
-                          aria-label={`编辑 ${task.title}`}
-                          size="icon-sm"
-                          variant="ghost"
-                          onClick={() => setEditor({ open: true, task })}
-                        >
-                          <Pencil />
-                        </Button>
-                        <Button
-                          aria-label={`删除 ${task.title}`}
-                          className="text-destructive hover:text-destructive"
-                          size="icon-sm"
-                          variant="ghost"
-                          onClick={() => setDeleteTarget(task)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </TabsContent>
               </div>
