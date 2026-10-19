@@ -4,7 +4,7 @@ import AccountSettingsDialog from '@/components/account-settings';
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'appearance' ? 'appearance' : 'ai';
+  const initialTab = searchParams.get('tab') === 'mail' ? 'mail' : 'ai';
   return (
     <AccountSettingsDialog
       key={initialTab}

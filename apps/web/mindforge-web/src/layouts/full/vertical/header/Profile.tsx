@@ -192,7 +192,7 @@ export default function ProfileSheet() {
       {/* 个人资料弹窗（原 Pages > User Profile 页面） */}
       <ProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
 
-      {/* 账户设置弹窗（AI 配置 / 应用配置 / 邮箱绑定 / 通知 / 偏好 / 安全） */}
+      {/* 账户设置弹窗（AI 配置 / 邮箱） */}
       <AccountSettingsDialog open={accountSettingsOpen} onOpenChange={setAccountSettingsOpen} />
     </>
   );

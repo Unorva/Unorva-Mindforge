@@ -1,31 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
 import { deleteFetcher, postFetcher } from '@/api/global-fetcher';
-import { changePassword } from '@/api/system/users/users';
-import { clearAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
-import AppearanceSettings from './appearance-settings';
-import {
-  Bell,
-  Blocks,
-  BookOpen,
-  Bot,
-  Check,
-  ClipboardCheck,
-  FolderKanban,
-  KeyRound,
-  Loader2,
-  LogOut,
-  Mail,
-  MonitorSmartphone,
-  NotebookText,
-  Palette,
-  Plus,
-  ScrollText,
-  ShieldCheck,
-  Star,
-  type LucideIcon,
-} from 'lucide-react';
+import { Bot, Check, Loader2, Mail, Plus, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,36 +23,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { SettingsProvider, useSettings } from '@/context/settings-context';
 import Spinner from 'src/views/spinner/Spinner';
 import { cn } from '@/lib/utils';
-import type {
-  AiSettings,
-  AppIntegration,
-  NotificationSettings,
-  ReportSettings,
-  SecuritySettings,
-} from '@/types/apps/settings';
+import type { AiSettings } from '@/types/apps/settings';
 
 const LANGUAGES = ['简体中文', '英语', '日语'];
-const SYNC_FREQUENCIES = ['实时', '每小时', '每天', '手动'] as const;
-const SESSION_TIMEOUTS = ['30 分钟', '2 小时', '8 小时', '24 小时'] as const;
-const WEEK_START_DAYS = [
-  '星期一',
-  '星期二',
-  '星期三',
-  '星期四',
-  '星期五',
-  '星期六',
-  '星期日',
-] as const;
 const EMAIL_PROVIDERS = ['Gmail', 'Outlook', '企业邮箱', 'QQ 邮箱', '163 邮箱'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const APP_ICONS: Record<string, LucideIcon> = {
-  projects: FolderKanban,
-  mail: Mail,
-  'daily-review': ClipboardCheck,
-  notes: NotebookText,
-  blog: BookOpen,
-};
 
 function OptionSelect<T extends string>({
   ariaLabel,
@@ -155,26 +106,21 @@ function SaveBar({ saving, onSave }: { saving: boolean; onSave: () => void }) {
 
 const SETTINGS_TABS = [
   { value: 'ai', label: 'AI 配置', icon: Bot },
-  { value: 'apps', label: '应用配置', icon: Blocks },
-  { value: 'emails', label: '邮箱绑定', icon: Mail },
-  { value: 'appearance', label: '背景设置', icon: Palette },
-  { value: 'notifications', label: '通知设置', icon: Bell },
-  { value: 'reports', label: '报告设置', icon: ScrollText },
-  { value: 'security', label: '安全设置', icon: ShieldCheck },
+  { value: 'mail', label: '邮箱', icon: Mail },
 ];
 
 function AccountSettingsTabs({
   initialTab,
   children,
 }: {
-  initialTab?: 'ai' | 'appearance';
+  initialTab?: 'ai' | 'mail';
   children?: ReactNode;
 }) {
   return (
     <Tabs
       defaultValue={initialTab ?? 'ai'}
       orientation="vertical"
-      className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[11rem_minmax(0,1fr)] md:grid-cols-[13rem_minmax(0,1fr)]"
+      className="grid min-h-0 grid-cols-[3.5rem_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[10rem_minmax(0,1fr)] md:grid-cols-[11rem_minmax(0,1fr)]"
     >
       <TabsList className="h-auto! w-full shrink-0 flex-col! items-stretch! justify-start! gap-1 overflow-y-auto rounded-none border-r bg-muted/30 p-2">
         {SETTINGS_TABS.map(({ value, label, icon: TabIcon }) => (
@@ -190,90 +136,53 @@ function AccountSettingsTabs({
         ))}
       </TabsList>
       {children}
-      <TabsContent
-        value="appearance"
-        className="m-0 min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
-      >
-        <AppearanceSettings />
-      </TabsContent>
     </Tabs>
   );
 }
 
-function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'appearance' }) {
-  const navigate = useNavigate();
-  const {
-    settings,
-    loading,
-    error,
-    saveAiSettings,
-    saveApps,
-    bindEmail,
-    setPrimaryEmail,
-    unbindEmail,
-    saveNotifications,
-    saveReportSettings,
-    saveSecurity,
-  } = useSettings();
+function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'mail' }) {
+  const { settings, loading, error, saveAiSettings, bindEmail, setPrimaryEmail, unbindEmail } =
+    useSettings();
 
   const [aiDraft, setAiDraft] = useState<AiSettings | null>(null);
-  const [appsDraft, setAppsDraft] = useState<AppIntegration[] | null>(null);
-  const [notificationsDraft, setNotificationsDraft] = useState<NotificationSettings | null>(null);
-  const [reportsDraft, setReportsDraft] = useState<ReportSettings | null>(null);
-  const [securityDraft, setSecurityDraft] = useState<SecuritySettings | null>(null);
   const [savingSection, setSavingSection] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState('');
   const [newEmailProvider, setNewEmailProvider] = useState<string>(EMAIL_PROVIDERS[0]);
-  const [passwordForm, setPasswordForm] = useState({
-    current: '',
-    next: '',
-    confirm: '',
-  });
-
   useEffect(() => {
     if (!settings) return;
     setAiDraft(settings.ai);
-    setAppsDraft(settings.apps);
-    setNotificationsDraft(settings.notifications);
-    setReportsDraft(settings.reports);
-    setSecurityDraft(settings.security);
   }, [settings]);
 
   if (error) {
-    // 背景支持离线预览，账户偏好异常时仍保留背景入口。
     return (
       <AccountSettingsTabs initialTab={initialTab}>
-        {SETTINGS_TABS.filter(({ value }) => value !== 'appearance').map(({ value }) => (
-          <TabsContent key={value} value={value} className="m-0 flex items-center justify-center">
-            <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
-              <p className="font-medium">账户设置加载失败</p>
-              <p className="max-w-md text-sm text-muted-foreground">
-                请重新打开设置；如果问题持续，请检查后端服务是否正常启动。
-              </p>
-            </div>
-          </TabsContent>
-        ))}
+        <TabsContent value="ai" className="m-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 px-6 text-center">
+            <p className="font-medium">AI 配置加载失败</p>
+            <p className="max-w-md text-sm text-muted-foreground">
+              请重新打开设置；如果问题持续，请检查后端服务是否正常启动。
+            </p>
+          </div>
+        </TabsContent>
+        <TabsContent value="mail" className="m-0 flex items-center justify-center">
+          <p className="px-6 text-center text-muted-foreground">
+            账户设置加载失败，请重新打开设置。
+          </p>
+        </TabsContent>
       </AccountSettingsTabs>
     );
   }
 
-  if (
-    loading ||
-    !settings ||
-    !aiDraft ||
-    !appsDraft ||
-    !notificationsDraft ||
-    !reportsDraft ||
-    !securityDraft
-  ) {
+  if (loading || !settings || !aiDraft) {
     return (
       <AccountSettingsTabs initialTab={initialTab}>
-        {SETTINGS_TABS.filter(({ value }) => value !== 'appearance').map(({ value }) => (
-          <TabsContent key={value} value={value} className="m-0 flex items-center justify-center">
-            <Spinner />
-          </TabsContent>
-        ))}
+        <TabsContent value="ai" className="m-0 flex items-center justify-center">
+          <Spinner />
+        </TabsContent>
+        <TabsContent value="mail" className="m-0 flex items-center justify-center">
+          <Spinner />
+        </TabsContent>
       </AccountSettingsTabs>
     );
   }
@@ -350,30 +259,6 @@ function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'ap
     } finally {
       setSavingSection(null);
     }
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwordForm.current || !passwordForm.next || !passwordForm.confirm) {
-      toast.add({ type: 'error', title: '请填写完整的密码信息' });
-      return;
-    }
-    if (passwordForm.next.length < 8) {
-      toast.add({ type: 'error', title: '新密码至少需要 8 位' });
-      return;
-    }
-    if (passwordForm.next !== passwordForm.confirm) {
-      toast.add({ type: 'error', title: '两次输入的新密码不一致' });
-      return;
-    }
-    await runSave(
-      'password',
-      async () => {
-        await changePassword(passwordForm.current, passwordForm.next);
-        clearAccessToken();
-        navigate('/auth/auth2/login', { replace: true });
-      },
-      '密码已修改，请重新登录',
-    );
   };
 
   return (
@@ -607,114 +492,13 @@ function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'ap
         <SaveBar saving={savingSection === 'ai'} onSave={() => void handleSaveAi()} />
       </TabsContent>
 
-      {/* 应用配置 */}
-      <TabsContent
-        value="apps"
-        className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
-      >
-        <SectionIntro
-          title="应用配置"
-          description="保存各个 APP 的启用状态、同步偏好、通知与 AI 辅助偏好。"
-        />
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {appsDraft.map((app) => {
-            const AppIcon = APP_ICONS[app.id] ?? Blocks;
-            return (
-              <Card key={app.id} size="sm">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <AppIcon className="size-4" />
-                      </span>
-                      <div>
-                        <CardTitle>{app.name}</CardTitle>
-                        <CardDescription className="mt-1">{app.description}</CardDescription>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={app.enabled}
-                      onCheckedChange={(enabled) =>
-                        setAppsDraft(
-                          appsDraft.map((item) =>
-                            item.id === app.id ? { ...item, enabled } : item,
-                          ),
-                        )
-                      }
-                    />
-                  </div>
-                </CardHeader>
-                {app.enabled && (
-                  <CardContent className="space-y-4 border-t pt-3">
-                    <SettingRow title="同步频率" description="保存同步偏好，外部自动同步尚未接入。">
-                      <OptionSelect
-                        ariaLabel={`${app.name} 同步频率`}
-                        className="w-32"
-                        items={SYNC_FREQUENCIES}
-                        value={app.options.syncFrequency}
-                        onValueChange={(syncFrequency) =>
-                          setAppsDraft(
-                            appsDraft.map((item) =>
-                              item.id === app.id
-                                ? {
-                                    ...item,
-                                    options: { ...item.options, syncFrequency },
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </SettingRow>
-                    <SettingRow title="应用内通知" description="该应用有新动态时推送通知。">
-                      <Switch
-                        checked={app.options.notify}
-                        onCheckedChange={(notify) =>
-                          setAppsDraft(
-                            appsDraft.map((item) =>
-                              item.id === app.id
-                                ? { ...item, options: { ...item.options, notify } }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </SettingRow>
-                    <SettingRow title="AI 辅助" description="允许 AI 在该应用中提供建议与自动化。">
-                      <Switch
-                        checked={app.options.aiAssist}
-                        onCheckedChange={(aiAssist) =>
-                          setAppsDraft(
-                            appsDraft.map((item) =>
-                              item.id === app.id
-                                ? { ...item, options: { ...item.options, aiAssist } }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </SettingRow>
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-
-        <SaveBar
-          saving={savingSection === 'apps'}
-          onSave={() => runSave('apps', () => saveApps(appsDraft), '应用配置已保存')}
-        />
-      </TabsContent>
-
       {/* 邮箱绑定 */}
       <TabsContent
-        value="emails"
+        value="mail"
         className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
       >
         <SectionIntro
-          title="邮箱绑定"
+          title="邮箱"
           description="保存常用邮箱地址与主邮箱偏好。外部邮件收发及邮箱验证尚未接入。"
         />
 
@@ -816,249 +600,6 @@ function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'ap
           </CardContent>
         </Card>
       </TabsContent>
-
-      {/* 通知设置 */}
-      <TabsContent
-        value="notifications"
-        className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
-      >
-        <SectionIntro
-          title="通知设置"
-          description="控制站内通知显示并保存提醒偏好。外部邮件通知与自动提醒尚未接入。"
-        />
-
-        <Card size="sm">
-          <CardContent className="space-y-4">
-            <SettingRow title="邮件通知" description="通过主要邮箱接收系统通知。">
-              <Switch
-                checked={notificationsDraft.emailNotifications}
-                onCheckedChange={(emailNotifications) =>
-                  setNotificationsDraft({ ...notificationsDraft, emailNotifications })
-                }
-              />
-            </SettingRow>
-            <SettingRow title="站内通知" description="在顶栏通知中心展示未读消息。">
-              <Switch
-                checked={notificationsDraft.inAppNotifications}
-                onCheckedChange={(inAppNotifications) =>
-                  setNotificationsDraft({ ...notificationsDraft, inAppNotifications })
-                }
-              />
-            </SettingRow>
-            <SettingRow title="每日复盘提醒" description="每晚提醒完成当日复盘。">
-              <Switch
-                checked={notificationsDraft.dailyReviewReminder}
-                onCheckedChange={(dailyReviewReminder) =>
-                  setNotificationsDraft({ ...notificationsDraft, dailyReviewReminder })
-                }
-              />
-            </SettingRow>
-            <SettingRow title="项目动态" description="项目状态、需求与缺陷变更时提醒。">
-              <Switch
-                checked={notificationsDraft.projectUpdates}
-                onCheckedChange={(projectUpdates) =>
-                  setNotificationsDraft({ ...notificationsDraft, projectUpdates })
-                }
-              />
-            </SettingRow>
-            <SettingRow title="AI 周报" description="每周一发送上周 AI 使用情况汇总。">
-              <Switch
-                checked={notificationsDraft.aiWeeklyReport}
-                onCheckedChange={(aiWeeklyReport) =>
-                  setNotificationsDraft({ ...notificationsDraft, aiWeeklyReport })
-                }
-              />
-            </SettingRow>
-          </CardContent>
-        </Card>
-
-        <SaveBar
-          saving={savingSection === 'notifications'}
-          onSave={() =>
-            runSave('notifications', () => saveNotifications(notificationsDraft), '通知设置已保存')
-          }
-        />
-      </TabsContent>
-
-      {/* 报告设置 */}
-      <TabsContent
-        value="reports"
-        className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
-      >
-        <SectionIntro
-          title="报告设置"
-          description="设置周报的统计周期，月报与年报按自然月和自然年生成。"
-        />
-
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>报告周期</CardTitle>
-            <CardDescription>该设置将影响周报的起止日期与日报归属。</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SettingRow
-              title="一周的第一天"
-              description={`当前按${reportsDraft.weekStartsOn}至下一周期前一天统计周报。`}
-            >
-              <OptionSelect
-                ariaLabel="一周的第一天"
-                className="w-32"
-                items={WEEK_START_DAYS}
-                value={reportsDraft.weekStartsOn}
-                onValueChange={(weekStartsOn) => setReportsDraft({ weekStartsOn })}
-              />
-            </SettingRow>
-          </CardContent>
-        </Card>
-
-        <SaveBar
-          saving={savingSection === 'reports'}
-          onSave={() =>
-            runSave('reports', () => saveReportSettings(reportsDraft), '报告设置已保存')
-          }
-        />
-      </TabsContent>
-
-      {/* 安全设置 */}
-      <TabsContent
-        value="security"
-        className="m-0 min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
-      >
-        <SectionIntro
-          title="安全设置"
-          description="查看当前登录会话、设置有效期和修改密码。两步验证及其他设备下线尚未接入。"
-        />
-
-        <Card size="sm">
-          <CardContent className="space-y-4">
-            <SettingRow title="两步验证" description="暂未接入邮箱或验证器验证，当前不可启用。">
-              <Switch
-                disabled
-                checked={securityDraft.twoFactor}
-                onCheckedChange={(twoFactor) => setSecurityDraft({ ...securityDraft, twoFactor })}
-              />
-            </SettingRow>
-            <SettingRow title="登录提醒" description="保存登录提醒偏好；邮件通知通道尚未接入。">
-              <Switch
-                checked={securityDraft.loginAlerts}
-                onCheckedChange={(loginAlerts) =>
-                  setSecurityDraft({ ...securityDraft, loginAlerts })
-                }
-              />
-            </SettingRow>
-            <SettingRow title="会话超时" description="保存后设置当前登录会话的剩余有效期。">
-              <OptionSelect
-                ariaLabel="会话超时"
-                className="w-32"
-                items={SESSION_TIMEOUTS}
-                value={securityDraft.sessionTimeout}
-                onValueChange={(sessionTimeout) =>
-                  setSecurityDraft({ ...securityDraft, sessionTimeout })
-                }
-              />
-            </SettingRow>
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MonitorSmartphone className="size-4" />
-              活跃会话
-            </CardTitle>
-            <CardDescription>当前登录过账号的设备列表。</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {securityDraft.activeSessions.map((session) => (
-              <div
-                key={session.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{session.device}</p>
-                    {session.current && <Badge variant="secondary">当前</Badge>}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {session.location} · {session.lastActive}
-                  </p>
-                </div>
-                {!session.current && (
-                  <Button disabled size="sm" variant="outline">
-                    <LogOut />
-                    下线
-                  </Button>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyRound className="size-4" />
-              修改密码
-            </CardTitle>
-            <CardDescription>建议定期更换密码以提升账号安全性。</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">当前密码</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  placeholder="输入当前密码"
-                  value={passwordForm.current}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, current: event.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">新密码</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="至少 8 位"
-                  value={passwordForm.next}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, next: event.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">确认新密码</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="再次输入新密码"
-                  value={passwordForm.confirm}
-                  onChange={(event) =>
-                    setPasswordForm({ ...passwordForm, confirm: event.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button
-                disabled={savingSection !== null}
-                variant="outline"
-                onClick={() => void handleChangePassword()}
-              >
-                <KeyRound />
-                修改密码
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <SaveBar
-          saving={savingSection === 'security'}
-          onSave={() => runSave('security', () => saveSecurity(securityDraft), '安全设置已保存')}
-        />
-      </TabsContent>
     </AccountSettingsTabs>
   );
 }
@@ -1066,7 +607,7 @@ function AccountSettingsContent({ initialTab = 'ai' }: { initialTab?: 'ai' | 'ap
 interface AccountSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialTab?: 'ai' | 'appearance';
+  initialTab?: 'ai' | 'mail';
 }
 
 /**
@@ -1080,16 +621,14 @@ const AccountSettingsDialog = ({ open, onOpenChange, initialTab }: AccountSettin
     <SettingsProvider>
       <Dialog open onOpenChange={onOpenChange}>
         <DialogContent
-          className="grid-rows-1 gap-0 overflow-hidden p-0 h-[min(56rem,calc(100vh-2rem))]"
+          className="grid-rows-1 gap-0 overflow-hidden p-0 h-[min(42rem,calc(100dvh-2rem))]"
           style={{
             width: 'calc(100vw - 2rem)',
-            maxWidth: '64rem',
+            maxWidth: '70rem',
           }}
         >
           <DialogTitle className="sr-only">账户设置</DialogTitle>
-          <DialogDescription className="sr-only">
-            管理 AI 接口、应用启用、邮箱地址、背景设置、通知偏好与账号安全。
-          </DialogDescription>
+          <DialogDescription className="sr-only">管理 AI 接口与邮箱账户。</DialogDescription>
           <AccountSettingsContent initialTab={initialTab} />
         </DialogContent>
       </Dialog>
