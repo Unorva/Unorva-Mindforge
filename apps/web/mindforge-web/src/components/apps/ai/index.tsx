@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, History, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowUp, CalendarClock, History, Plus, Puzzle, Search, Trash2 } from 'lucide-react';
 import { AiAvatar, useAiAvatarController } from '@/components/ai-avatar';
 import {
   createConversation,
@@ -30,6 +30,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
+import AutomationDialog from './automation-dialog';
+import MarketDialog from './market-dialog';
 
 export default function AiAssistant() {
   const avatar = useAiAvatarController('idle');
@@ -40,12 +43,15 @@ export default function AiAssistant() {
   const [composer, setComposer] = useState('');
   const [search, setSearch] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [marketOpen, setMarketOpen] = useState(false);
+  const [automationOpen, setAutomationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
   const [error, setError] = useState('');
   const requestId = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,7 +92,8 @@ export default function AiAssistant() {
   };
 
   const send = async () => {
-    const content = composer.trim();
+    const submittedComposer = composer;
+    const content = submittedComposer.trim();
     if (!content || responding || !config?.configured || messageLoading) return;
     setResponding(true);
     setError('');
@@ -105,7 +112,7 @@ export default function AiAssistant() {
         result.data.conversation,
         ...items.filter((item) => item.id !== conversationId),
       ]);
-      setComposer('');
+      setComposer((current) => (current === submittedComposer ? '' : current));
       avatar.play({ expression: 'success', intensity: 0.8, durationMs: 2400, returnTo: 'idle' });
     } catch {
       setError('回复生成失败，输入已保留，可重试。');
@@ -139,7 +146,7 @@ export default function AiAssistant() {
 
   return (
     <section className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'flex min-h-0 flex-col overflow-hidden')}>
-      <div className="flex shrink-0 items-center justify-between gap-3 py-2">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 py-2">
         <span className="truncate text-sm text-muted-foreground">
           {loading
             ? '加载 AI 配置…'
@@ -147,7 +154,25 @@ export default function AiAssistant() {
               ? `${config.provider} · ${config.model}`
               : '尚未配置 AI 服务'}
         </span>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button
+            onClick={() => setMarketOpen(true)}
+            variant="outline"
+            aria-haspopup="dialog"
+            aria-expanded={marketOpen}
+          >
+            <Puzzle />
+            插件
+          </Button>
+          <Button
+            onClick={() => setAutomationOpen(true)}
+            variant="outline"
+            aria-haspopup="dialog"
+            aria-expanded={automationOpen}
+          >
+            <CalendarClock />
+            自动化任务
+          </Button>
           <Button onClick={() => setHistoryOpen(true)} variant="outline">
             <History />
             历史记录
@@ -168,6 +193,27 @@ export default function AiAssistant() {
           </Button>
         </div>
       </div>
+      <MarketDialog
+        open={marketOpen}
+        onOpenChange={setMarketOpen}
+        skillDisabled={responding}
+        onUseSkill={(prompt) => {
+          const next = composer.trim() ? `${composer}\n\n${prompt}` : prompt;
+          if (next.length > 10000) {
+            toast.add({
+              type: 'error',
+              title: '无法添加技能提示词',
+              description: '输入内容将超过 10000 字，请精简后重试。',
+            });
+            return;
+          }
+          setComposer(next);
+          requestAnimationFrame(() => composerRef.current?.focus());
+        }}
+      />
+      {automationOpen && (
+        <AutomationDialog open={automationOpen} onOpenChange={setAutomationOpen} />
+      )}
       {!loading && !config?.configured && (
         <p className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
           请点击右上角头像，在头像侧边栏的“账户设置”中配置兼容 OpenAI 的接口地址、模型和 API Key
@@ -281,6 +327,7 @@ export default function AiAssistant() {
       </ScrollArea>
       <InputGroup className="mx-auto mb-3 w-full max-w-4xl shrink-0 rounded-3xl bg-card">
         <InputGroupTextarea
+          ref={composerRef}
           aria-label="向 AI 提问"
           placeholder="输入问题，Enter 发送，Shift + Enter 换行"
           value={composer}
