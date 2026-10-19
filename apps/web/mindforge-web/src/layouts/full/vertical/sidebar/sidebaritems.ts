@@ -79,12 +79,6 @@ const SidebarContent: MenuItem[] = [
       },
       {
         id: uniqueId(),
-        name: '工作日志',
-        icon: ClipboardCheck,
-        url: '/apps/daily-review',
-      },
-      {
-        id: uniqueId(),
         name: '资金管理',
         icon: Wallet,
         url: '/apps/finance',
@@ -116,6 +110,17 @@ const SidebarContent: MenuItem[] = [
             url: '/apps/blog/manage-blog',
           },
         ],
+      },
+    ],
+  },
+  {
+    heading: '工作',
+    items: [
+      {
+        id: uniqueId(),
+        name: '工作日志',
+        icon: ClipboardCheck,
+        url: '/apps/daily-review',
       },
     ],
   },
