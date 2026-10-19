@@ -9,4 +9,10 @@
 - 推送使用普通 `git push`。远端有新提交时先检查并妥善整合，保留其他人的工作；不得擅自强制推送或改写已发布的历史。
 - 完成后向用户报告提交摘要、提交哈希、目标分支及推送结果。若检查或推送失败，继续排查，明确报告仍未解决的原因。
 
+## 提交身份
+
+- AI 代理完成的提交统一使用 `DSH Agent <dsh-agent@users.noreply.github.com>`；本仓库已在本地 `git config` 中设置该身份，不要再使用个人身份提交代理产出。
+- 确需以个人身份提交时，用 `git -c user.name="..." -c user.email="..." commit ...` 临时覆盖会话级配置。
+- 远端展示的头像由提交邮箱决定；如需自定义头像，将该邮箱绑定到对应的 GitHub/Gravatar 账号即可。
+
 前端开发还需遵守 `apps/web/mindforge-web/AGENTS.md`。
