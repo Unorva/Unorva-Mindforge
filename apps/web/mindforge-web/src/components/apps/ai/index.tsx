@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, CalendarClock, History, Plus, Puzzle, Search, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { ArrowUp, CalendarClock, History, MessageCircle, Plus, Puzzle, Trash2 } from 'lucide-react';
 import { AiAvatar, useAiAvatarController } from '@/components/ai-avatar';
 import {
   createConversation,
@@ -14,7 +14,15 @@ import {
 } from '@/api/ai/ai';
 import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   InputGroup,
   InputGroupAddon,
@@ -22,17 +30,16 @@ import {
   InputGroupTextarea,
 } from '@/components/ui/input-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import AutomationDialog from './automation-dialog';
 import MarketDialog from './market-dialog';
+
+function conversationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric' }).format(date);
+}
 
 export default function AiAssistant() {
   const avatar = useAiAvatarController('idle');
@@ -41,8 +48,8 @@ export default function AiAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [composer, setComposer] = useState('');
-  const [search, setSearch] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historySelection, setHistorySelection] = useState('');
   const [marketOpen, setMarketOpen] = useState(false);
   const [automationOpen, setAutomationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -231,60 +238,72 @@ export default function AiAssistant() {
           </Button>
         </div>
       )}
-      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-        <SheetContent side="left" className="flex w-80 flex-col">
-          <SheetHeader>
-            <SheetTitle>对话历史</SheetTitle>
-            <SheetDescription>对话已保存到你的个人工作台</SheetDescription>
-          </SheetHeader>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
-            <Input
-              aria-label="搜索对话"
-              className="pl-9"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索对话标题"
-            />
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            {conversations
-              .filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
-              .map((item) => (
-                <div
+      <CommandDialog
+        className="sm:max-w-lg"
+        description="搜索并打开已保存的对话，选中后按 Delete 可删除"
+        open={historyOpen}
+        title="对话历史"
+        onOpenChange={setHistoryOpen}
+      >
+        <Command
+          value={historySelection}
+          onValueChange={setHistorySelection}
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+            const focused = event.target;
+            if (focused instanceof HTMLInputElement && focused.value) return;
+            if (event.key !== 'Delete' || responding) return;
+            const target = conversations.find(
+              (item) => `${item.title} ${item.id}` === historySelection,
+            );
+            if (!target) return;
+            event.preventDefault();
+            setHistorySelection('');
+            void remove(target.id);
+          }}
+        >
+          <CommandInput placeholder="搜索对话标题…" />
+          <CommandList>
+            <CommandEmpty>
+              {conversations.length ? '没有找到匹配的对话' : '还没有对话，开始你的第一个问题。'}
+            </CommandEmpty>
+            <CommandGroup heading="最近对话">
+              {conversations.map((item) => (
+                <CommandItem
+                  className="group/conversation"
+                  disabled={responding}
                   key={item.id}
-                  className={cn(
-                    'my-1 flex items-center gap-1 rounded-lg',
-                    item.id === activeId && 'bg-muted',
-                  )}
+                  value={`${item.title} ${item.id}`}
+                  onSelect={() => void selectConversation(item.id)}
                 >
-                  <Button
-                    className="min-w-0 flex-1 justify-start"
-                    disabled={responding}
-                    variant="ghost"
-                    onClick={() => void selectConversation(item.id)}
-                  >
-                    <span className="truncate">{item.title}</span>
-                  </Button>
-                  <Button
+                  <MessageCircle
+                    className={cn(
+                      'size-4',
+                      item.id === activeId ? 'text-primary' : 'text-muted-foreground',
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {conversationTime(item.updatedAt)}
+                  </span>
+                  <button
                     aria-label={`删除 ${item.title}`}
-                    disabled={responding}
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={() => void remove(item.id)}
+                    className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover/conversation:opacity-100 focus-visible:opacity-100"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setHistorySelection('');
+                      void remove(item.id);
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
                   >
-                    <Trash2 />
-                  </Button>
-                </div>
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </CommandItem>
               ))}
-            {!conversations.length && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                还没有对话，开始你的第一个问题。
-              </p>
-            )}
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CommandDialog>
       <ScrollArea className="min-h-0 flex-1">
         {messages.length || responding || messageLoading ? (
           <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
