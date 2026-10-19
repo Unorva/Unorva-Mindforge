@@ -125,7 +125,18 @@ const SidebarContent: MenuItem[] = [
     ],
   },
   {
-    heading: '开发',
+    heading: '团队',
+    items: [
+      {
+        id: uniqueId(),
+        name: '项目管理',
+        icon: FolderKanban,
+        url: '/apps/projects',
+      },
+    ],
+  },
+  {
+    heading: '组件',
     items: [
       {
         id: uniqueId(),
@@ -144,17 +155,6 @@ const SidebarContent: MenuItem[] = [
         name: 'AI 动画测试',
         icon: Bot,
         url: '/components/ai-avatar',
-      },
-    ],
-  },
-  {
-    heading: '团队',
-    items: [
-      {
-        id: uniqueId(),
-        name: '项目管理',
-        icon: FolderKanban,
-        url: '/apps/projects',
       },
     ],
   },
