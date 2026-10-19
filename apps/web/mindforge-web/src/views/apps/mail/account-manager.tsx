@@ -1,5 +1,5 @@
-import { useRef, useState, type SubmitEvent } from 'react';
-import { ExternalLink, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { useRef, useState, type ReactNode, type SubmitEvent } from 'react';
+import { ExternalLink, Loader2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import {
   deleteMailAccount,
   saveMailAccount,
@@ -20,20 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import MailSelect from './mail-select';
-import { mailDate, mailError } from './mail-utils';
+import { mailDate } from './mail-utils';
 
 const securityOptions = [
   { value: 'ssl', label: 'SSL / TLS' },
@@ -59,6 +52,36 @@ function newAccount(provider?: MailProvider): MailAccountInput {
   };
 }
 
+function AccountManagerSurface({
+  embedded,
+  open,
+  locked,
+  onOpenChange,
+  children,
+}: {
+  embedded: boolean;
+  open: boolean;
+  locked: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  if (embedded) return <div className="space-y-4">{children}</div>;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+        showCloseButton={!locked}
+      >
+        <DialogHeader>
+          <DialogTitle>管理邮箱</DialogTitle>
+          <DialogDescription>连接常用邮箱，在一个收件箱查看和处理邮件。</DialogDescription>
+        </DialogHeader>
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AccountManager({
   open,
   onOpenChange,
@@ -66,6 +89,7 @@ export default function AccountManager({
   providers,
   onChanged,
   externalBusy = false,
+  embedded = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -73,11 +97,11 @@ export default function AccountManager({
   providers: MailProvider[];
   onChanged: () => Promise<void>;
   externalBusy?: boolean;
+  embedded?: boolean;
 }) {
   const [editing, setEditing] = useState<MailAccountInput | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MailAccount | null>(null);
   const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
   const operation = useRef(false);
   const provider = providers.find((item) => item.id === editing?.provider);
   const original = accounts.find((account) => account.id === editing?.id);
@@ -85,7 +109,6 @@ export default function AccountManager({
 
   const update = (updates: Partial<MailAccountInput>) => {
     setEditing((current) => (current ? { ...current, ...updates } : current));
-    setError('');
   };
 
   const save = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -93,7 +116,6 @@ export default function AccountManager({
     if (!editing || operation.current || externalBusy) return;
     operation.current = true;
     setBusy('save');
-    setError('');
     try {
       await saveMailAccount({
         ...editing,
@@ -104,15 +126,15 @@ export default function AccountManager({
         imapHost: editing.imapHost.trim(),
         smtpHost: editing.smtpHost.trim(),
       });
-      await onChanged();
       setEditing(null);
       toast.add({
         type: 'success',
         title: '邮箱配置已保存',
         description: '可测试连接后同步邮件。',
       });
-    } catch (cause) {
-      setError(mailError(cause, '邮箱配置保存失败，请重试。'));
+      await onChanged();
+    } catch {
+      // global-fetcher reports request failures once through the shared toast.
     } finally {
       operation.current = false;
       setBusy('');
@@ -123,7 +145,6 @@ export default function AccountManager({
     if (operation.current || externalBusy) return;
     operation.current = true;
     setBusy(`test-${account.id}`);
-    setError('');
     try {
       const result = await testMailAccount(account.id);
       toast.add({
@@ -131,14 +152,13 @@ export default function AccountManager({
         title: result.data.success ? '邮箱连接正常' : '邮箱连接失败',
         description: result.data.message,
       });
-      if (!result.data.success) setError(result.data.message);
-    } catch (cause) {
-      setError(mailError(cause, '连接测试失败，请检查授权凭据与服务器设置。'));
+    } catch {
+      // Transport failures are already reported by global-fetcher.
     } finally {
       try {
         await onChanged();
-      } catch (cause) {
-        setError(mailError(cause, '邮箱状态刷新失败，请重新打开管理邮箱。'));
+      } catch {
+        // Refresh failures use the same global request feedback.
       } finally {
         operation.current = false;
         setBusy('');
@@ -150,14 +170,13 @@ export default function AccountManager({
     if (!deleteTarget || operation.current || externalBusy) return;
     operation.current = true;
     setBusy('delete');
-    setError('');
     try {
       await deleteMailAccount(deleteTarget.id);
-      await onChanged();
       setDeleteTarget(null);
       toast.add({ type: 'success', title: '邮箱已移除' });
-    } catch (cause) {
-      setError(mailError(cause, '邮箱移除失败，请重试。'));
+      await onChanged();
+    } catch {
+      // Keep the confirmation open; the request error is shown in a toast.
     } finally {
       operation.current = false;
       setBusy('');
@@ -171,164 +190,134 @@ export default function AccountManager({
   if (editing && !providerOptions.some((item) => item.value === editing.provider)) {
     providerOptions.push({ value: editing.provider, label: editing.provider });
   }
+  const Footer = embedded ? 'div' : DialogFooter;
 
   return (
     <>
-      <Dialog
+      <AccountManagerSurface
+        embedded={embedded}
         open={open}
+        locked={locked}
         onOpenChange={(next) => {
           if (!locked && !editing && !deleteTarget) {
-            setError('');
             onOpenChange(next);
           }
         }}
       >
-        <DialogContent
-          className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
-          showCloseButton={!locked}
-        >
-          <DialogHeader>
-            <DialogTitle>管理邮箱</DialogTitle>
-            <DialogDescription>连接常用邮箱，在一个收件箱查看和处理邮件。</DialogDescription>
-          </DialogHeader>
-          {error && !editing && !deleteTarget && (
-            <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          <div className="space-y-3">
-            {!accounts.length && (
-              <Empty className="border">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Mail />
-                  </EmptyMedia>
-                  <EmptyTitle>还没有绑定邮箱</EmptyTitle>
-                  <EmptyDescription>添加 QQ、163、Gmail、Outlook 或企业邮箱。</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
-            {accounts.map((account) => (
-              <div key={account.id} className="rounded-lg border p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="break-all font-medium">
-                        {account.displayName || account.email}
-                      </p>
-                      {account.isDefault && <Badge variant="secondary">默认发件</Badge>}
-                      {!account.enabled && <Badge variant="outline">已停用</Badge>}
-                    </div>
-                    <p className="break-all text-xs text-muted-foreground">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {providers.find((item) => item.id === account.provider)?.name ??
-                        account.provider}
-                      {' · '}最近同步：{mailDate(account.lastSyncAt, true)}
-                    </p>
+        <div className="space-y-3">
+          {accounts.map((account) => (
+            <div key={account.id} className="rounded-lg border p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="break-all font-medium">{account.displayName || account.email}</p>
+                    {account.isDefault && <Badge variant="secondary">默认发件</Badge>}
+                    {!account.enabled && <Badge variant="outline">已停用</Badge>}
                   </div>
-                  <Badge variant={account.status === 'error' ? 'destructive' : 'outline'}>
-                    <span
-                      className={cn(
-                        'size-1.5 rounded-full',
-                        account.status === 'connected'
-                          ? 'bg-emerald-500'
-                          : account.status === 'error'
-                            ? 'bg-destructive'
-                            : 'bg-muted-foreground',
-                      )}
-                    />
-                    {account.status === 'connected'
-                      ? '已连接'
-                      : account.status === 'error'
-                        ? '连接异常'
-                        : '待测试'}
-                  </Badge>
+                  <p className="break-all text-xs text-muted-foreground">{account.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {providers.find((item) => item.id === account.provider)?.name ??
+                      account.provider}
+                    {' · '}最近同步：{mailDate(account.lastSyncAt, true)}
+                  </p>
                 </div>
-                {account.lastError && (
-                  <p className="mt-2 break-words text-xs text-destructive">{account.lastError}</p>
-                )}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={locked}
-                    onClick={() => void test(account)}
-                  >
-                    {busy === `test-${account.id}` ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <ShieldCheck />
+                <Badge variant={account.status === 'error' ? 'destructive' : 'outline'}>
+                  <span
+                    className={cn(
+                      'size-1.5 rounded-full',
+                      account.status === 'connected'
+                        ? 'bg-emerald-500'
+                        : account.status === 'error'
+                          ? 'bg-destructive'
+                          : 'bg-muted-foreground',
                     )}
-                    {busy === `test-${account.id}` ? '测试中…' : '测试连接'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={locked}
-                    onClick={() => {
-                      setError('');
-                      setEditing({
-                        id: account.id,
-                        provider: account.provider,
-                        email: account.email,
-                        displayName: account.displayName,
-                        username: account.username,
-                        authType: account.authType,
-                        imapHost: account.imapHost,
-                        imapPort: account.imapPort,
-                        imapSecurity: account.imapSecurity,
-                        smtpHost: account.smtpHost,
-                        smtpPort: account.smtpPort,
-                        smtpSecurity: account.smtpSecurity,
-                        enabled: account.enabled,
-                        isDefault: account.isDefault,
-                        password: '',
-                      });
-                    }}
-                  >
-                    <Pencil />
-                    编辑
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="ml-auto text-destructive"
-                    disabled={locked}
-                    onClick={() => {
-                      setError('');
-                      setDeleteTarget(account);
-                    }}
-                  >
-                    <Trash2 />
-                    移除
-                  </Button>
-                </div>
+                  />
+                  {account.status === 'connected'
+                    ? '已连接'
+                    : account.status === 'error'
+                      ? '连接异常'
+                      : '待测试'}
+                </Badge>
               </div>
-            ))}
-          </div>
-          <DialogFooter>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={locked}
+                  onClick={() => void test(account)}
+                >
+                  {busy === `test-${account.id}` ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ShieldCheck />
+                  )}
+                  {busy === `test-${account.id}` ? '测试中…' : '测试连接'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={locked}
+                  onClick={() => {
+                    setEditing({
+                      id: account.id,
+                      provider: account.provider,
+                      email: account.email,
+                      displayName: account.displayName,
+                      username: account.username,
+                      authType: account.authType,
+                      imapHost: account.imapHost,
+                      imapPort: account.imapPort,
+                      imapSecurity: account.imapSecurity,
+                      smtpHost: account.smtpHost,
+                      smtpPort: account.smtpPort,
+                      smtpSecurity: account.smtpSecurity,
+                      enabled: account.enabled,
+                      isDefault: account.isDefault,
+                      password: '',
+                    });
+                  }}
+                >
+                  <Pencil />
+                  编辑
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto text-destructive"
+                  disabled={locked}
+                  onClick={() => {
+                    setDeleteTarget(account);
+                  }}
+                >
+                  <Trash2 />
+                  移除
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Footer className={embedded ? 'flex justify-end gap-2' : undefined}>
+          {!embedded && (
             <Button variant="outline" disabled={locked} onClick={() => onOpenChange(false)}>
               关闭
             </Button>
-            <Button
-              disabled={locked}
-              onClick={() => {
-                setError('');
-                setEditing(newAccount(providers[0]));
-              }}
-            >
-              <Plus />
-              添加邮箱
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+          <Button
+            disabled={locked}
+            onClick={() => {
+              setEditing(newAccount(providers[0]));
+            }}
+          >
+            <Plus />
+            添加邮箱
+          </Button>
+        </Footer>
+      </AccountManagerSurface>
       <Dialog
         open={editing !== null}
         onOpenChange={(next) => {
           if (!next && !locked) {
             setEditing(null);
-            setError('');
           }
         }}
       >
@@ -542,11 +531,6 @@ export default function AccountManager({
                 </div>
               </div>
             </fieldset>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
             <DialogFooter>
               <Button
                 type="button"
@@ -554,7 +538,6 @@ export default function AccountManager({
                 disabled={locked}
                 onClick={() => {
                   setEditing(null);
-                  setError('');
                 }}
               >
                 取消
@@ -572,7 +555,6 @@ export default function AccountManager({
         onOpenChange={(next) => {
           if (!next && !locked) {
             setDeleteTarget(null);
-            setError('');
           }
         }}
       >
@@ -584,18 +566,12 @@ export default function AccountManager({
               及其在邮件中心的本地缓存；关联草稿也将删除。邮箱服务中的邮件不会被删除。
             </DialogDescription>
           </DialogHeader>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
           <DialogFooter>
             <Button
               variant="outline"
               disabled={locked}
               onClick={() => {
                 setDeleteTarget(null);
-                setError('');
               }}
             >
               取消

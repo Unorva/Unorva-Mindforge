@@ -11,7 +11,7 @@ export default function SettingsPage() {
       open
       initialTab={initialTab}
       onOpenChange={(open) => {
-        if (!open) navigate('/apps/ai');
+        if (!open) navigate(initialTab === 'mail' ? '/apps/mail' : '/', { replace: true });
       }}
     />
   );
