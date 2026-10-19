@@ -282,9 +282,8 @@ export default function AiSettings() {
   };
 
   return (
-    <TabsContent value="ai" className="m-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <TabsContent value="ai" className="m-0 min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
+      <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-medium">AI 配置</h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -609,42 +608,41 @@ export default function AiSettings() {
             </div>
           </CollapsibleContent>
         </Collapsible>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t bg-card px-4 py-3 sm:px-6">
-        <Button disabled={busy !== null} onClick={() => void handleSave(true)}>
-          {busy === 'save-test' ? <Loader2 className="animate-spin" /> : <Zap />}
-          {busy === 'save-test' ? '正在保存并测试…' : '保存并测试'}
-        </Button>
-        <Button variant="outline" disabled={busy !== null} onClick={() => void handleSave(false)}>
-          {busy === 'save' ? <Loader2 className="animate-spin" /> : <Check />}
-          仅保存
-        </Button>
-        <div className="min-w-2 flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy !== null || !configured}
-          onClick={() => void handleTest()}
-        >
-          {busy === 'test' ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
-          测试已保存的连接
-        </Button>
-        {configured && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button disabled={busy !== null} onClick={() => void handleSave(true)}>
+            {busy === 'save-test' ? <Loader2 className="animate-spin" /> : <Zap />}
+            {busy === 'save-test' ? '正在保存并测试…' : '保存并测试'}
+          </Button>
+          <Button variant="outline" disabled={busy !== null} onClick={() => void handleSave(false)}>
+            {busy === 'save' ? <Loader2 className="animate-spin" /> : <Check />}
+            仅保存
+          </Button>
+          <div className="min-w-2 flex-1" />
           <Button
-            className="text-destructive hover:text-destructive"
             variant="ghost"
             size="sm"
-            disabled={busy !== null}
-            onClick={() => setClearOpen(true)}
+            disabled={busy !== null || !configured}
+            onClick={() => void handleTest()}
           >
-            <Trash2 />
-            清除密钥
+            {busy === 'test' ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+            测试已保存的连接
           </Button>
-        )}
-      </div>
+          {configured && (
+            <Button
+              className="text-destructive hover:text-destructive"
+              variant="ghost"
+              size="sm"
+              disabled={busy !== null}
+              onClick={() => setClearOpen(true)}
+            >
+              <Trash2 />
+              清除密钥
+            </Button>
+          )}
+        </div>
 
-      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogMedia>
