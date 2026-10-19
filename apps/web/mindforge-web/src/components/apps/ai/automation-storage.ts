@@ -1,5 +1,7 @@
 export type AutomationFrequency = 'once' | 'daily' | 'weekly';
 
+export type AutomationSpeed = 'fast' | 'standard' | 'deep';
+
 export interface AutomationTask {
   id: string;
   title: string;
@@ -9,6 +11,12 @@ export interface AutomationTask {
   time: string;
   weekDay: number;
   timeZone: string;
+  /** 生成速度偏好，旧数据缺省时按 fast 处理。 */
+  speed?: AutomationSpeed;
+  /** 是否推送 App 通知，旧数据缺省时开启。 */
+  notifyApp?: boolean;
+  /** 是否推送邮件通知，旧数据缺省时开启。 */
+  notifyEmail?: boolean;
 }
 
 export const WEEK_DAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
@@ -61,6 +69,9 @@ function isAutomationTask(value: unknown): value is AutomationTask {
     !task.timeZone
   )
     return false;
+  if (task.speed !== undefined && !['fast', 'standard', 'deep'].includes(task.speed)) return false;
+  if (task.notifyApp !== undefined && typeof task.notifyApp !== 'boolean') return false;
+  if (task.notifyEmail !== undefined && typeof task.notifyEmail !== 'boolean') return false;
   try {
     new Intl.DateTimeFormat('zh-CN', { timeZone: task.timeZone });
     return true;
