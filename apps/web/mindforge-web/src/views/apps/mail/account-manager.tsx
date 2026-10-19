@@ -323,16 +323,13 @@ export default function AccountManager({
           }
         }}
       >
-        <DialogContent
-          className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"
-          showCloseButton={!locked}
-        >
+        <DialogContent className="sm:max-w-xl" showCloseButton={!locked}>
           <DialogHeader>
             <DialogTitle>{editing?.id ? '编辑邮箱' : '添加邮箱'}</DialogTitle>
             <DialogDescription>选择邮箱服务，填写地址和授权凭据。</DialogDescription>
           </DialogHeader>
-          <form onSubmit={save} className="space-y-4">
-            <fieldset disabled={locked} className="space-y-4">
+          <form onSubmit={save} className="space-y-3">
+            <fieldset disabled={locked} className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="mail-provider">邮箱服务</Label>
                 <MailSelect
@@ -362,7 +359,7 @@ export default function AccountManager({
                 />
               </div>
               {provider?.helpText && (
-                <div className="rounded-lg bg-muted/60 p-3 text-xs leading-6 text-muted-foreground">
+                <div className="rounded-lg bg-muted/60 p-2.5 text-xs leading-5 text-muted-foreground">
                   <p>{provider.helpText}</p>
                   {provider.helpUrl && /^https:\/\//i.test(provider.helpUrl) && (
                     <a
@@ -426,14 +423,14 @@ export default function AccountManager({
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
                   {editing?.authType === 'oauth2'
-                    ? '需要从你自己的邮箱服务应用取得令牌；令牌过期后需在此更新，暂不支持一键授权或自动刷新。'
-                    : '在邮箱设置中开启 IMAP / SMTP，并生成授权码或应用专用密码。请按邮箱服务的说明填写。'}
+                    ? '令牌过期后需在此更新，暂不支持自动刷新。'
+                    : '开启 IMAP / SMTP 后，使用邮箱服务生成的授权码或应用专用密码。'}
                 </p>
               </div>
               <details className="rounded-lg border p-3" open={editing?.provider === 'custom'}>
                 <summary className="cursor-pointer text-sm font-medium">高级服务器设置</summary>
-                <div className="mt-4 space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <div className="mt-3 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="mail-account-username">登录账号</Label>
                       <Input
@@ -511,7 +508,7 @@ export default function AccountManager({
                   ))}
                 </div>
               </details>
-              <div className="flex flex-wrap gap-x-6 gap-y-3 rounded-lg bg-muted/50 p-3">
+              <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-lg bg-muted/50 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="mail-enabled"
