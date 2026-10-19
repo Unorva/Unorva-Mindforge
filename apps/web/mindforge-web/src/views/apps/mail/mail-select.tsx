@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ export default function MailSelect({
   options,
   onChange,
   disabled,
+  iconFor,
 }: {
   id?: string;
   label: string;
@@ -20,6 +22,7 @@ export default function MailSelect({
   options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
   disabled?: boolean;
+  iconFor?: (value: string) => ReactNode;
 }) {
   return (
     <Select
@@ -31,11 +34,13 @@ export default function MailSelect({
       }}
     >
       <SelectTrigger id={id} aria-label={label} className="w-full">
+        {iconFor && <span data-slot="mail-select-icon" className="flex shrink-0 items-center">{iconFor(value)}</span>}
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
+            {iconFor && <span className="flex shrink-0 items-center">{iconFor(option.value)}</span>}
             {option.label}
           </SelectItem>
         ))}

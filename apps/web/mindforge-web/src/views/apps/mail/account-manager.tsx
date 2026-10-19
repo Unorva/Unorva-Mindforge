@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import MailSelect from './mail-select';
+import { MailProviderLogo } from './mail-provider-logo';
 import { mailDate } from './mail-utils';
 
 const securityOptions = [
@@ -208,6 +209,7 @@ export default function AccountManager({
           {accounts.map((account) => (
             <div key={account.id} className="rounded-lg border p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
+                <MailProviderLogo provider={account.provider} />
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="break-all font-medium">{account.displayName || account.email}</p>
@@ -339,6 +341,7 @@ export default function AccountManager({
                   value={editing?.provider ?? 'custom'}
                   options={providerOptions}
                   disabled={locked}
+                  iconFor={(provider) => <MailProviderLogo provider={provider} size="xs" />}
                   onChange={(value) => {
                     const preset = providers.find((item) => item.id === value);
                     update({
