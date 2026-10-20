@@ -773,8 +773,10 @@ export const STATES: StateDef[] = [
     baseFace: false,
     baseBody: true,
     pose: (t) => {
-      // l'ellipse est vue par la tranche (0.62) : les points passent devant et
-      // derriere la boule dans la meme revolution
+      // l'ellipse est vue par la tranche (0.62). Le point qui passe derriere
+      // n'est pas composite derriere la boule — le rendu ne trie pas les points
+      // un par un — il disparait parce qu'il prend la couleur du corps : meme
+      // encre sur meme encre, la lecture est la meme.
       const orbit = t * 2.2;
       const dots = [0, 1, 2].map((i) => {
         const a = orbit + (i * TAU) / 3;
@@ -886,7 +888,7 @@ export const POSES: Record<StateId, number> = {
   deny: 0.2,
   hop: 0.45,
   laugh: 0.3,
-  stomp: 0.15,
+  stomp: 0.09,
   sweat: 0.7,
   loading: 0.45,
   celebrate: 0.6,

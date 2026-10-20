@@ -1,4 +1,5 @@
 import { BloubAvatar } from './bloub-avatar';
+import type { ExpressionId } from './bloub-core/expressions';
 import type { StateId } from './bloub-core/states';
 import type { AiAvatarExpression } from './types';
 
@@ -23,7 +24,7 @@ type AiAvatarProps = {
  * `listening`, `focused`, `thinking`, `processing` — gardent un etat tenu ou
  * cyclique.
  */
-const APPEARANCE: Record<AiAvatarExpression, { state: StateId; face: string }> = {
+const APPEARANCE: Record<AiAvatarExpression, { state: StateId; face: ExpressionId }> = {
   idle: { state: 'idle', face: 'neutre' },
   neutral: { state: 'idle', face: 'neutre' },
   happy: { state: 'idle', face: 'heureux' },
