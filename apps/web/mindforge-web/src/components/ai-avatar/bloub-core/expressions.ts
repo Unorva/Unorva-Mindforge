@@ -38,7 +38,25 @@ export type ExpressionId =
   | 'fier'
   | 'timide'
   | 'blase'
-  | 'somnolent';
+  | 'somnolent'
+  // Familles d'emotions ajoutees d'apres ClaudeAnimationBase (JohnHeibel) : joie,
+  // ruse, abattement, colere, alarme et reflexion. Le vocabulaire reste le meme —
+  // orientation de tete, ecart, proportions, inclinaison par oeil — pour que le
+  // personnage garde un seul visage et non une collection de masques.
+  | 'reconforte'
+  | 'amoureux'
+  | 'espiegle'
+  | 'sournois'
+  | 'impassible'
+  | 'determine'
+  | 'furieux'
+  | 'ecoeure'
+  | 'affole'
+  | 'pensif'
+  | 'idee'
+  | 'gene'
+  | 'ennuye'
+  | 'abattu';
 
 export interface BotExpression {
   id: ExpressionId;
@@ -158,12 +176,124 @@ export const EXPRESSIONS: BotExpression[] = [
     eyes: pair(0.3, 0.12),
   },
   {
-    // paupières à moitié tombées : on passe par `open`, donc l'écrasement
+    // paupieres a moitie tombées : on passe par `open`, donc l'écrasement
     // vertical à l'écran, le même mécanisme que le clignement
     id: 'somnolent',
     gaze: { yaw: 6, pitch: -9, roll: -3 },
     split: 16,
     eyes: pair(0.2, 0.42, 0, 0.42),
+  },
+  /* ---------------------------------------------- familles de ClaudeAnimationBase */
+  {
+    // Le relâchement : les paupières retombent et la tête se pose. C'est le
+    // soulagement sans la joie — pas d'arc, juste un relâchement des paupières.
+    id: 'reconforte',
+    gaze: { yaw: 5, pitch: 2, roll: -4 },
+    split: 16,
+    eyes: pair(0.2, 0.4, 6, 0.55),
+  },
+  {
+    // Les hauts convergent doucement et la tête penche : le tendre. Faute de
+    // pouvoir dessiner un cœur (deux gélules, pas de pupille), c'est la pose
+    // qui porte l'affection.
+    id: 'amoureux',
+    gaze: { yaw: 7, pitch: 12, roll: -10 },
+    split: 16.5,
+    eyes: pair(0.26, 0.2, 18),
+  },
+  {
+    // Un œil plissé, l'autre ouvert, tête penchée : la malice sans le soupçon.
+    id: 'espiegle',
+    gaze: { yaw: 12, pitch: 4, roll: -9 },
+    split: 15.5,
+    eyes: [eye(0.22, 0.4, -6), eye(0.2, 0.16, 10)],
+  },
+  {
+    // Fentes relevées d'un côté, regard en coin : le satisfait qui sait.
+    id: 'sournois',
+    gaze: { yaw: -14, pitch: 8, roll: 5 },
+    split: 15,
+    eyes: pair(0.28, 0.14, 4),
+  },
+  {
+    // Fentes parfaitement plates, regard droit : rien ne trahit l'humeur,
+    // tout est calculé. L'axe `roll` à zéro achève le contraste avec `blase`,
+    // qui part sur le côté.
+    id: 'impassible',
+    gaze: { yaw: -2, pitch: 1, roll: 0 },
+    split: 16,
+    eyes: pair(0.3, 0.1),
+  },
+  {
+    // Convergence forte mais paupières hautes : la détermination, sans la
+    // rougeur de la colère.
+    id: 'determine',
+    gaze: { yaw: 4, pitch: 12, roll: 0 },
+    split: 15.5,
+    eyes: pair(0.3, 0.24, 24),
+  },
+  {
+    // Même convergence poussée plus loin, et des yeux plus hauts que `colere` :
+    // l'emportement.
+    id: 'furieux',
+    gaze: { yaw: 1, pitch: 14, roll: 0 },
+    split: 16.5,
+    eyes: pair(0.36, 0.2, 36),
+  },
+  {
+    // Un œil s'est fermé, l'autre est resté ouvert, la tête s'est détournée :
+    // le dégoût. C'est l'asymétrie de la fermeture qui fait le dégoût plutôt
+    // que la colère.
+    id: 'ecoeure',
+    gaze: { yaw: -22, pitch: 8, roll: -12 },
+    split: 15,
+    eyes: [eye(0.3, 0.12, 20), eye(0.22, 0.4, -10)],
+  },
+  {
+    // La panique : les deux yeux n'ont pas la même taille. La dissymétrie est
+    // ici une loi du genre, comme l'affolement l'est de la peur.
+    id: 'affole',
+    gaze: { yaw: 4, pitch: -6, roll: -6 },
+    split: 21,
+    eyes: [eye(0.42, 0.58, 4), eye(0.34, 0.5, -6)],
+  },
+  {
+    // Le regard monte vers la gauche, un œil légèrement plus fermé que l'autre :
+    // on voit la pensée en train de se faire.
+    id: 'pensif',
+    gaze: { yaw: -16, pitch: 12, roll: 6 },
+    split: 15,
+    eyes: [eye(0.2, 0.4, -6), eye(0.16, 0.34, 4)],
+  },
+  {
+    // L'ampoule : les yeux s'ouvrent grand, vers le haut. Le seul état où les
+    // deux yeux sont à la fois larges et hauts.
+    id: 'idee',
+    gaze: { yaw: 8, pitch: 16, roll: -6 },
+    split: 18,
+    eyes: pair(0.4, 0.5),
+  },
+  {
+    // Yeux bas et petits, tête qui penche : la gêne.
+    id: 'gene',
+    gaze: { yaw: -18, pitch: -12, roll: 8 },
+    split: 14,
+    eyes: pair(0.16, 0.26, -8),
+  },
+  {
+    // Fentes basses, regard qui fuit sur le côté : l'ennui, plus éteint que
+    // `blase` qui, lui, jauge encore.
+    id: 'ennuye',
+    gaze: { yaw: -10, pitch: -6, roll: -3 },
+    split: 15.5,
+    eyes: pair(0.28, 0.1),
+  },
+  {
+    // Les hauts divergent fort et les paupières tombent : les larmes retenues.
+    id: 'abattu',
+    gaze: { yaw: 2, pitch: -18, roll: 3 },
+    split: 15,
+    eyes: pair(0.2, 0.3, -34, 0.75),
   },
 ];
 

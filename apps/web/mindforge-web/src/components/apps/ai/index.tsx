@@ -130,7 +130,7 @@ export default function AiAssistant() {
           /* 请求层已提示加载失败。 */
         }
       }
-      avatar.play({ expression: 'worried', intensity: 0.7, durationMs: 2400, returnTo: 'idle' });
+      avatar.play({ expression: 'error', intensity: 0.7, durationMs: 2400, returnTo: 'idle' });
     } finally {
       setResponding(false);
     }

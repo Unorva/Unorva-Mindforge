@@ -52,6 +52,15 @@ const STATE_LABELS: Record<StateId, string> = {
   orbit: '轨道',
   burst: '爆散',
   comet: '彗星',
+  nod: '点头',
+  deny: '摇头',
+  hop: '雀跃',
+  laugh: '大笑',
+  stomp: '跺脚',
+  sweat: '紧张',
+  loading: '加载中',
+  celebrate: '庆祝',
+  doze: '打盹',
   swirl: '漩涡',
 };
 
@@ -72,6 +81,20 @@ const EXPRESSION_LABELS: Record<string, string> = {
   timide: '羞怯',
   blase: '无趣',
   somnolent: '困倦',
+  reconforte: '释然',
+  amoureux: '喜爱',
+  espiegle: '调皮',
+  sournois: '自得',
+  impassible: '淡定',
+  determine: '坚定',
+  furieux: '暴怒',
+  ecoeure: '嫌恶',
+  affole: '惊慌',
+  pensif: '沉思',
+  idee: '灵感',
+  gene: '难为情',
+  ennuye: '无聊',
+  abattu: '消沉',
 };
 
 const SHAPE_LABELS: Record<string, string> = {
@@ -274,7 +297,9 @@ export default function AiAvatarPage() {
           <h1 className="text-lg font-semibold tracking-tight">
             AI 动画组件 <span className="ml-2 text-sm font-normal text-[#6e7382]">bloub</span>
           </h1>
-          <p className="text-xs text-[#6e7382]">14 种动画状态 · 16 种静止表情 · SVG 轮廓逐帧变形</p>
+          <p className="text-xs text-[#6e7382]">
+            {SEQUENCE.length} 种动画状态 · {EXPRESSIONS.length} 种静止表情 · SVG 轮廓逐帧变形
+          </p>
         </div>
         <a
           className="inline-flex items-center gap-1 text-xs text-[#6e7382] underline-offset-4 hover:underline"
@@ -398,7 +423,7 @@ export default function AiAvatarPage() {
           ) : (
             <div className="space-y-6">
               <section>
-                <h2 className="mb-3 text-sm font-semibold">形状 · 8 种</h2>
+                <h2 className="mb-3 text-sm font-semibold">形状 · {SHAPES.length} 种</h2>
                 <div className="grid grid-cols-4 gap-2">
                   {SHAPES.map((item) => (
                     <button
@@ -416,7 +441,7 @@ export default function AiAvatarPage() {
                 </div>
               </section>
               <section>
-                <h2 className="mb-3 text-sm font-semibold">颜色 · 12 种</h2>
+                <h2 className="mb-3 text-sm font-semibold">颜色 · {COLORS.length} 种</h2>
                 <div className="grid grid-cols-6 gap-2">
                   {COLORS.map((item) => (
                     <button
@@ -437,7 +462,9 @@ export default function AiAvatarPage() {
                 </div>
               </section>
               <section>
-                <h2 className="mb-3 text-sm font-semibold">表情 · 16 种</h2>
+                <h2 className="mb-3 text-sm font-semibold">
+                  表情 · {EXPRESSIONS.length} 种
+                </h2>
                 <div className="grid grid-cols-4 gap-2">
                   {EXPRESSIONS.map((item) => (
                     <button
