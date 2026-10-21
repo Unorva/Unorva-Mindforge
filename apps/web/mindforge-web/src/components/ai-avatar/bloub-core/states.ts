@@ -130,6 +130,23 @@ const barItalic = (pose: Partial<Silhouette> = {}): Silhouette => ({
  */
 const TEAR = polyPath(hullOfCircles(0, 0, 0.118, 0, 0.172, 0.012));
 
+const LOVE_HEART =
+  'M0 0.115 C-0.035 0.075 -0.13 0.015 -0.13 -0.045 C-0.13 -0.13 -0.035 -0.15 0 -0.075 C0.035 -0.15 0.13 -0.13 0.13 -0.045 C0.13 0.015 0.035 0.075 0 0.115 Z';
+
+/** Four curved corners form the comic anger mark, with an open cross at its centre. */
+const ANGER_MARK =
+  'M-0.19 -0.06 H-0.11 Q-0.06 -0.06 -0.06 -0.11 V-0.19 H-0.01 V-0.11 Q-0.01 -0.01 -0.11 -0.01 H-0.19 Z ' +
+  'M0.19 -0.06 H0.11 Q0.06 -0.06 0.06 -0.11 V-0.19 H0.01 V-0.11 Q0.01 -0.01 0.11 -0.01 H0.19 Z ' +
+  'M-0.19 0.06 H-0.11 Q-0.06 0.06 -0.06 0.11 V0.19 H-0.01 V0.11 Q-0.01 0.01 -0.11 0.01 H-0.19 Z ' +
+  'M0.19 0.06 H0.11 Q0.06 0.06 0.06 0.11 V0.19 H0.01 V0.11 Q0.01 0.01 0.11 0.01 H0.19 Z';
+
+const TEAR_STREAK =
+  'M-0.045 0 Q-0.055 0.13 -0.043 0.27 Q-0.035 0.4 0 0.4 Q0.04 0.4 0.045 0.27 Q0.055 0.13 0.045 0 Z';
+const TEAR_HIGHLIGHT =
+  'M-0.014 0 Q-0.022 0.13 -0.014 0.28 Q-0.008 0.35 0.002 0.35 Q0.012 0.35 0.014 0.28 Q0.02 0.13 0.014 0 Z';
+const TEAR_DROP =
+  'M0 -0.075 C-0.02 -0.035 -0.052 0 -0.052 0.035 A0.052 0.052 0 1 0 0.052 0.035 C0.052 0 0.02 -0.035 0 -0.075 Z';
+
 /**
  * Le triangle ne tourne pas sur lui-meme : son centre decrit un cercle de
  * rayon 0.213 autour de l'origine (mesure). C'est ce decalage qui donne
@@ -167,18 +184,13 @@ export type StateId =
    * envoie, le modele repond, une erreur tombe) la ou les etats releves sur la
    * video decrivent surtout des formes. Le vocabulaire est emprunte aux
    * "emotes" et aux "moves" de ClaudeAnimationBase (JohnHeibel) : hochement,
-   * refus, saut, rire, coup au sol, goutte de tension, chargement, fete et
-   * assoupissement.
+   * refus, puis trois emotions accompagnees de signes animes.
    */
   | 'nod'
   | 'deny'
-  | 'hop'
-  | 'laugh'
-  | 'stomp'
-  | 'sweat'
-  | 'loading'
-  | 'celebrate'
-  | 'doze'
+  | 'love'
+  | 'angry'
+  | 'sad'
   /** transition d'interface, pas une animation du catalogue : hors `SEQUENCE` */
   | 'swirl';
 
@@ -590,7 +602,7 @@ export const STATES: StateDef[] = [
 
   /* --------------------------------------------------- actions de la couche IA */
   /**
-   * Les neuf etats qui suivent ne sont pas releves sur la video : ils sont
+   * Les cinq etats qui suivent ne sont pas releves sur la video : ils sont
    * CHOISIS, comme `swirl`, mais ils appartiennent au catalogue (donc a la
    * palette et a la sequence). Trois regles leur sont communes :
    *
@@ -600,8 +612,8 @@ export const STATES: StateDef[] = [
    * - `baseFace: false` : l'action porte son propre visage, sinon chaque
    *   combinaison (forme, etat, expression) ferait une entree de plus dans la
    *   table de `eyefit.ts`, payee a l'import pour rien ;
-   * - des courbes amorties : la derniere fraction du bloc ramene la pose au
-   *   repos, sans quoi la reprise sur `idle` se ferait en plein mouvement.
+   * - les hochements s'amortissent ; les emotions bouclent pour rester lisibles
+   *   quelle que soit la duree choisie dans l'editeur.
    */
   {
     /** Acquiescement : deux hochements de tete, le corps suit. */
@@ -647,116 +659,72 @@ export const STATES: StateDef[] = [
   },
 
   {
-    /**
-     * Saut de joie. Anticipation (ecrasement) puis extension en l'air puis
-     * reception : c'est la regle du squash and stretch, ecrite dans une seule
-     * fonction pure du temps.
-     */
-    id: 'hop',
-    duration: 1.3,
+    /** Love: staggered pink hearts continuously rise above the head. */
+    id: 'love',
+    duration: 2.8,
+    minDuration: 1.2,
+    morph: 0.4,
+    blinkIn: true,
+    baseFace: false,
+    baseBody: true,
+    pose: (t) => {
+      const sway = Math.sin((t / 2.8) * TAU);
+      const dots = [0, 1, 2].map((index) => {
+        const phase = (((t / 2.1 + index / 3) % 1) + 1) % 1;
+        return {
+          x: -0.3 + index * 0.3 + Math.sin(phase * TAU + index) * 0.035,
+          y: -1.03 - phase * 0.34,
+          r: 0.13,
+          d: LOVE_HEART,
+          color: ['#f472b6', '#ec4899', '#fb7185'][index],
+          rot: Math.sin(phase * TAU + index) * 12,
+          opacity: Math.sin(phase * Math.PI) * 0.95,
+        };
+      });
+      return base({
+        offY: sway * 0.018,
+        sil: circle(1, { sy: 1 + sway * 0.012 }),
+        gaze: { yaw: 5, pitch: 9, roll: sway * 3 - 3 },
+        split: 17,
+        eyes: [
+          { w: 0.27, h: 0.17, tilt: 14, open: 1 },
+          { w: 0.27, h: 0.17, tilt: -14, open: 1 },
+        ],
+        dots,
+      });
+    },
+  },
+
+  {
+    /** Anger: a red comic vein mark accompanies a gently puffed-up body. */
+    id: 'angry',
+    duration: 2.4,
     minDuration: 1,
     morph: 0.35,
     blinkIn: true,
     baseFace: false,
     baseBody: true,
     pose: (t) => {
-      const p = clamp(t / 0.9);
-      const jump = Math.sin(p * Math.PI);
-      const crouch = Math.sin(clamp(t / 0.18) * Math.PI) * 0.1;
-      return base({
-        offY: -0.26 * jump + 0.05 * crouch,
-        sil: circle(1, {
-          sx: 1 + 0.1 * jump - 0.06 * crouch,
-          sy: 1 - 0.1 * jump + 0.09 * crouch,
-        }),
-        gaze: { yaw: 5, pitch: 12 + 6 * jump, roll: -6 },
-        eyes: [
-          { w: 0.27, h: 0.17, tilt: 14, open: 1 },
-          { w: 0.27, h: 0.17, tilt: -14, open: 1 },
-        ],
-      });
-    },
-  },
-
-  {
-    /** Rire : secousses rapides du corps, amorties en fin de bloc. */
-    id: 'laugh',
-    duration: 1.8,
-    minDuration: 1.2,
-    morph: 0.3,
-    blinkIn: true,
-    baseFace: false,
-    baseBody: true,
-    pose: (t) => {
-      const fade = 1 - clamp((t - 1.5) / 0.3);
-      const shake = Math.sin(t * TAU * 4.5) * fade;
-      return base({
-        offX: shake * 0.025,
-        offY: -0.02 + Math.abs(shake) * 0.03,
-        sil: circle(1, { sx: 1 - shake * 0.015, sy: 1 + shake * 0.03 }),
-        gaze: { yaw: 4, pitch: 14, roll: shake * 4 },
-        eyes: [
-          { w: 0.34, h: 0.13, tilt: 20, open: 1 },
-          { w: 0.34, h: 0.13, tilt: -20, open: 1 },
-        ],
-      });
-    },
-  },
-
-  {
-    /** Coup au sol : trois impacts secs, ecrasement bref puis retour. */
-    id: 'stomp',
-    duration: 1.4,
-    minDuration: 1.1,
-    morph: 0.3,
-    blinkIn: true,
-    baseFace: false,
-    baseBody: true,
-    pose: (t) => {
-      // la puissance 8 rend le coup sec : la pose est au repos presque tout
-      // le temps et l'ecrasement ne dure que quelques images
-      const hit = Math.abs(Math.sin(clamp(t / 1.05) * TAU * 3)) ** 8;
-      return base({
-        offY: 0.035 * hit,
-        sil: circle(1, { sx: 1 + 0.06 * hit, sy: 1 - 0.09 * hit }),
-        gaze: { yaw: 3, pitch: 8, roll: 0 },
-        eyes: [
-          { w: 0.32, h: 0.16, tilt: 26, open: 1 },
-          { w: 0.32, h: 0.16, tilt: -26, open: 1 },
-        ],
-      });
-    },
-  },
-
-  {
-    /** Tension : une goutte coule sur le flanc, le corps micro-tremble. */
-    id: 'sweat',
-    duration: 1.8,
-    minDuration: 1.4,
-    morph: 0.35,
-    blinkIn: true,
-    baseFace: false,
-    baseBody: true,
-    pose: (t) => {
-      const slide = clamp(t / 1.15);
-      const tremble = Math.sin(t * TAU * 11) * 0.004;
-      const fade = clamp(t / 0.15) * clamp((1.7 - t) / 0.3);
+      const puff = (Math.sin((t / 1.2) * TAU) + 1) / 2;
+      const tremble = Math.sin(t * TAU * 3) * 0.005;
       return base({
         offX: tremble,
-        gaze: { yaw: 9, pitch: 3, roll: -8 },
+        sil: circle(1, { sx: 1.015 + puff * 0.025, sy: 1 - puff * 0.012 }),
+        gaze: { yaw: 3, pitch: 7, roll: tremble * 80 },
+        split: 17,
         eyes: [
-          { w: 0.3, h: 0.46, tilt: 4, open: 1 },
-          { w: 0.26, h: 0.42, tilt: -6, open: 1 },
+          { w: 0.34, h: 0.15, tilt: 30, open: 1 },
+          { w: 0.34, h: 0.15, tilt: -30, open: 1 },
         ],
         dots: [
           {
-            x: 0.82 - slide * 0.06,
-            y: -0.34 + slide * 1.0,
-            r: 0.115,
-            d: TEAR,
-            rot: 0,
-            depth: 1,
-            opacity: fade,
+            x: 0.26,
+            y: -1.23 - puff * 0.015,
+            r: 0.19,
+            d: ANGER_MARK,
+            color: '#ef4444',
+            rot: Math.sin(t * TAU * 0.7) * 4,
+            opacity: 0.88 + puff * 0.12,
           },
         ],
       });
@@ -764,95 +732,56 @@ export const STATES: StateDef[] = [
   },
 
   {
-    /** Chargement : trois points tournent autour de la boule, facon attente. */
-    id: 'loading',
-    duration: 2,
+    /** Sadness: blue streaks stay under both eyes as fresh tears fall. */
+    id: 'sad',
+    duration: 3,
     minDuration: 1.2,
-    morph: 0.35,
-    blinkIn: true,
-    baseFace: false,
-    baseBody: true,
-    pose: (t) => {
-      // l'ellipse est vue par la tranche (0.62). Le point qui passe derriere
-      // n'est pas composite derriere la boule — le rendu ne trie pas les points
-      // un par un — il disparait parce qu'il prend la couleur du corps : meme
-      // encre sur meme encre, la lecture est la meme.
-      const orbit = t * 2.2;
-      const dots = [0, 1, 2].map((i) => {
-        const a = orbit + (i * TAU) / 3;
-        return {
-          x: Math.cos(a) * 1.18,
-          y: Math.sin(a) * 0.62,
-          r: 0.055,
-          opacity: 0.25 + 0.75 * clamp((Math.sin(a) + 1) / 2),
-        };
-      });
-      return base({
-        gaze: { yaw: 4, pitch: 6, roll: -4 },
-        eyes: pair(0.2, 0.4),
-        dots,
-      });
-    },
-  },
-
-  {
-    /** Fete : un saut et quatre anneaux, le vocabulaire d'`orbit` en plus court. */
-    id: 'celebrate',
-    duration: 2.4,
-    minDuration: 2,
     morph: 0.4,
-    blinkIn: true,
-    baseFace: false,
-    baseBody: true,
-    pose: (t) => {
-      const jump = Math.sin(clamp(t / 1.5) * Math.PI);
-      const fade = clamp((t - 0.1) / 0.25) * clamp((2.2 - t) / 0.4);
-      return base({
-        offY: -0.24 * jump,
-        sil: circle(1, { sx: 1 + 0.06 * jump, sy: 1 - 0.06 * jump }),
-        gaze: { yaw: 6, pitch: 16, roll: -6 },
-        eyes: [
-          { w: 0.28, h: 0.17, tilt: 16, open: 1 },
-          { w: 0.28, h: 0.17, tilt: -16, open: 1 },
-        ],
-        // les quatre premiers anneaux seulement : la moitie suffit a lire la
-        // fete et c'est autant d'arcs en moins a rasteriser par image
-        arcs: RINGS.slice(0, 4).map((seed, i) => ({
-          id: `ce${i}`,
-          seed,
-          t,
-          opacity: fade * clamp((t - i * 0.1) / 0.25),
-        })),
-      });
-    },
-  },
-
-  {
-    /** Assoupissement : trois bulles montent, les paupieres tombent. */
-    id: 'doze',
-    duration: 2.8,
-    morph: 0.45,
     blinkIn: false,
     baseFace: false,
     baseBody: true,
     pose: (t) => {
-      const breath = Math.sin((t / 2.8) * TAU);
-      const dots = [0, 1, 2].map((i) => {
-        const ph = (((t / 2.4 + i / 3) % 1) + 1) % 1;
-        return {
-          x: 0.55 + ph * 0.5,
-          y: -0.25 - ph * 0.85,
-          r: 0.045 + ph * 0.03,
-          opacity: Math.sin(ph * Math.PI) * 0.85,
-        };
+      const breath = Math.sin((t / 3) * TAU);
+      const dots = ([0, 1] as const).flatMap((eye) => {
+        const phase = (((t / 1.5 + eye * 0.45) % 1) + 1) % 1;
+        return [
+          {
+            eye,
+            x: 0,
+            y: 0.12,
+            r: 0.045,
+            d: TEAR_STREAK,
+            color: '#38bdf8',
+            opacity: 0.82 + Math.sin(t * TAU + eye) * 0.07,
+          },
+          {
+            eye,
+            x: -0.012,
+            y: 0.135,
+            r: 0.014,
+            d: TEAR_HIGHLIGHT,
+            color: '#bae6fd',
+            opacity: 0.72,
+          },
+          {
+            eye,
+            x: 0,
+            y: 0.5 + phase * 0.18,
+            r: 0.052,
+            d: TEAR_DROP,
+            color: '#38bdf8',
+            opacity: Math.sin(phase * Math.PI) * 0.95,
+          },
+        ];
       });
       return base({
-        offY: breath * 0.018,
-        sil: circle(1, { sy: 1 + breath * 0.012 }),
-        gaze: { yaw: 8, pitch: -8, roll: -4 },
+        offY: breath * 0.015,
+        sil: circle(1, { sx: 1.01, sy: 0.99 + breath * 0.01 }),
+        gaze: { yaw: 3, pitch: -12, roll: breath * 2 },
+        split: 16,
         eyes: [
-          { w: 0.19, h: 0.38, tilt: 0, open: 0.36 },
-          { w: 0.19, h: 0.38, tilt: 0, open: 0.4 },
+          { w: 0.22, h: 0.38, tilt: -28, open: 1 },
+          { w: 0.22, h: 0.38, tilt: 28, open: 1 },
         ],
         dots,
       });
@@ -886,18 +815,14 @@ export const POSES: Record<StateId, number> = {
   comet: 1.15,
   nod: 0.25,
   deny: 0.2,
-  hop: 0.45,
-  laugh: 0.3,
-  stomp: 0.09,
-  sweat: 0.7,
-  loading: 0.45,
-  celebrate: 0.6,
-  doze: 1.1,
+  love: 0.7,
+  angry: 0.8,
+  sad: 0.8,
 };
 
 /**
  * Ordre de lecture de la sequence par defaut : d'abord les quatorze etats
- * releves sur la video, puis les neuf actions ajoutees pour la couche IA.
+ * releves sur la video, puis les cinq actions ajoutees pour la couche IA.
  *
  * C'est aussi la palette de la vue Animations et la liste blanche de relecture
  * des montages stockes (`cycles.ts`), donc tout etat du catalogue doit y figurer.
@@ -919,11 +844,7 @@ export const SEQUENCE: StateId[] = [
   'comet',
   'nod',
   'deny',
-  'hop',
-  'laugh',
-  'stomp',
-  'sweat',
-  'loading',
-  'celebrate',
-  'doze',
+  'love',
+  'angry',
+  'sad',
 ];

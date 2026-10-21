@@ -495,6 +495,7 @@ export class BotEngine {
       radiusAtAngle(pose.sil.radii, Math.atan2(y, x) - pose.sil.rot);
 
     const eyes: RenderedEye[] = [];
+    const eyeAnchors: ({ x: number; y: number; alpha: number } | undefined)[] = [];
     if (pose.eyeAlpha > 0.01) {
       const poses = eyePoses(gaze, R, pose.split);
       for (let i = 0; i < 2; i++) {
@@ -515,10 +516,14 @@ export class BotEngine {
         // Le clignement s'applique APRES tout ca : c'est un ecrasement vertical
         // a l'ecran, pas le long de l'axe de la gelule.
         const k = blinkScale(Math.min(lid, cfg.open));
+        const x = e.x * fit + (offX + decalage.x) * R;
+        const y = e.y * fit + (offY + decalage.y) * R;
+        const alpha = pose.eyeAlpha * clamp(e.depth / 0.12);
+        eyeAnchors[i] = { x, y, alpha };
         eyes.push({
           d: capsulePath(cfg.w * R, cfg.h * R),
-          matrix: `matrix(${r2(ax)},${r2(ay * k)},${r2(cx2)},${r2(cy2 * k)},${r2(e.x * fit + (offX + decalage.x) * R)},${r2(e.y * fit + (offY + decalage.y) * R)})`,
-          alpha: pose.eyeAlpha * clamp(e.depth / 0.12),
+          matrix: `matrix(${r2(ax)},${r2(ay * k)},${r2(cx2)},${r2(cy2 * k)},${r2(x)},${r2(y)})`,
+          alpha,
         });
       }
     }
@@ -526,7 +531,19 @@ export class BotEngine {
     // --- decor ------------------------------------------------------------
     const dots = pose.dots
       .filter((p) => p.opacity > 0.01 && p.r > 0.0005)
-      .map((p) => ({ ...p, x: (p.x + offX) * R, y: (p.y + offY) * R, r: p.r * R }));
+      .flatMap((p) => {
+        const anchor = p.eye === undefined ? undefined : eyeAnchors[p.eye];
+        if (p.eye !== undefined && !anchor) return [];
+        return [
+          {
+            ...p,
+            x: p.x * R + (anchor?.x ?? offX * R),
+            y: p.y * R + (anchor?.y ?? offY * R),
+            r: p.r * R,
+            opacity: p.opacity * (anchor?.alpha ?? 1),
+          },
+        ];
+      });
 
     // la pastille est posee sur le contour : elle suit donc la forme aussi
     const nFit = pose.notif ? bodyRadius(pose.notif.x, pose.notif.y) : 1;

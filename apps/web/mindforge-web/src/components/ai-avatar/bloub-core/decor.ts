@@ -38,6 +38,8 @@ export interface DotRender {
   y: number;
   r: number;
   opacity: number;
+  /** Offset from this eye's rendered center, in body-radius units (tear trails). */
+  eye?: 0 | 1;
   /** couleur explicite ; par defaut le rendu prend celle du corps */
   color?: string;
   /**

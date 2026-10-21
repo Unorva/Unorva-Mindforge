@@ -17,23 +17,19 @@ type AiAvatarProps = {
  * VISAGE (l'expression). Les deux axes sont separes parce qu'une action peut
  * se jouer sur plusieurs visages, et un visage sur plusieurs actions.
  *
- * Les emotions de joie, de fierte, de tension et de faute sont mappees sur les
- * actions ajoutees au catalogue (`hop`, `celebrate`, `laugh`, `nod`, `sweat`,
- * `stomp`, `deny`) : une reaction d'IA est un evenement bref, pas une humeur
- * d'attente. Les emotions qui restent affichees longtemps — `idle`,
- * `listening`, `focused`, `thinking`, `processing` — gardent un etat tenu ou
- * cyclique.
+ * 喜爱、生气和伤心使用带符号的情绪动作。其余命令沿用静止表情、
+ * 点头、摇头和思考等现有动作，保持已接入的 AI 命令兼容。
  */
 const APPEARANCE: Record<AiAvatarExpression, { state: StateId; face: ExpressionId }> = {
   idle: { state: 'idle', face: 'neutre' },
   neutral: { state: 'idle', face: 'neutre' },
   happy: { state: 'idle', face: 'heureux' },
-  joyful: { state: 'laugh', face: 'hilare' },
-  excited: { state: 'hop', face: 'excite' },
+  joyful: { state: 'idle', face: 'hilare' },
+  excited: { state: 'idle', face: 'excite' },
   playful: { state: 'idle', face: 'espiegle' },
-  proud: { state: 'celebrate', face: 'fier' },
+  proud: { state: 'idle', face: 'fier' },
   relieved: { state: 'nod', face: 'reconforte' },
-  affectionate: { state: 'idle', face: 'amoureux' },
+  affectionate: { state: 'love', face: 'amoureux' },
   shy: { state: 'idle', face: 'timide' },
   thinking: { state: 'thinking', face: 'pensif' },
   focused: { state: 'idle', face: 'attentif' },
@@ -42,20 +38,20 @@ const APPEARANCE: Record<AiAvatarExpression, { state: StateId; face: ExpressionI
   skeptical: { state: 'idle', face: 'sournois' },
   inspired: { state: 'idle', face: 'idee' },
   surprised: { state: 'wide', face: 'surpris' },
-  sad: { state: 'idle', face: 'abattu' },
+  sad: { state: 'sad', face: 'triste' },
   worried: { state: 'idle', face: 'effraye' },
-  nervous: { state: 'sweat', face: 'affole' },
+  nervous: { state: 'idle', face: 'affole' },
   disappointed: { state: 'idle', face: 'ennuye' },
-  frustrated: { state: 'stomp', face: 'blase' },
-  angry: { state: 'idle', face: 'furieux' },
+  frustrated: { state: 'idle', face: 'blase' },
+  angry: { state: 'angry', face: 'furieux' },
   embarrassed: { state: 'idle', face: 'gene' },
   tired: { state: 'idle', face: 'somnolent' },
-  sleepy: { state: 'doze', face: 'somnolent' },
+  sleepy: { state: 'sleep', face: 'somnolent' },
   listening: { state: 'idle', face: 'attentif' },
   speaking: { state: 'idle', face: 'neutre' },
-  processing: { state: 'loading', face: 'attentif' },
+  processing: { state: 'thinking', face: 'attentif' },
   searching: { state: 'orbit', face: 'curieux' },
-  success: { state: 'celebrate', face: 'heureux' },
+  success: { state: 'nod', face: 'heureux' },
   warning: { state: 'alert', face: 'affole' },
   error: { state: 'deny', face: 'confus' },
   offline: { state: 'sleep', face: 'somnolent' },

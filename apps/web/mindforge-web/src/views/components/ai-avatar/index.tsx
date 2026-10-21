@@ -54,13 +54,9 @@ const STATE_LABELS: Record<StateId, string> = {
   comet: '彗星',
   nod: '点头',
   deny: '摇头',
-  hop: '雀跃',
-  laugh: '大笑',
-  stomp: '跺脚',
-  sweat: '紧张',
-  loading: '加载中',
-  celebrate: '庆祝',
-  doze: '打盹',
+  love: '喜爱',
+  angry: '生气',
+  sad: '伤心',
   swirl: '漩涡',
 };
 
@@ -462,9 +458,7 @@ export default function AiAvatarPage() {
                 </div>
               </section>
               <section>
-                <h2 className="mb-3 text-sm font-semibold">
-                  表情 · {EXPRESSIONS.length} 种
-                </h2>
+                <h2 className="mb-3 text-sm font-semibold">表情 · {EXPRESSIONS.length} 种</h2>
                 <div className="grid grid-cols-4 gap-2">
                   {EXPRESSIONS.map((item) => (
                     <button
