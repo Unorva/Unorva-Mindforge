@@ -3,14 +3,14 @@ import { cn } from '@/lib/utils';
 import { MAIL_PROVIDER_LOGOS } from './mail-provider-logos';
 
 const SIZES = {
-  xs: { box: 'size-5 rounded', glyph: 'size-3', text: 'text-[9px]' },
-  sm: { box: 'size-6 rounded-md', glyph: 'size-3.5', text: 'text-[9px]' },
-  default: { box: 'size-8 rounded-lg', glyph: 'size-4', text: 'text-[10px]' },
-  lg: { box: 'size-10 rounded-xl', glyph: 'size-5', text: 'text-xs' },
+  xs: { box: 'size-5 rounded', image: 'size-4', glyph: 'size-3' },
+  sm: { box: 'size-6 rounded-md', image: 'size-5', glyph: 'size-3.5' },
+  default: { box: 'size-8 rounded-lg', image: 'size-6', glyph: 'size-4' },
+  lg: { box: 'size-10 rounded-xl', image: 'size-8', glyph: 'size-5' },
 } as const;
 
 /**
- * 邮箱服务商 Logo：品牌色底块 + 品牌图形（或 163/126 文字标识）。
+ * 邮箱服务商 Logo：保留官网标签页图标的原始颜色与透明背景。
  * 未知服务商回退为中性信封图标。
  */
 export function MailProviderLogo({
@@ -31,18 +31,12 @@ export function MailProviderLogo({
       className={cn(
         'flex shrink-0 items-center justify-center',
         spec.box,
-        logo?.tileClass ?? 'bg-muted text-muted-foreground',
+        !logo?.src && 'bg-muted text-muted-foreground',
         className,
       )}
     >
-      {logo?.body ? (
-        <svg
-          viewBox={logo.viewBox ?? '0 0 24 24'}
-          className={spec.glyph}
-          dangerouslySetInnerHTML={{ __html: logo.body }}
-        />
-      ) : logo?.text ? (
-        <span className={cn('font-semibold tracking-tight', spec.text)}>{logo.text}</span>
+      {logo?.src ? (
+        <img src={logo.src} alt="" draggable={false} className={cn('object-contain', spec.image)} />
       ) : (
         <Mail className={spec.glyph} />
       )}
