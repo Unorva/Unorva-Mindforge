@@ -96,6 +96,25 @@ class CompatibleAiClientTest {
     }
 
     @Test
+    void connectionProbeAcceptsGenuineReasoningButChatStillRequiresAnswerText() {
+        server.createContext(
+                "/v1/chat/completions",
+                exchange -> {
+                    exchange.getRequestBody().readAllBytes();
+                    byte[] response =
+                            "{\"choices\":[{\"message\":{\"content\":\"\",\"reasoning_content\":\"让我检查连接\"}}]}"
+                                    .getBytes(StandardCharsets.UTF_8);
+                    exchange.sendResponseHeaders(200, response.length);
+                    exchange.getResponseBody().write(response);
+                    exchange.close();
+                });
+        ProviderCredentialBO credential = new ProviderCredentialBO(baseUrl, "test-key");
+        List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", "OK"));
+        assertEquals("让我检查连接", client().complete(credential, settings(), messages, true));
+        assertThrows(BusinessException.class, () -> client().complete(credential, settings(), messages, false));
+    }
+
+    @Test
     void rejectsOversizedBodyBeforeReturningAReply() {
         server.createContext(
                 "/v1/chat/completions",

@@ -1,8 +1,10 @@
 package com.unorva.mindforge.module.business.ai.manager;
 
 import com.unorva.mindforge.module.business.ai.client.CompatibleAiClient;
+import com.unorva.mindforge.module.business.ai.domain.bo.AiStreamEventBO;
 import com.unorva.mindforge.module.business.ai.domain.bo.ProviderCredentialBO;
 import com.unorva.mindforge.module.business.ai.domain.vo.AiSettingsVO;
+import com.unorva.mindforge.module.business.ai.support.AiStreamControl;
 
 import lombok.RequiredArgsConstructor;
 
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /** Provider transport capability; caller controls when persistence begins. */
 @Component
@@ -20,5 +23,14 @@ public class AiProviderManager {
     public String complete(
             ProviderCredentialBO credential, AiSettingsVO settings, List<Map<String, String>> context, boolean test) {
         return client.complete(credential, settings, context, test);
+    }
+
+    public String stream(
+            ProviderCredentialBO credential,
+            AiSettingsVO settings,
+            List<Map<String, String>> context,
+            Consumer<AiStreamEventBO> events,
+            AiStreamControl control) {
+        return client.stream(credential, settings, context, events, control);
     }
 }

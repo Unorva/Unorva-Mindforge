@@ -1,19 +1,45 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { ArrowUp, CalendarClock, History, MessageCircle, Plus, Puzzle, Trash2 } from 'lucide-react';
-import { AiAvatar, useAiAvatarController } from '@/components/ai-avatar';
+import {
+  ArrowUp,
+  Brain,
+  CalendarClock,
+  ChevronDown,
+  History,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Puzzle,
+  Square,
+  Trash2,
+  Wrench,
+} from 'lucide-react';
+import { AiAvatar } from '@/components/ai-avatar';
 import {
   createConversation,
   deleteConversation,
   getAiConfig,
   getConversations,
   getMessages,
-  sendMessage,
+  streamMessage,
+  type AiActivity,
   type AiConfig,
   type ChatMessage,
   type Conversation,
 } from '@/api/ai/ai';
 import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace';
 import { Button } from '@/components/ui/button';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker';
+import { Message, MessageContent } from '@/components/ui/message';
+import {
+  MessageScrollerProvider,
+  MessageScroller,
+  MessageScrollerViewport,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerButton,
+} from '@/components/ui/message-scroller';
 import {
   Command,
   CommandDialog,
@@ -29,11 +55,66 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from '@/components/ui/input-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import AutomationDialog from './automation-dialog';
 import MarketDialog from './market-dialog';
+import { AssistantContent } from './assistant-content';
+
+interface ReplyDetailsData {
+  reasoning: string;
+  activities: AiActivity[];
+}
+
+interface PendingReply extends ReplyDetailsData {
+  prompt: string;
+  content: string;
+  status: 'running' | 'stopped' | 'error';
+}
+
+function ReplyDetails({
+  reasoning,
+  activities,
+  running = false,
+}: ReplyDetailsData & { running?: boolean }) {
+  const tools = activities.filter((activity) => activity.type === 'tool');
+  return (
+    <div className="space-y-2">
+      {reasoning && (
+        <Collapsible>
+          <CollapsibleTrigger className="group flex cursor-pointer items-center gap-2 text-left">
+            <Marker render={<span />}>
+              <MarkerIcon>{running ? <Loader2 className="animate-spin" /> : <Brain />}</MarkerIcon>
+              <MarkerContent>{running ? '正在思考' : '思考过程'}</MarkerContent>
+            </Marker>
+            <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 max-h-64 overflow-y-auto border-l-2 pl-4 text-muted-foreground">
+              <AssistantContent content={reasoning} streaming={running} />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+      {tools.map((activity, index) => (
+        <Marker key={`${activity.name ?? 'tool'}-${index}`}>
+          <MarkerIcon>
+            <Wrench />
+          </MarkerIcon>
+          <MarkerContent>
+            {activity.state === 'complete'
+              ? '工具已完成'
+              : activity.state === 'requested'
+                ? '请求调用工具'
+                : '正在调用工具'}
+            {activity.name ? `：${activity.name}` : ''}
+            {activity.detail ? ` · ${activity.detail}` : ''}
+          </MarkerContent>
+        </Marker>
+      ))}
+    </div>
+  );
+}
 
 function conversationTime(value: string) {
   const date = new Date(value);
@@ -42,7 +123,6 @@ function conversationTime(value: string) {
 }
 
 export default function AiAssistant() {
-  const avatar = useAiAvatarController('idle');
   const [config, setConfig] = useState<AiConfig | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -56,8 +136,10 @@ export default function AiAssistant() {
   const [responding, setResponding] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<PendingReply | null>(null);
+  const [replyDetails, setReplyDetails] = useState<Record<number, ReplyDetailsData>>({});
   const requestId = useRef(0);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const streamController = useRef<AbortController | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(async () => {
@@ -78,8 +160,21 @@ export default function AiAssistant() {
     void load();
   }, [load]);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages, responding]);
+    const refresh = () => {
+      void getAiConfig()
+        .then((result) => setConfig(result.data))
+        .catch(() => undefined);
+    };
+    window.addEventListener('mindforge-ai-settings-changed', refresh);
+    return () => window.removeEventListener('mindforge-ai-settings-changed', refresh);
+  }, []);
+  useEffect(
+    () => () => {
+      ++requestId.current;
+      streamController.current?.abort();
+    },
+    [],
+  );
 
   const selectConversation = async (id: number) => {
     if (responding) return;
@@ -88,6 +183,8 @@ export default function AiAssistant() {
     setHistoryOpen(false);
     setMessageLoading(true);
     setMessages([]);
+    setPending(null);
+    setError('');
     try {
       const result = await getMessages(id);
       if (currentRequest === requestId.current) setMessages(result.data);
@@ -101,38 +198,108 @@ export default function AiAssistant() {
   const send = async () => {
     const submittedComposer = composer;
     const content = submittedComposer.trim();
-    if (!content || responding || !config?.configured || messageLoading) return;
+    if (!content || streamController.current || responding || !config?.configured || messageLoading)
+      return;
+    const controller = new AbortController();
+    streamController.current = controller;
+    const currentRequest = ++requestId.current;
+    const draft: PendingReply = {
+      prompt: content,
+      content: '',
+      reasoning: '',
+      activities: [],
+      status: 'running',
+    };
     setResponding(true);
     setError('');
-    avatar.play({ expression: 'thinking', intensity: 0.85 });
+    setPending({ ...draft });
     let conversationId = activeId;
     try {
       if (conversationId === null) {
-        const created = await createConversation(content.slice(0, 100));
+        const created = await createConversation(content.slice(0, 100), controller.signal);
+        if (currentRequest !== requestId.current || controller.signal.aborted) {
+          throw new DOMException('已停止生成', 'AbortError');
+        }
         conversationId = created.data.id;
         setActiveId(conversationId);
         setConversations((items) => [created.data, ...items]);
       }
-      const result = await sendMessage(conversationId, content);
-      setMessages((items) => [...items, result.data.userMessage, result.data.assistantMessage]);
+      if (controller.signal.aborted) throw new DOMException('已停止生成', 'AbortError');
+      const updatePending = () => {
+        if (currentRequest === requestId.current) setPending({ ...draft });
+      };
+      const result = await streamMessage(
+        conversationId,
+        content,
+        {
+          onContent(delta) {
+            draft.content += delta;
+            updatePending();
+          },
+          onReasoning(delta) {
+            draft.reasoning += delta;
+            updatePending();
+          },
+          onActivity(activity) {
+            const existing = draft.activities.findIndex(
+              (item) => item.type === activity.type && item.name === activity.name,
+            );
+            draft.activities =
+              existing < 0
+                ? [...draft.activities, activity]
+                : draft.activities.map((item, index) => (index === existing ? activity : item));
+            updatePending();
+          },
+        },
+        controller.signal,
+      );
+      if (currentRequest !== requestId.current) return;
+      setMessages((items) => [...items, result.userMessage, result.assistantMessage]);
+      setReplyDetails((items) => ({
+        ...items,
+        [result.assistantMessage.id]: { reasoning: draft.reasoning, activities: draft.activities },
+      }));
+      setPending(null);
       setConversations((items) => [
-        result.data.conversation,
+        result.conversation,
         ...items.filter((item) => item.id !== conversationId),
       ]);
       setComposer((current) => (current === submittedComposer ? '' : current));
-      avatar.play({ expression: 'success', intensity: 0.8, durationMs: 2400, returnTo: 'idle' });
-    } catch {
-      setError('回复生成失败，输入已保留，可重试。');
+    } catch (cause) {
+      if (currentRequest !== requestId.current) return;
+      const stopped = controller.signal.aborted;
+      if (streamController.current === controller) streamController.current = null;
+      setResponding(false);
+      setPending({ ...draft, status: stopped ? 'stopped' : 'error' });
+      setError(
+        stopped
+          ? '已停止生成，部分回复未保存。输入已保留，可重新发送。'
+          : `${cause instanceof Error ? cause.message : '回复生成失败。'} 输入已保留，可重试。`,
+      );
       if (conversationId !== null) {
         try {
-          setMessages((await getMessages(conversationId)).data);
+          const recovered = (await getMessages(conversationId)).data;
+          if (currentRequest !== requestId.current) return;
+          setMessages(recovered);
+          const userMessage = recovered[recovered.length - 2];
+          const assistantMessage = recovered[recovered.length - 1];
+          if (
+            userMessage?.role === 'user' &&
+            userMessage.content === content &&
+            assistantMessage?.role === 'assistant' &&
+            assistantMessage.id !== messages[messages.length - 1]?.id
+          ) {
+            setPending(null);
+            setComposer((current) => (current === submittedComposer ? '' : current));
+            setError('连接已结束，已恢复服务器保存的完整回复。');
+          }
         } catch {
           /* 请求层已提示加载失败。 */
         }
       }
-      avatar.play({ expression: 'error', intensity: 0.7, durationMs: 2400, returnTo: 'idle' });
     } finally {
-      setResponding(false);
+      if (streamController.current === controller) streamController.current = null;
+      if (currentRequest === requestId.current) setResponding(false);
     }
   };
 
@@ -145,6 +312,7 @@ export default function AiAssistant() {
         ++requestId.current;
         setActiveId(null);
         setMessages([]);
+        setPending(null);
       }
     } catch {
       setError('删除对话失败，请重试。');
@@ -159,7 +327,9 @@ export default function AiAssistant() {
             ? '加载 AI 配置…'
             : config?.configured
               ? `${config.provider} · ${config.model}`
-              : '尚未配置 AI 服务'}
+              : config?.enabled === false
+                ? 'AI 服务已停用'
+                : '尚未配置可用 AI 模型'}
         </span>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <Button
@@ -192,7 +362,8 @@ export default function AiAssistant() {
               setMessages([]);
               setComposer('');
               setMessageLoading(false);
-              avatar.reset();
+              setPending(null);
+              setError('');
             }}
           >
             <Plus />
@@ -223,8 +394,7 @@ export default function AiAssistant() {
       )}
       {!loading && !config?.configured && (
         <p className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-          请点击右上角头像，在头像侧边栏的“账户设置”中配置兼容 OpenAI 的接口地址、模型和 API Key
-          后使用对话。会话历史仍可查看。
+          请在“账户设置 → AI 配置”中保存接口和密钥，并启用至少一个模型后使用对话。
         </p>
       )}
       {error && (
@@ -304,46 +474,98 @@ export default function AiAssistant() {
           </CommandList>
         </Command>
       </CommandDialog>
-      <ScrollArea className="min-h-0 flex-1">
-        {messages.length || responding || messageLoading ? (
-          <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
-            {messageLoading && <p className="text-sm text-muted-foreground">正在加载消息…</p>}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn('flex items-start gap-3', message.role === 'user' && 'justify-end')}
-              >
-                {message.role === 'assistant' && (
-                  <AiAvatar expression="focused" intensity={0.45} size={28} />
+      <MessageScrollerProvider key={activeId ?? 'new'} defaultScrollPosition="end" autoScroll>
+        <MessageScroller className="min-h-0 flex-1">
+          <MessageScrollerViewport aria-label="AI 对话消息">
+            {messages.length || pending || messageLoading ? (
+              <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-5 px-4 py-6">
+                {messageLoading && <p className="text-sm text-muted-foreground">正在加载消息…</p>}
+                {messages.map((message) => (
+                  <MessageScrollerItem
+                    key={message.id}
+                    messageId={String(message.id)}
+                    scrollAnchor={message.role === 'user'}
+                  >
+                    <Message align={message.role === 'user' ? 'end' : 'start'}>
+                      <MessageContent>
+                        {message.role === 'assistant' && replyDetails[message.id] && (
+                          <ReplyDetails {...replyDetails[message.id]} />
+                        )}
+                        <Bubble
+                          variant={message.role === 'user' ? 'default' : 'ghost'}
+                          className={cn(message.role === 'assistant' && 'w-full')}
+                        >
+                          <BubbleContent
+                            className={cn(
+                              message.role === 'user' ? 'whitespace-pre-wrap leading-7' : 'w-full',
+                            )}
+                          >
+                            {message.role === 'user' ? (
+                              message.content
+                            ) : (
+                              <AssistantContent content={message.content} />
+                            )}
+                          </BubbleContent>
+                        </Bubble>
+                      </MessageContent>
+                    </Message>
+                  </MessageScrollerItem>
+                ))}
+                {pending && (
+                  <>
+                    <MessageScrollerItem messageId="pending-user" scrollAnchor>
+                      <Message align="end">
+                        <MessageContent>
+                          <Bubble>
+                            <BubbleContent className="whitespace-pre-wrap leading-7">
+                              {pending.prompt}
+                            </BubbleContent>
+                          </Bubble>
+                        </MessageContent>
+                      </Message>
+                    </MessageScrollerItem>
+                    <MessageScrollerItem messageId="pending-assistant">
+                      <Message>
+                        <MessageContent>
+                          <ReplyDetails
+                            reasoning={pending.reasoning}
+                            activities={pending.activities}
+                            running={responding && !pending.content}
+                          />
+                          {pending.content && (
+                            <AssistantContent content={pending.content} streaming={responding} />
+                          )}
+                          <Marker role="status" aria-live="polite">
+                            <MarkerIcon>
+                              {responding ? <Loader2 className="animate-spin" /> : <Square />}
+                            </MarkerIcon>
+                            <MarkerContent>
+                              {responding
+                                ? pending.content
+                                  ? '正在回复…'
+                                  : pending.reasoning
+                                    ? '正在思考…'
+                                    : '正在连接模型…'
+                                : pending.status === 'stopped'
+                                  ? '生成已停止'
+                                  : '生成中断'}
+                            </MarkerContent>
+                          </Marker>
+                        </MessageContent>
+                      </Message>
+                    </MessageScrollerItem>
+                  </>
                 )}
-                <p
-                  className={cn(
-                    'max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-7',
-                    message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/40',
-                  )}
-                >
-                  {message.content}
-                </p>
-              </div>
-            ))}
-            {responding && (
-              <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
-                <AiAvatar expression={avatar.expression} intensity={avatar.intensity} size={28} />
-                正在思考…
+              </MessageScrollerContent>
+            ) : (
+              <div className="flex min-h-72 items-center justify-center py-12">
+                <AiAvatar expression="idle" intensity={0.4} size="clamp(13rem, 28vw, 18.75rem)" />
               </div>
             )}
-            <div ref={bottomRef} />
-          </div>
-        ) : (
-          <div className="flex min-h-72 items-center justify-center py-12">
-            <AiAvatar
-              expression={avatar.expression}
-              intensity={avatar.intensity}
-              size="clamp(13rem, 28vw, 18.75rem)"
-            />
-          </div>
-        )}
-      </ScrollArea>
+          </MessageScrollerViewport>
+          <MessageScrollerButton aria-label="滚动到最新消息" />
+        </MessageScroller>
+      </MessageScrollerProvider>
       <InputGroup className="mx-auto mb-3 w-full max-w-4xl shrink-0 rounded-3xl bg-card">
         <InputGroupTextarea
           ref={composerRef}
@@ -363,13 +585,13 @@ export default function AiAssistant() {
         <InputGroupAddon align="block-end" className="justify-between">
           <span className="text-xs text-muted-foreground">{composer.length} / 10000</span>
           <InputGroupButton
-            aria-label="发送消息"
-            disabled={!composer.trim() || responding || messageLoading || !config?.configured}
+            aria-label={responding ? '停止生成' : '发送消息'}
+            disabled={!responding && (!composer.trim() || messageLoading || !config?.configured)}
             size="icon-sm"
             variant="default"
-            onClick={() => void send()}
+            onClick={() => (responding ? streamController.current?.abort() : void send())}
           >
-            <ArrowUp />
+            {responding ? <Square /> : <ArrowUp />}
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>

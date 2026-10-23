@@ -6,12 +6,13 @@ import {
   KeyRound,
   Loader2,
   RotateCcw,
+  RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
   Zap,
 } from 'lucide-react';
-import { deleteFetcher, postFetcher } from '@/api/global-fetcher';
+import { deleteFetcher, getFetcher, postFetcher } from '@/api/global-fetcher';
 import { AiProviderIcon } from '@/components/account-settings/ai-provider-icon';
 import {
   AI_PROVIDER_PRESETS,
@@ -73,7 +74,7 @@ import type { AiSettings as AiSettingsData } from '@/types/apps/settings';
 
 const LANGUAGES = ['简体中文', '英语', '日语'];
 const CUSTOM_MODEL_VALUE = '__custom_model__';
-type BusyAction = 'save' | 'save-test' | 'test' | 'clear' | null;
+type BusyAction = 'save' | 'save-test' | 'test' | 'clear' | 'models' | null;
 
 const AI_FEATURES: {
   key: keyof AiSettingsData['features'];
@@ -82,7 +83,11 @@ const AI_FEATURES: {
 }[] = [
   { key: 'smartSummary', title: '智能摘要', description: '为长内容生成摘要。' },
   { key: 'autoTag', title: '自动标签', description: '保存自动标签偏好，自动执行尚未配置。' },
-  { key: 'dailyReviewDraft', title: '每日复盘草稿', description: '可在工作日志中手动生成 AI 总结。' },
+  {
+    key: 'dailyReviewDraft',
+    title: '每日复盘草稿',
+    description: '可在工作日志中手动生成 AI 总结。',
+  },
   { key: 'emailComposeAssist', title: '邮件写作助手', description: '在 AI 助手中撰写邮件正文。' },
 ];
 
@@ -115,6 +120,10 @@ function providerInputId(id: string) {
   return `ai-provider-${id}`;
 }
 
+function normalizedBaseUrl(value?: string) {
+  return (value ?? '').trim().replace(/\/+$/, '');
+}
+
 /**
  * 账户设置中的 AI 配置页签：内置国内主流大模型预设，
  * 选择服务商后只需填写 API Key，接口地址与模型自动带出。
@@ -130,6 +139,7 @@ export default function AiSettings() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [busy, setBusy] = useState<BusyAction>(null);
+  const [catalog, setCatalog] = useState<{ baseUrl: string; models: string[] } | null>(null);
 
   useEffect(() => {
     if (!savedAi) return;
@@ -137,7 +147,9 @@ export default function AiSettings() {
     const nextPreset = findAiProviderPreset(nextPresetId);
     setDraft(savedAi);
     setPresetId(nextPresetId);
-    setCustomModel(nextPresetId === CUSTOM_PROVIDER_ID || !nextPreset?.models.includes(savedAi.model));
+    setCustomModel(
+      nextPresetId === CUSTOM_PROVIDER_ID || !nextPreset?.models.includes(savedAi.model),
+    );
   }, [savedAi]);
 
   if (!draft || !settings) return null;
@@ -145,7 +157,17 @@ export default function AiSettings() {
   const configured = settings.ai.configured;
   const preset = findAiProviderPreset(presetId);
   const isCustomProvider = presetId === CUSTOM_PROVIDER_ID || !preset;
-  const modelOptions = preset?.models ?? [];
+  const enabledModels = draft.enabledModels ?? (draft.model ? [draft.model] : []);
+  const serviceEnabled = draft.enabled !== false;
+  const modelOptions = [
+    ...new Set([
+      ...(catalog && catalog.baseUrl === normalizedBaseUrl(draft.baseUrl)
+        ? catalog.models
+        : (preset?.models ?? [])),
+      ...enabledModels,
+      ...(draft.model.trim() ? [draft.model.trim()] : []),
+    ]),
+  ];
   const modelIsCustom = isCustomProvider || customModel || !modelOptions.includes(draft.model);
 
   const update = (patch: Partial<AiSettingsData>) => {
@@ -163,6 +185,11 @@ export default function AiSettings() {
             provider: next.name,
             baseUrl: next.baseUrl,
             model: next.models[0] ?? current.model,
+            enabledModels: next.models.slice(0, 1),
+            apiKey:
+              normalizedBaseUrl(current.baseUrl) === normalizedBaseUrl(next.baseUrl)
+                ? current.apiKey
+                : '',
           }
         : current,
     );
@@ -195,7 +222,27 @@ export default function AiSettings() {
       return;
     }
     setCustomModel(false);
-    update({ model: value });
+    update({ model: value, enabledModels: [...new Set([...enabledModels, value])] });
+  };
+
+  const changeCustomModel = (value: string) => {
+    update({
+      model: value,
+      enabledModels: [
+        ...new Set([...enabledModels.filter((model) => model !== draft.model), value.trim()]),
+      ].filter(Boolean),
+    });
+  };
+
+  const toggleModel = (model: string, enabled: boolean) => {
+    const next = enabled
+      ? [...new Set([...enabledModels, model])]
+      : enabledModels.filter((item) => item !== model);
+    update({
+      enabledModels: next,
+      model: !enabled && draft.model === model && next.length ? next[0] : draft.model,
+      enabled: next.length ? draft.enabled !== false : false,
+    });
   };
 
   const validate = (): string | null => {
@@ -207,8 +254,17 @@ export default function AiSettings() {
       /* 输入尚未构成完整 URL。 */
     }
     if (!validUrl) return '请填写有效的接口地址（以 http:// 或 https:// 开头）';
+    if (
+      configured &&
+      normalizedBaseUrl(baseUrl) !== normalizedBaseUrl(savedAi?.baseUrl) &&
+      !draft.apiKey?.trim()
+    ) {
+      return '接口地址已更改，请填写该服务商对应的 API Key';
+    }
     if (!draft.provider.trim()) return '请选择模型服务商或填写服务商名称';
     if (!draft.model.trim()) return '请选择或填写模型名称';
+    if (serviceEnabled && !enabledModels.includes(draft.model.trim()))
+      return '请启用默认模型，或关闭 AI 服务';
     if (!Number.isInteger(draft.maxTokens) || draft.maxTokens < 256 || draft.maxTokens > 8192) {
       return '最大 Token 数需为 256–8192 的整数';
     }
@@ -228,6 +284,8 @@ export default function AiSettings() {
       provider: draft.provider.trim(),
       model: draft.model.trim(),
       baseUrl: draft.baseUrl?.trim() ?? '',
+      enabled: serviceEnabled,
+      enabledModels,
     });
     setDraft((current) => (current ? { ...current, apiKey: '' } : current));
     return true;
@@ -267,6 +325,26 @@ export default function AiSettings() {
     }
   };
 
+  const handleFetchModels = async () => {
+    if (busy) return;
+    setBusy('models');
+    try {
+      if (!(await persist())) return;
+      const result = (await getFetcher('/ai/models')) as ApiResult<string[]>;
+      setCatalog({ baseUrl: normalizedBaseUrl(draft.baseUrl), models: result.data });
+      setCustomModel(!result.data.includes(draft.model));
+      toast.add({
+        type: 'success',
+        title: `已获取 ${result.data.length} 个模型`,
+        description: '选择需要启用的模型后保存。',
+      });
+    } catch {
+      // 请求层统一提示服务商返回的错误；已有模型选择继续保留。
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const handleClear = async () => {
     if (busy) return;
     setBusy('clear');
@@ -282,8 +360,12 @@ export default function AiSettings() {
   };
 
   return (
-    <TabsContent value="ai" className="m-0 min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <TabsContent
+      value="ai"
+      className="m-0 min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-4 pr-10 sm:p-6 sm:pr-12"
+    >
+      <fieldset disabled={busy !== null} className="min-w-0 space-y-4 border-0 p-0">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-medium">AI 配置</h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -353,10 +435,7 @@ export default function AiSettings() {
                   其他国内平台或自建网关
                 </span>
               </span>
-              <RadioGroupItem
-                id={providerInputId(CUSTOM_PROVIDER_ID)}
-                value={CUSTOM_PROVIDER_ID}
-              />
+              <RadioGroupItem id={providerInputId(CUSTOM_PROVIDER_ID)} value={CUSTOM_PROVIDER_ID} />
             </label>
           </RadioGroup>
         </div>
@@ -380,6 +459,20 @@ export default function AiSettings() {
               </ItemActions>
             </Item>
 
+            <Item size="sm" variant="outline">
+              <ItemContent>
+                <ItemTitle>启用 AI 服务</ItemTitle>
+                <ItemDescription>停用后保留密钥与对话历史，暂停生成新回复。</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Switch
+                  aria-label="启用 AI 服务"
+                  checked={serviceEnabled}
+                  onCheckedChange={(enabled) => update({ enabled })}
+                />
+              </ItemActions>
+            </Item>
+
             <FieldGroup className="gap-4">
               <Field>
                 <FieldLabel htmlFor="ai-api-key">API Key</FieldLabel>
@@ -391,7 +484,9 @@ export default function AiSettings() {
                     maxLength={512}
                     value={draft.apiKey ?? ''}
                     placeholder={
-                      configured ? '已保存，留空保留；输入新值替换' : '粘贴服务商控制台生成的 API Key'
+                      configured
+                        ? '已保存，留空保留；输入新值替换'
+                        : '粘贴服务商控制台生成的 API Key'
                     }
                     onChange={(event) => update({ apiKey: event.target.value })}
                   />
@@ -409,7 +504,9 @@ export default function AiSettings() {
                     </InputGroupAddon>
                   )}
                 </InputGroup>
-                <FieldDescription>密钥只提交到后端保存，不会在浏览器回显完整内容。</FieldDescription>
+                <FieldDescription>
+                  密钥只提交到后端保存，不会在浏览器回显完整内容。
+                </FieldDescription>
               </Field>
 
               {isCustomProvider && (
@@ -435,7 +532,7 @@ export default function AiSettings() {
                       maxLength={120}
                       value={draft.model}
                       placeholder="输入接口支持的模型 ID"
-                      onChange={(event) => update({ model: event.target.value })}
+                      onChange={(event) => changeCustomModel(event.target.value)}
                     />
                   ) : (
                     <>
@@ -444,7 +541,7 @@ export default function AiSettings() {
                         onValueChange={(value) => value && handleModelSelect(value)}
                       >
                         <SelectTrigger id="ai-model" className="w-full cursor-pointer">
-                          <SelectValue />
+                          <SelectValue>{modelIsCustom ? '自定义模型' : draft.model}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {modelOptions.map((model) => (
@@ -462,12 +559,14 @@ export default function AiSettings() {
                           maxLength={120}
                           value={draft.model}
                           placeholder="输入接口支持的模型 ID"
-                          onChange={(event) => update({ model: event.target.value })}
+                          onChange={(event) => changeCustomModel(event.target.value)}
                         />
                       )}
                     </>
                   )}
-                  <FieldDescription>模型版本更新较快，可切换为自定义模型。</FieldDescription>
+                  <FieldDescription>
+                    选择默认模型会同时启用它，也可手动填写模型 ID。
+                  </FieldDescription>
                 </Field>
 
                 <Field>
@@ -479,14 +578,14 @@ export default function AiSettings() {
                       maxLength={1000}
                       value={draft.baseUrl ?? ''}
                       placeholder="https://api.example.com/v1"
-                      onChange={(event) => update({ baseUrl: event.target.value })}
+                      onChange={(event) => update({ baseUrl: event.target.value, apiKey: '' })}
                     />
                     {preset && (draft.baseUrl ?? '') !== preset.baseUrl && (
                       <InputGroupAddon align="inline-end">
                         <InputGroupButton
                           aria-label="恢复官方接口地址"
                           size="icon-xs"
-                          onClick={() => update({ baseUrl: preset.baseUrl })}
+                          onClick={() => update({ baseUrl: preset.baseUrl, apiKey: '' })}
                         >
                           <RotateCcw />
                         </InputGroupButton>
@@ -497,6 +596,53 @@ export default function AiSettings() {
                 </Field>
               </div>
             </FieldGroup>
+
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-medium">可用模型</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    获取服务商模型列表，选择允许在对话中使用的模型。
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy !== null}
+                  onClick={() => void handleFetchModels()}
+                >
+                  {busy === 'models' ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                  {busy === 'models' ? '正在获取模型…' : '保存并获取模型'}
+                </Button>
+              </div>
+              <ItemGroup className="max-h-72 gap-2 overflow-y-auto">
+                {modelOptions.map((model) => (
+                  <Item key={model} size="sm" variant="outline">
+                    <ItemContent className="min-w-0">
+                      <ItemTitle className="break-all">{model}</ItemTitle>
+                      {draft.model === model && <ItemDescription>默认模型</ItemDescription>}
+                    </ItemContent>
+                    <ItemActions>
+                      {draft.model !== model && enabledModels.includes(model) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleModelSelect(model)}>
+                          设为默认
+                        </Button>
+                      )}
+                      <Switch
+                        aria-label={`启用模型 ${model}`}
+                        checked={enabledModels.includes(model)}
+                        onCheckedChange={(enabled) => toggleModel(model, enabled)}
+                      />
+                    </ItemActions>
+                  </Item>
+                ))}
+              </ItemGroup>
+              {!enabledModels.length && (
+                <p className="text-xs text-muted-foreground">
+                  尚未启用模型。开启模型并保存后即可使用。
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -641,8 +787,9 @@ export default function AiSettings() {
             </Button>
           )}
         </div>
+      </fieldset>
 
-        <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogMedia>

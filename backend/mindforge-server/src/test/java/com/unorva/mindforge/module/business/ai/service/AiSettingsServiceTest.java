@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.business.ai.domain.dto.AiFeaturesDTO;
 import com.unorva.mindforge.module.business.ai.domain.form.AiSaveForm;
 import com.unorva.mindforge.module.business.ai.domain.vo.AiSettingsVO;
@@ -21,6 +22,7 @@ import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /** Verifies stored preference compatibility and credential masking after moving AI ownership. */
 class AiSettingsServiceTest {
@@ -50,6 +52,8 @@ class AiSettingsServiceTest {
         assertEquals("https://current.example/v1", settings.baseUrl());
         assertEquals("", settings.apiKey());
         assertTrue(settings.configured());
+        assertTrue(settings.enabled());
+        assertEquals(List.of("saved-model"), settings.enabledModels());
     }
 
     @Test
@@ -137,5 +141,55 @@ class AiSettingsServiceTest {
         service.removeCredential(7L);
 
         org.mockito.Mockito.verify(settingsManager).removeCredential(7L);
+    }
+
+    @Test
+    void retainsExplicitDisabledServiceAndEmptyModelSelection() {
+        when(settingsManager.findJson(7L))
+                .thenReturn("{\"model\":\"deepseek-chat\",\"enabled\":false,\"enabledModels\":[]}");
+        AiSettingsVO settings = service.get(7L);
+        assertFalse(settings.enabled());
+        assertTrue(settings.enabledModels().isEmpty());
+    }
+
+    @Test
+    void savesEnabledModelSelectionWithoutDuplicatingIds() {
+        AiSaveForm form =
+                new AiSaveForm(
+                        "DeepSeek",
+                        "deepseek-chat",
+                        new BigDecimal("0.7"),
+                        4096,
+                        "简体中文",
+                        "prompt",
+                        new AiFeaturesDTO(true, false, false, true),
+                        "https://api.deepseek.com/v1",
+                        "",
+                        true,
+                        List.of(" deepseek-chat ", "deepseek-reasoner", "deepseek-chat"));
+        service.save(7L, form);
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(settingsManager).save(eq(7L), json.capture(), eq(form.baseUrl()), eq(""));
+        AiSettingsVO stored = objectMapper.readValue(json.getValue(), AiSettingsVO.class);
+        assertTrue(stored.enabled());
+        assertEquals(List.of("deepseek-chat", "deepseek-reasoner"), stored.enabledModels());
+    }
+
+    @Test
+    void refusesAnEnabledServiceWhoseDefaultModelIsDisabled() {
+        AiSaveForm form =
+                new AiSaveForm(
+                        "DeepSeek",
+                        "deepseek-chat",
+                        new BigDecimal("0.7"),
+                        4096,
+                        "简体中文",
+                        "prompt",
+                        new AiFeaturesDTO(true, false, false, true),
+                        "https://api.deepseek.com/v1",
+                        "",
+                        true,
+                        List.of("deepseek-reasoner"));
+        assertThrows(BusinessException.class, () -> service.save(7L, form));
     }
 }

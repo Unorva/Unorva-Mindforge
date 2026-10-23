@@ -9,6 +9,7 @@ import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.business.ai.domain.bo.ProviderCredentialBO;
 import com.unorva.mindforge.module.business.ai.domain.vo.*;
 import com.unorva.mindforge.module.business.ai.manager.*;
+import com.unorva.mindforge.module.business.ai.support.AiStreamControl;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -28,7 +29,7 @@ class AiConversationServiceTest {
     void completesNetworkRequestBeforeOpeningPersistenceTransaction() {
         LocalDateTime now = LocalDateTime.of(2026, 10, 9, 12, 0);
         ConversationVO conversation = new ConversationVO(18L, "新对话", now, now);
-        AiSettingsVO settings = mock(AiSettingsVO.class);
+        AiSettingsVO settings = enabledSettings();
         ProviderCredentialBO credential = new ProviderCredentialBO("https://example.test/v1", "key");
         MessageReplyVO reply =
                 new MessageReplyVO(
@@ -52,19 +53,76 @@ class AiConversationServiceTest {
         when(conversations.requireConversation(7L, 18L, false))
                 .thenThrow(new BusinessException(BusinessErrorCode.NOT_FOUND));
         assertThrows(BusinessException.class, () -> service.send(7L, 18L, "你好"));
+        assertThrows(BusinessException.class, () -> service.stream(7L, 18L, "你好", unused -> {}, new AiStreamControl()));
+        assertThrows(BusinessException.class, () -> service.validateStreamAccess(7L, 18L));
         verifyNoInteractions(credentials, provider, settingsService);
         verify(conversations, never()).saveReply(anyLong(), anyLong(), anyString(), anyString());
     }
 
     @Test
     void providerFailureDoesNotPersistPartialMessages() {
+        AiSettingsVO settings = enabledSettings();
         when(conversations.requireConversation(7L, 18L, false)).thenReturn(mock(ConversationVO.class));
-        when(settingsService.get(7L)).thenReturn(mock(AiSettingsVO.class));
+        when(settingsService.get(7L)).thenReturn(settings);
         when(credentials.requireCredential(7L)).thenReturn(new ProviderCredentialBO("https://example.test/v1", "key"));
         when(conversations.newestMessages(7L, 18L, 24)).thenReturn(List.of());
         when(provider.complete(any(), any(), anyList(), eq(false)))
                 .thenThrow(new BusinessException(BusinessErrorCode.PROVIDER_FAILED));
         assertThrows(BusinessException.class, () -> service.send(7L, 18L, "你好"));
         verify(conversations, never()).saveReply(anyLong(), anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void streamsBeforePersistingAndNeverPersistsAnInterruptedReply() {
+        AiSettingsVO settings = enabledSettings();
+        when(conversations.requireConversation(7L, 18L, false)).thenReturn(mock(ConversationVO.class));
+        when(settingsService.get(7L)).thenReturn(settings);
+        when(credentials.requireCredential(7L)).thenReturn(new ProviderCredentialBO("https://example.test/v1", "key"));
+        when(conversations.newestMessages(7L, 18L, 24)).thenReturn(List.of());
+        AiStreamControl control = new AiStreamControl();
+        when(provider.stream(any(), any(), anyList(), any(), eq(control)))
+                .thenAnswer(
+                        invocation -> {
+                            control.cancel();
+                            return "partial text";
+                        });
+        assertThrows(BusinessException.class, () -> service.stream(7L, 18L, "你好", unused -> {}, control));
+        verify(conversations, never()).saveReply(anyLong(), anyLong(), anyString(), anyString());
+
+        AiStreamControl retry = new AiStreamControl();
+        when(provider.stream(any(), any(), anyList(), any(), eq(retry))).thenReturn("完整回答");
+        service.stream(7L, 18L, "你好", unused -> {}, retry);
+        InOrder order = inOrder(provider, conversations);
+        order.verify(provider).stream(any(), any(), anyList(), any(), eq(retry));
+        order.verify(conversations).saveReply(7L, 18L, "你好", "完整回答");
+    }
+
+    @Test
+    void rejectsDisabledProvidersBeforeAccessingCredentials() {
+        when(conversations.requireConversation(7L, 18L, false)).thenReturn(mock(ConversationVO.class));
+        when(settingsService.get(7L)).thenReturn(mock(AiSettingsVO.class));
+        assertThrows(BusinessException.class, () -> service.send(7L, 18L, "你好"));
+        assertThrows(BusinessException.class, () -> service.stream(7L, 18L, "你好", unused -> {}, new AiStreamControl()));
+        verifyNoInteractions(credentials, provider);
+    }
+
+    @Test
+    void rejectsDisabledDefaultModelsBeforeCallingProvider() {
+        AiSettingsVO settings = enabledSettings();
+        when(settings.enabledModels()).thenReturn(List.of("another-model"));
+        when(settingsService.get(7L)).thenReturn(settings);
+        when(conversations.requireConversation(7L, 18L, false)).thenReturn(mock(ConversationVO.class));
+        assertThrows(BusinessException.class, () -> service.send(7L, 18L, "你好"));
+        assertThrows(BusinessException.class, () -> service.stream(7L, 18L, "你好", unused -> {}, new AiStreamControl()));
+        verifyNoInteractions(credentials, provider);
+        assertFalse(service.config(7L).configured());
+    }
+
+    private AiSettingsVO enabledSettings() {
+        AiSettingsVO settings = mock(AiSettingsVO.class);
+        when(settings.enabled()).thenReturn(true);
+        when(settings.model()).thenReturn("test-model");
+        when(settings.enabledModels()).thenReturn(List.of("test-model"));
+        return settings;
     }
 }

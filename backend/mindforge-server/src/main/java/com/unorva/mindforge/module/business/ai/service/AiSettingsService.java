@@ -1,5 +1,7 @@
 package com.unorva.mindforge.module.business.ai.service;
 
+import com.unorva.mindforge.common.exception.BusinessErrorCode;
+import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.business.ai.domain.dto.AiFeaturesDTO;
 import com.unorva.mindforge.module.business.ai.domain.form.AiSaveForm;
 import com.unorva.mindforge.module.business.ai.domain.vo.AiSettingsVO;
@@ -16,6 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /** Owns AI preferences and credentials independently of the aggregate settings page. */
 @Service
@@ -29,11 +32,17 @@ public class AiSettingsService {
     public AiSettingsVO get(long userId) {
         String json = settingsManager.findJson(userId);
         AiSettingsVO defaults = defaultPreferences();
+        JsonNode stored = StringUtils.hasText(json) ? objectMapper.readTree(json) : null;
+        if (stored instanceof ObjectNode object && !object.has("enabledModels")) {
+            String legacyModel = object.path("model").asString("");
+            object.set(
+                    "enabledModels",
+                    objectMapper.valueToTree(StringUtils.hasText(legacyModel) ? List.of(legacyModel) : List.of()));
+        }
         AiSettingsVO preferences =
                 StringUtils.hasText(json)
                         ? objectMapper.treeToValue(
-                                withDefaults(objectMapper.readTree(json), objectMapper.valueToTree(defaults)),
-                                AiSettingsVO.class)
+                                withDefaults(stored, objectMapper.valueToTree(defaults)), AiSettingsVO.class)
                         : defaults;
         return new AiSettingsVO(
                 preferences.provider(),
@@ -45,10 +54,16 @@ public class AiSettingsService {
                 preferences.features(),
                 credentialService.baseUrl(userId),
                 "",
-                credentialService.configured(userId));
+                credentialService.configured(userId),
+                preferences.enabled(),
+                preferences.enabledModels());
     }
 
     public void save(long userId, AiSaveForm param) {
+        List<String> enabledModels = param.enabledModels().stream().map(String::trim).distinct().toList();
+        if (Boolean.TRUE.equals(param.enabled()) && !enabledModels.contains(param.model().trim())) {
+            throw new BusinessException("请启用默认模型，或关闭 AI 服务", BusinessErrorCode.INVALID_INPUT);
+        }
         AiSettingsVO preferences =
                 new AiSettingsVO(
                         param.provider().trim(),
@@ -60,7 +75,9 @@ public class AiSettingsService {
                         param.features(),
                         "",
                         "",
-                        false);
+                        false,
+                        Boolean.TRUE.equals(param.enabled()),
+                        enabledModels);
         settingsManager.save(userId, objectMapper.writeValueAsString(preferences), param.baseUrl(), param.apiKey());
     }
 

@@ -40,6 +40,11 @@ public class AiCredentialManager {
         AiCredentialEntity current = stored(userId);
         String normalizedUrl = normalizeBaseUrl(StringUtils.hasText(baseUrl) ? baseUrl : current.getBaseUrl());
         String ciphertext = current.getApiKeyCiphertext();
+        if (StringUtils.hasText(ciphertext)
+                && !normalizedUrl.equals(normalizeBaseUrl(current.getBaseUrl()))
+                && !StringUtils.hasText(submittedKey)) {
+            throw new BusinessException("接口地址已更改，请填写该服务商对应的 API Key", BusinessErrorCode.INVALID_INPUT);
+        }
         if (StringUtils.hasText(submittedKey)) {
             if (submittedKey.indexOf('\n') >= 0 || submittedKey.indexOf('\r') >= 0) {
                 throw new BusinessException("API Key 不能包含换行", BusinessErrorCode.INVALID_INPUT);

@@ -54,7 +54,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSettings(result.data);
   };
 
-  const saveAiSettings = (ai: AiSettings) => applyUpdate(putFetcher('/api/data/settings/ai', ai));
+  const saveAiSettings = async (ai: AiSettings) => {
+    await applyUpdate(putFetcher('/api/data/settings/ai', ai));
+    window.dispatchEvent(new Event('mindforge-ai-settings-changed'));
+  };
 
   const saveAppearance = (appearance: AppearanceSettings) =>
     applyUpdate(putFetcher('/api/data/settings/appearance', appearance));

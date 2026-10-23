@@ -14,6 +14,8 @@ export interface AiSettings {
   baseUrl?: string;
   apiKey?: string;
   configured?: boolean;
+  enabled?: boolean;
+  enabledModels?: string[];
   provider: string;
   model: string;
   temperature: number;

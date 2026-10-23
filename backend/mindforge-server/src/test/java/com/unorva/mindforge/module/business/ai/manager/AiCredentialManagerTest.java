@@ -66,4 +66,27 @@ class AiCredentialManagerTest {
         AiCredentialManager manager = new AiCredentialManager(mock(AiCredentialDao.class), "");
         assertThrows(BusinessException.class, () -> manager.save(1L, "https://example.test/v1", "private-key"));
     }
+
+    @Test
+    void requiresANewKeyWhenChangingTheSavedDestination() {
+        AiCredentialDao dao = mock(AiCredentialDao.class);
+        AiCredentialEntity entity = new AiCredentialEntity();
+        entity.setBaseUrl("https://original.example/v1");
+        entity.setApiKeyCiphertext("saved-encrypted-credential");
+        when(dao.find(7L)).thenReturn(entity);
+        AiCredentialManager manager = new AiCredentialManager(dao, Base64.getEncoder().encodeToString(new byte[32]));
+
+        assertThrows(BusinessException.class, () -> manager.save(7L, "https://other.example/v1", " "));
+        verify(dao, never()).save(anyLong(), anyString(), nullable(String.class));
+
+        manager.save(7L, " https://original.example/v1/ ", "");
+        verify(dao).save(7L, "https://original.example/v1", "saved-encrypted-credential");
+
+        manager.save(7L, "https://other.example/v1", "replacement-key");
+        verify(dao)
+                .save(
+                        eq(7L),
+                        eq("https://other.example/v1"),
+                        argThat(value -> value != null && !value.equals("saved-encrypted-credential")));
+    }
 }
