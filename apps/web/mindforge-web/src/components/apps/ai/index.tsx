@@ -26,7 +26,6 @@ import {
   type ChatMessage,
   type Conversation,
 } from '@/api/ai/ai';
-import { APP_WORKSPACE_HEIGHT_CLASS } from '@/components/shared/app-workspace';
 import { Button } from '@/components/ui/button';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -320,7 +319,7 @@ export default function AiAssistant() {
   };
 
   return (
-    <section className={cn(APP_WORKSPACE_HEIGHT_CLASS, 'flex min-h-0 flex-col overflow-hidden')}>
+    <section className="flex h-[calc(100dvh-6.5rem-1px)] min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 py-2">
         <span className="truncate text-sm text-muted-foreground">
           {loading
@@ -558,7 +557,7 @@ export default function AiAssistant() {
                 )}
               </MessageScrollerContent>
             ) : (
-              <div className="flex min-h-72 items-center justify-center py-12">
+              <div className="flex h-full min-h-0 items-center justify-center py-6">
                 <AiAvatar expression="idle" intensity={0.4} size="clamp(13rem, 28vw, 18.75rem)" />
               </div>
             )}
@@ -566,35 +565,38 @@ export default function AiAssistant() {
           <MessageScrollerButton aria-label="滚动到最新消息" />
         </MessageScroller>
       </MessageScrollerProvider>
-      <InputGroup className="mx-auto mb-3 w-full max-w-4xl shrink-0 rounded-3xl bg-card">
-        <InputGroupTextarea
-          ref={composerRef}
-          aria-label="向 AI 提问"
-          placeholder="输入问题，Enter 发送，Shift + Enter 换行"
-          value={composer}
-          maxLength={10000}
-          disabled={loading || !config?.configured}
-          onChange={(event) => setComposer(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault();
-              void send();
-            }
-          }}
-        />
-        <InputGroupAddon align="block-end" className="justify-between">
-          <span className="text-xs text-muted-foreground">{composer.length} / 10000</span>
-          <InputGroupButton
-            aria-label={responding ? '停止生成' : '发送消息'}
-            disabled={!responding && (!composer.trim() || messageLoading || !config?.configured)}
-            size="icon-sm"
-            variant="default"
-            onClick={() => (responding ? streamController.current?.abort() : void send())}
-          >
-            {responding ? <Square /> : <ArrowUp />}
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
+      <div className="relative z-1 shrink-0 px-2 pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4">
+        <InputGroup className="mx-auto w-full max-w-4xl rounded-3xl border-border/70 bg-card/95 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-card/95 dark:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+          <InputGroupTextarea
+            ref={composerRef}
+            className="max-h-[min(28dvh,12rem)] min-h-20 overflow-y-auto px-4 pt-4"
+            aria-label="向 AI 提问"
+            placeholder="输入问题，Enter 发送，Shift + Enter 换行"
+            value={composer}
+            maxLength={10000}
+            disabled={loading || !config?.configured}
+            onChange={(event) => setComposer(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                void send();
+              }
+            }}
+          />
+          <InputGroupAddon align="block-end" className="justify-between">
+            <span className="text-xs text-muted-foreground">{composer.length} / 10000</span>
+            <InputGroupButton
+              aria-label={responding ? '停止生成' : '发送消息'}
+              disabled={!responding && (!composer.trim() || messageLoading || !config?.configured)}
+              size="icon-sm"
+              variant="default"
+              onClick={() => (responding ? streamController.current?.abort() : void send())}
+            >
+              {responding ? <Square /> : <ArrowUp />}
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
     </section>
   );
 }
