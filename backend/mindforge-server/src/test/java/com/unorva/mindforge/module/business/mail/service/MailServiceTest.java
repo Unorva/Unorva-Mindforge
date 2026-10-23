@@ -12,6 +12,7 @@ import com.unorva.mindforge.module.business.mail.dao.*;
 import com.unorva.mindforge.module.business.mail.domain.bo.*;
 import com.unorva.mindforge.module.business.mail.domain.entity.*;
 import com.unorva.mindforge.module.business.mail.domain.form.*;
+import com.unorva.mindforge.module.business.mail.domain.vo.MailVO;
 import com.unorva.mindforge.module.business.mail.manager.MailManager;
 import com.unorva.mindforge.module.business.mail.support.MailCredentialCipher;
 
@@ -343,6 +344,64 @@ class MailServiceTest {
         when(remoteDao.selectForMail(USER, MAIL)).thenReturn(identity(MAIL, 1L), identity(MAIL, 2L));
         assertThrows(BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm(null, true, false)));
         verify(gateway).updateFlags(connection, 5L, 1L, true, false);
+        verify(mailDao, never()).patchOwned(anyLong(), anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void missingRemoteMessageKeepsItsContentAndUpdatesLocalFlagsThenStopsProviderRequests() {
+        MailEntity cached = mail("archive", LocalDateTime.now());
+        when(mailDao.selectOwned(USER, MAIL)).thenReturn(cached);
+        when(remoteDao.selectForMail(USER, MAIL)).thenReturn(identity(MAIL, 1L));
+        when(remoteDao.tombstone(USER, MAIL)).thenReturn(1);
+        when(mailDao.patchOwned(USER, MAIL, null, true, false)).thenReturn(1);
+        doThrow(new MailGateway.MissingMessageException()).when(gateway).updateFlags(connection, 5L, 1L, true, false);
+
+        MailVO result = service.patch(USER, MAIL, new MailPatchForm(null, true, false));
+
+        assertEquals("Body", result.body());
+        assertEquals("Subject", result.subject());
+        assertEquals("archive", result.folder());
+        var order = inOrder(gateway, remoteDao, mailDao);
+        order.verify(gateway).updateFlags(connection, 5L, 1L, true, false);
+        order.verify(remoteDao).selectForMail(USER, MAIL);
+        order.verify(remoteDao).tombstone(USER, MAIL);
+        order.verify(mailDao).patchOwned(USER, MAIL, null, true, false);
+        verify(mailDao, never()).deleteOwned(anyLong(), anyLong());
+        verify(mailDao, never()).updateOwned(any());
+
+        // The committed tombstone leaves the cached copy independent of the provider.
+        when(remoteDao.selectForMail(USER, MAIL)).thenReturn(null);
+        clearInvocations(gateway);
+        service.patch(USER, MAIL, new MailPatchForm(null, true, false));
+        verifyNoInteractions(gateway);
+    }
+
+    @Test
+    void providerFailuresAndIdentityConflictsNeverFallBackToLocalFlags() {
+        when(remoteDao.selectForMail(USER, MAIL)).thenReturn(identity(MAIL, 1L));
+        for (BusinessErrorCode code :
+                List.of(BusinessErrorCode.PROVIDER_FAILED, BusinessErrorCode.CONFLICT, BusinessErrorCode.NOT_FOUND)) {
+            BusinessException failure = new BusinessException(code);
+            doThrow(failure).when(gateway).updateFlags(connection, 5L, 1L, true, false);
+            assertSame(
+                    failure,
+                    assertThrows(
+                            BusinessException.class,
+                            () -> service.patch(USER, MAIL, new MailPatchForm(null, true, false))));
+        }
+        verify(remoteDao, never()).tombstone(anyLong(), anyLong());
+        verify(mailDao, never()).patchOwned(anyLong(), anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void missingRemoteMessageStillRejectsAnIdentityChangedDuringTheRequest() {
+        when(remoteDao.selectForMail(USER, MAIL)).thenReturn(identity(MAIL, 1L), identity(MAIL, 2L));
+        doThrow(new MailGateway.MissingMessageException()).when(gateway).updateFlags(connection, 5L, 1L, true, false);
+        BusinessException failure =
+                assertThrows(
+                        BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm(null, true, false)));
+        assertEquals(BusinessErrorCode.CONFLICT, failure.getErrorCode());
+        verify(remoteDao, never()).tombstone(anyLong(), anyLong());
         verify(mailDao, never()).patchOwned(anyLong(), anyLong(), any(), any(), any());
     }
 

@@ -124,7 +124,7 @@ public class MailManager {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public MailVO patch(long userId, long id, MailPatchForm form, MailPatchBO prepared) {
+    public MailVO patch(long userId, long id, MailPatchForm form, MailPatchBO prepared, boolean remoteMissing) {
         locks.lock(userId, "mail");
         MailVO current = get(userId, id);
         validatePatch(current, form);
@@ -136,6 +136,11 @@ public class MailManager {
                     || !Objects.equals(remote.getRemoteUid(), prepared.remoteUid())
                     || !prepared.connection().equals(requireConnection(userId, current.accountId()))) {
                 throw conflict("邮箱消息标识或配置已变化，请重新同步后重试");
+            }
+            if (remoteMissing) {
+                // Detach only the identity checked above. Keep a tombstone so an in-flight
+                // sync cannot resurrect the vanished provider message or overwrite local flags.
+                DaoSupport.requireChanged(remoteDao.tombstone(userId, id));
             }
         }
         DaoSupport.requireChanged(mailDao.patchOwned(userId, id, form.folder(), form.starred(), form.unread()));

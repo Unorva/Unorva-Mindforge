@@ -12,6 +12,7 @@ import jakarta.mail.FetchProfile;
 import jakarta.mail.Flags;
 import jakarta.mail.Folder;
 import jakarta.mail.Message;
+import jakarta.mail.MessageRemovedException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
@@ -95,6 +96,13 @@ public class MailGateway {
             @Value("${mindforge.mail.allow-provider-fake-ip:false}") boolean allowProviderFakeIp) {
         this.allowPrivateHosts = allowPrivateHosts;
         this.allowProviderFakeIp = allowProviderFakeIp;
+    }
+
+    /** The provider confirmed absence; the caller may retain and update the local copy. */
+    public static final class MissingMessageException extends BusinessException {
+        public MissingMessageException() {
+            super("邮件已不在服务商收件箱中", BusinessErrorCode.NOT_FOUND);
+        }
     }
 
     /** The caller must retain the send claim after an ambiguous network failure. */
@@ -241,12 +249,14 @@ public class MailGateway {
                     throw new BusinessException("邮箱消息标识已变化，请先重新同步", BusinessErrorCode.CONFLICT);
                 }
                 Message message = uidFolder.getMessageByUID(remoteUid);
-                if (message == null) throw new BusinessException("邮件已不在服务商收件箱中，请重新同步", BusinessErrorCode.NOT_FOUND);
+                if (message == null || message.isExpunged()) throw new MissingMessageException();
                 if (starred != null) message.setFlag(Flags.Flag.FLAGGED, starred);
                 if (unread != null) message.setFlag(Flags.Flag.SEEN, !unread);
             } finally {
                 if (inbox.isOpen()) inbox.close(false);
             }
+        } catch (MessageRemovedException exception) {
+            throw new MissingMessageException();
         } catch (BusinessException exception) {
             throw exception;
         } catch (MessagingException | RuntimeException exception) {

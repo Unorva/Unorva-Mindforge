@@ -51,11 +51,20 @@ public class MailService {
 
     public MailVO patch(long userId, long id, MailPatchForm form) {
         var prepared = manager.preparePatch(userId, id, form);
+        boolean remoteMissing = false;
         if (prepared.connection() != null) {
-            gateway.updateFlags(
-                    prepared.connection(), prepared.uidValidity(), prepared.remoteUid(), form.starred(), form.unread());
+            try {
+                gateway.updateFlags(
+                        prepared.connection(),
+                        prepared.uidValidity(),
+                        prepared.remoteUid(),
+                        form.starred(),
+                        form.unread());
+            } catch (MailGateway.MissingMessageException exception) {
+                remoteMissing = true;
+            }
         }
-        return manager.patch(userId, id, form, prepared);
+        return manager.patch(userId, id, form, prepared, remoteMissing);
     }
 
     public MailSyncVO sync(long userId, long accountId) {

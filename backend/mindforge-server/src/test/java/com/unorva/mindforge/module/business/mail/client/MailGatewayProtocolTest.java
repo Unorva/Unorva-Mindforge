@@ -163,6 +163,40 @@ class MailGatewayProtocolTest {
     }
 
     @Test
+    void absentUidIsReportedAsMissingWithoutChangingAnyOtherMessage() throws Exception {
+        for (boolean hasOtherMessage : new boolean[] {false, true}) {
+            try (LocalMailServer imap = server(true, "ssl", true, true)) {
+                imap.inboxHasMessage = hasOtherMessage;
+                imap.omitUidFetch = true;
+                assertThrows(
+                        MailGateway.MissingMessageException.class,
+                        () ->
+                                new MailGateway(true)
+                                        .updateFlags(connection(imap, imap, "ssl", "password"), 5L, 99L, true, false));
+                imap.completed();
+                assertTrue(imap.flagChanges.isEmpty());
+            }
+        }
+    }
+
+    @Test
+    void changedUidValidityIsNotTreatedAsAMissingMessage() throws Exception {
+        try (LocalMailServer imap = server(true, "ssl", true, true)) {
+            imap.inboxHasMessage = true;
+            BusinessException failure =
+                    assertThrows(
+                            BusinessException.class,
+                            () ->
+                                    new MailGateway(true)
+                                            .updateFlags(
+                                                    connection(imap, imap, "ssl", "password"), 4L, 42L, true, false));
+            assertEquals(com.unorva.mindforge.common.exception.BusinessErrorCode.CONFLICT, failure.getErrorCode());
+            imap.completed();
+            assertTrue(imap.flagChanges.isEmpty());
+        }
+    }
+
+    @Test
     void missingStarttlsPreventsCredentialsFromBeingTransmitted() throws Exception {
         try (LocalMailServer imap = server(true, "starttls", false, false);
                 LocalMailServer smtp = server(false, "starttls", false, false)) {
@@ -299,6 +333,7 @@ class MailGatewayProtocolTest {
         private volatile boolean advertisePlain = true;
         private volatile boolean rejectAuthentication;
         private volatile boolean inboxHasMessage;
+        private volatile boolean omitUidFetch;
         private volatile boolean peekRequested;
         private final List<String> flagChanges = new CopyOnWriteArrayList<>();
         private final List<String> commands = new CopyOnWriteArrayList<>();
@@ -426,7 +461,7 @@ class MailGatewayProtocolTest {
                     }
                     case "FETCH", "UID" -> {
                         if (line.contains("BODY.PEEK")) peekRequested = true;
-                        respondFetch(output, line);
+                        if (!("UID".equals(command) && omitUidFetch)) respondFetch(output, line);
                         output.print(tag + " OK FETCH\r\n");
                     }
                     case "STORE" -> {
