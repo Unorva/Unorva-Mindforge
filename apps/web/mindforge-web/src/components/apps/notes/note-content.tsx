@@ -1,4 +1,4 @@
-import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useContext, useEffect, useRef } from 'react';
 import { FileText, Menu } from 'lucide-react';
 
 import MarkdownEditor from '@/components/markdown/markdown-editor';
@@ -31,7 +31,6 @@ type NoteContentProps = {
 const NoteContent = ({ onOpenSidebar }: NoteContentProps) => {
   const { notes, updateNote, selectedNoteId } = useContext(NotesContext);
   const noteDetails = notes.find((note) => note.id === selectedNoteId && !note.deleted);
-  const [content, setContent] = useState('');
   const drawingDrafts = useRef(new Map<number, string>());
 
   useEffect(() => {
@@ -42,17 +41,6 @@ const NoteContent = ({ onOpenSidebar }: NoteContentProps) => {
     window.addEventListener('beforeunload', warnUnsaved);
     return () => window.removeEventListener('beforeunload', warnUnsaved);
   }, []);
-
-  useEffect(() => {
-    setContent(noteDetails?.content ?? '');
-  }, [noteDetails?.id, noteDetails?.content]);
-
-  const saveNote = async (nextContent = content) => {
-    if (!noteDetails) return;
-    await updateNote(noteDetails.id, {
-      content: nextContent,
-    });
-  };
 
   return (
     <article className="flex h-full min-w-0 flex-1 flex-col bg-transparent">
@@ -118,13 +106,9 @@ const NoteContent = ({ onOpenSidebar }: NoteContentProps) => {
             key={noteDetails.id}
             className="h-full shadow-none"
             minHeight={430}
-            value={content}
-            onChange={(nextContent) => {
-              setContent(nextContent);
-            }}
+            value={noteDetails.content ?? ''}
             onSave={async (nextContent) => {
-              setContent(nextContent);
-              await saveNote(nextContent);
+              await updateNote(noteDetails.id, { content: nextContent });
             }}
             placeholder="开始记录，支持 Markdown 与 Typora 快捷键……"
           />
