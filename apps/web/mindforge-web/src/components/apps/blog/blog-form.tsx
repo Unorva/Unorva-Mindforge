@@ -1,4 +1,4 @@
-import { useEffect, useState, type SubmitEvent } from 'react';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getBlogs, saveBlog } from '@/api/blog/blog';
 import MarkdownEditor from '@/components/markdown/markdown-editor';
@@ -25,6 +25,8 @@ export default function BlogForm({ editing = false }: { editing?: boolean }) {
   });
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState('');
   useEffect(() => {
     if (!editing) return;
@@ -47,26 +49,43 @@ export default function BlogForm({ editing = false }: { editing?: boolean }) {
     };
   }, [editing, id]);
 
-  const save = async () => {
-    if (saving || !post.title?.trim() || (editing && !post.id)) return;
+  const save = async (content = post.content ?? '') => {
+    if (savingRef.current) throw new Error('文章正在保存，请稍候。');
+    if (imageUploading) {
+      const message = '图片正在上传，请等待完成后保存。';
+      setError(message);
+      throw new Error(message);
+    }
+    if (!post.title?.trim() || (editing && !post.id)) {
+      const message = !post.title?.trim() ? '请先填写文章标题。' : '文章尚未成功加载，无法保存。';
+      setError(message);
+      throw new Error(message);
+    }
+    savingRef.current = true;
     setSaving(true);
+    setError('');
     try {
-      await saveBlog({
+      const result = await saveBlog({
         ...post,
+        content,
         title: post.title.trim(),
         category: post.category?.trim() || '未分类',
       });
+      if (!result.success) throw new Error(result.message || '保存文章失败。');
       toast.add({ type: 'success', title: '文章已保存' });
       navigate('/apps/blog/manage-blog');
-    } catch {
+    } catch (error) {
       setError('保存失败，编辑内容已保留。');
+      throw error;
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void save();
+    // 编辑器会处理保存异常；表单入口的错误已由 save 写入页面提示。
+    void save().catch(() => {});
   };
 
   return (
@@ -132,8 +151,10 @@ export default function BlogForm({ editing = false }: { editing?: boolean }) {
                 </Label>
               </div>
               <MarkdownEditor
+                disabled={saving}
                 value={post.content ?? ''}
                 onChange={(content) => setPost((current) => ({ ...current, content }))}
+                onImageUploadingChange={setImageUploading}
                 onSave={save}
                 minHeight={360}
                 placeholder="撰写正文，支持 Markdown"
@@ -149,7 +170,9 @@ export default function BlogForm({ editing = false }: { editing?: boolean }) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={saving || !post.title?.trim() || (editing && !post.id)}
+                  disabled={
+                    saving || imageUploading || !post.title?.trim() || (editing && !post.id)
+                  }
                 >
                   {saving ? '保存中…' : '保存文章'}
                 </Button>

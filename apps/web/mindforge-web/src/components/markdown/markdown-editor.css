@@ -21,7 +21,41 @@
   background: color-mix(in oklab, var(--color-primary) 18%, transparent);
 }
 
-.markdown-visual-editor > .tiptap img.ProseMirror-selectednode {
+.markdown-visual-editor > .tiptap .ProseMirror-selectednode {
   outline: 3px solid color-mix(in oklab, var(--color-ring) 55%, transparent);
   outline-offset: 3px;
+}
+
+.markdown-image-view,
+.markdown-image-upload {
+  display: block;
+  max-width: 100%;
+  margin: 1rem 0;
+}
+
+.markdown-image-view img,
+.markdown-image-upload img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.markdown-image-view img[hidden] {
+  display: none;
+}
+
+.markdown-image-upload img {
+  max-height: 18rem;
+  opacity: 0.6;
+}
+
+.markdown-image-status,
+.markdown-image-upload > span {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.markdown-image-status:empty {
+  display: none;
 }

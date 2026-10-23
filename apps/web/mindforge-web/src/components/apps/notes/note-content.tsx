@@ -43,6 +43,7 @@ const NoteContent = ({ onOpenSidebar }: NoteContentProps) => {
       <div className="min-h-0 flex-1">
         {noteDetails ? (
           <MarkdownEditor
+            key={noteDetails.id}
             className="h-full shadow-none"
             minHeight={430}
             value={content}

@@ -15,6 +15,11 @@ public interface FileService {
      */
     void upload(String objectKey, InputStream inputStream, long contentLength, String contentType);
 
+    /** 读取默认存储桶中的对象，调用方负责关闭输入流。 */
+    Download download(String objectKey);
+
+    record Download(InputStream inputStream, long contentLength) {}
+
     /**
      * 删除默认存储桶中的对象。
      *

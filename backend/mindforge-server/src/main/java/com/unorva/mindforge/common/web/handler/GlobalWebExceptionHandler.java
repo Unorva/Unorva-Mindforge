@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DateTimeException;
@@ -57,7 +59,8 @@ public class GlobalWebExceptionHandler {
         HandlerMethodValidationException.class,
         DateTimeException.class,
         MethodArgumentTypeMismatchException.class,
-        MissingServletRequestParameterException.class
+        MissingServletRequestParameterException.class,
+        MissingServletRequestPartException.class
     })
     public ResponseEntity<Result<?>> handleInvalidRequest(Exception exception) {
         return error(HttpStatus.BAD_REQUEST, "请求参数格式不正确，请检查后重试。");
@@ -68,6 +71,11 @@ public class GlobalWebExceptionHandler {
         String message = StringUtils.hasText(exception.getReason()) ? exception.getReason() : "请求无法完成";
         return ResponseEntity.status(exception.getStatusCode())
                 .body(Result.error(exception.getStatusCode().value(), message));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Result<?>> handleUploadTooLarge(MaxUploadSizeExceededException exception) {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "图片不能超过 10 MB。");
     }
 
     @ExceptionHandler(BaseException.class)

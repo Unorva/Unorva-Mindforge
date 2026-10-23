@@ -8,6 +8,10 @@ spring:
     import: optional:file:./.local/application-secrets.yml
   jackson:
     time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
   datasource:
     hikari:
       # DATETIME values and CURRENT_TIMESTAMP must use the same zone as business LocalDateTime.

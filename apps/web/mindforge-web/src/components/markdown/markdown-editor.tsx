@@ -1,5 +1,4 @@
 import { Extension } from '@tiptap/core';
-import { Image } from '@tiptap/extension-image';
 import { Markdown } from '@tiptap/markdown';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -44,6 +43,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { uploadMarkdownImage } from '@/api/files/images';
+import { ImageUploadPlaceholders, imageUploadKey, StoredImage } from './editor-images';
+import {
+  clipboardImages,
+  imageMarkdown,
+  mapSourcePosition,
+  validateClipboardImage,
+  type SourceEdit,
+} from './image-clipboard';
 
 import './markdown-editor.css';
 
@@ -55,6 +63,7 @@ export type MarkdownEditorProps = {
   disabled?: boolean;
   minHeight?: number;
   onChange?: (markdown: string) => void;
+  onImageUploadingChange?: (uploading: boolean) => void;
   onPolish?: (selectedText: string) => Promise<string | void> | string | void;
   onSave?: (markdown: string) => Promise<void> | void;
   placeholder?: string;
@@ -115,10 +124,8 @@ const editorExtensions = [
       openOnClick: false,
     },
   }),
-  Image.configure({
-    allowBase64: false,
-    inline: false,
-  }),
+  StoredImage,
+  ImageUploadPlaceholders,
   Markdown.configure({
     indentation: { size: 2, style: 'space' },
     markedOptions: { breaks: true, gfm: true },
@@ -218,6 +225,8 @@ const shortcutGroups: { title: string; shortcuts: Shortcut[] }[] = [
     shortcuts: [
       { label: '插入链接', keys: ['Ctrl / ⌘', 'K'] },
       { label: '插入图片', keys: ['Ctrl / ⌘', 'Shift', 'I'] },
+      { label: '粘贴图片（两种模式）', keys: ['Ctrl / ⌘', 'V'] },
+      { label: '保存（两种模式）', keys: ['Ctrl / ⌘', 'S'] },
       { label: '撤销', keys: ['Ctrl / ⌘', 'Z'] },
       { label: '重做', keys: ['Ctrl', 'Y'] },
     ],
@@ -244,7 +253,7 @@ function MarkdownShortcutHelp() {
         <DrawerHeader className="relative border-b px-5 pb-4 pt-5 text-left">
           <DrawerTitle>Markdown 快捷键</DrawerTitle>
           <DrawerDescription>
-            以下快捷键仅在“显示文本”模式下生效，源码模式不会触发格式命令。
+            保存和图片粘贴在两种模式下均可使用，格式快捷键仅在“显示文本”模式下生效。
           </DrawerDescription>
           <DrawerClose
             render={
@@ -295,12 +304,33 @@ export function MarkdownEditor({
   disabled = false,
   minHeight = 420,
   onChange,
+  onImageUploadingChange,
   onPolish,
   onSave,
   placeholder = '开始输入内容，或键入 #、>、- 等 Markdown 标记后按空格…',
   value,
 }: MarkdownEditorProps) {
   const draftRef = useRef(value);
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const sourceEditRef = useRef<SourceEdit | undefined>(undefined);
+  const savingRef = useRef(false);
+  const uploads = useRef(
+    new Map<
+      string,
+      {
+        controller: AbortController;
+        preview: string;
+        position: number;
+        from: number;
+        selection: string;
+        mode: EditorMode;
+        count: number;
+      }
+    >(),
+  );
+  const uploadCountRef = useRef(0);
+  const [uploadCount, setUploadCount] = useState(0);
+  const [imageError, setImageError] = useState('');
   const [draft, setDraft] = useState(value);
   const [lastSaved, setLastSaved] = useState(value);
   const [mode, setMode] = useState<EditorMode>('visual');
@@ -308,10 +338,21 @@ export function MarkdownEditor({
   const [saveState, setSaveState] = useState<SaveState>('idle');
 
   const updateDraft = useCallback(
-    (nextValue: string) => {
+    (nextValue: string, edit?: SourceEdit) => {
+      for (const upload of uploads.current.values()) {
+        if (upload.mode === 'source') {
+          const position = mapSourcePosition(draftRef.current, nextValue, upload.position, edit);
+          const from = mapSourcePosition(draftRef.current, nextValue, upload.from, edit);
+          if (position === null || from === null) upload.controller.abort();
+          else {
+            upload.position = position;
+            upload.from = from;
+          }
+        }
+      }
       draftRef.current = nextValue;
       setDraft(nextValue);
-      setSaveState('idle');
+      if (!savingRef.current) setSaveState('idle');
       onChange?.(nextValue);
     },
     [onChange],
@@ -332,7 +373,7 @@ export function MarkdownEditor({
       immediatelyRender: false,
       onUpdate: ({ editor: currentEditor }) => updateDraft(currentEditor.getMarkdown()),
     },
-    [disabled, placeholder],
+    [],
   );
 
   const hasPolishableSelection =
@@ -349,20 +390,66 @@ export function MarkdownEditor({
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
 
+  const clearUploads = useCallback(() => {
+    if (!uploads.current.size) return;
+    for (const upload of uploads.current.values()) {
+      upload.controller.abort();
+      URL.revokeObjectURL(upload.preview);
+    }
+    uploads.current.clear();
+    uploadCountRef.current = 0;
+    setUploadCount(0);
+    if (editor && !editor.isDestroyed) {
+      editor.view.dispatch(
+        editor.state.tr.setMeta(imageUploadKey, { clear: true }).setMeta('addToHistory', false),
+      );
+    }
+  }, [editor]);
+
+  useEffect(() => () => clearUploads(), [clearUploads, editor]);
+
+  useEffect(() => {
+    if (disabled) clearUploads();
+  }, [clearUploads, disabled]);
+
+  useEffect(() => {
+    onImageUploadingChange?.(uploadCount > 0);
+  }, [onImageUploadingChange, uploadCount]);
+
+  useEffect(() => {
+    const source = sourceRef.current;
+    if (mode !== 'source' || !source) return;
+    const beforeInput = (event: InputEvent) => {
+      sourceEditRef.current = {
+        from: source.selectionStart,
+        to: source.selectionEnd,
+        inputType: event.inputType,
+      };
+    };
+    source.addEventListener('beforeinput', beforeInput);
+    return () => {
+      source.removeEventListener('beforeinput', beforeInput);
+      sourceEditRef.current = undefined;
+    };
+  }, [mode]);
+
   useEffect(() => {
     if (!editor || value === draftRef.current) return;
+    clearUploads();
+    setImageError('');
     draftRef.current = value;
     setDraft(value);
     setLastSaved(value);
     setSaveState('idle');
     editor.commands.setContent(value, { contentType: 'markdown', emitUpdate: false });
-  }, [editor, value]);
+  }, [clearUploads, editor, value]);
 
   const applyCommand = (command: () => boolean) => {
     command();
   };
 
   const changeMode = (nextValue: string | number) => {
+    if (uploadCountRef.current) return;
     const nextMode: EditorMode = nextValue === 'source' ? 'source' : 'visual';
     if (nextMode === 'visual' && editor) {
       editor.commands.setContent(draftRef.current, { contentType: 'markdown', emitUpdate: false });
@@ -386,15 +473,174 @@ export function MarkdownEditor({
   };
 
   const save = async () => {
+    if (disabled || !onSave || savingRef.current || uploadCountRef.current) return;
+    savingRef.current = true;
     const markdown = draftRef.current;
     setSaveState('saving');
     try {
-      await onSave?.(markdown);
+      await onSave(markdown);
       setLastSaved(markdown);
       setSaveState('saved');
     } catch {
       setSaveState('error');
+    } finally {
+      savingRef.current = false;
     }
+  };
+
+  const pasteImages = (event: React.ClipboardEvent<HTMLElement>) => {
+    if (disabled || !editor || editor.isDestroyed) return;
+    const target = event.target;
+    if (
+      !(target instanceof Node) ||
+      (!editor.view.dom.contains(target) && target !== sourceRef.current)
+    )
+      return;
+    const files = clipboardImages(event.clipboardData);
+    if (!files.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setImageError('');
+    try {
+      files.forEach(validateClipboardImage);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : '图片无法上传，请重新复制。');
+      return;
+    }
+    const id = crypto.randomUUID();
+    const upload = {
+      controller: new AbortController(),
+      preview: URL.createObjectURL(files[0]),
+      position:
+        mode === 'source'
+          ? (sourceRef.current?.selectionEnd ?? draftRef.current.length)
+          : editor.state.selection.to,
+      from:
+        mode === 'source'
+          ? (sourceRef.current?.selectionStart ?? draftRef.current.length)
+          : editor.state.selection.from,
+      selection:
+        mode === 'source'
+          ? draftRef.current.slice(
+              sourceRef.current?.selectionStart,
+              sourceRef.current?.selectionEnd,
+            )
+          : JSON.stringify(
+              editor.state.doc
+                .slice(editor.state.selection.from, editor.state.selection.to)
+                .toJSON(),
+            ),
+      mode,
+      count: files.length,
+    };
+    uploads.current.set(id, upload);
+    uploadCountRef.current += files.length;
+    setUploadCount(uploadCountRef.current);
+    if (mode === 'visual') {
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(imageUploadKey, {
+            add: { id, from: upload.from, position: upload.position, preview: upload.preview },
+          })
+          .setMeta('addToHistory', false),
+      );
+    }
+    void Promise.allSettled(
+      files.map((file) => uploadMarkdownImage(file, upload.controller.signal)),
+    )
+      .then((results) => {
+        if (upload.controller.signal.aborted || editor.isDestroyed || !uploads.current.has(id))
+          return;
+        const images = results.flatMap((result) =>
+          result.status === 'fulfilled' ? [result.value] : [],
+        );
+        const failed = results.find((result) => result.status === 'rejected');
+        if (failed?.status === 'rejected') {
+          setImageError(
+            failed.reason instanceof Error ? failed.reason.message : '图片上传失败，请重新粘贴。',
+          );
+        }
+        if (!images.length) return;
+        if (upload.mode === 'source') {
+          const current = draftRef.current;
+          const position = upload.position;
+          const from =
+            current.slice(upload.from, position) === upload.selection ? upload.from : position;
+          const markdown = `\n${images.map((image) => imageMarkdown(image.name, image.url)).join('\n\n')}\n`;
+          const nextValue = current.slice(0, from) + markdown + current.slice(position);
+          const edit = {
+            from,
+            to: position,
+            inputType: 'insertFromPaste',
+          };
+          const source = sourceRef.current;
+          const atPasteSelection =
+            source?.selectionStart === upload.from && source.selectionEnd === position;
+          const caret =
+            source && document.activeElement === source
+              ? {
+                  start: atPasteSelection
+                    ? from + markdown.length
+                    : (mapSourcePosition(current, nextValue, source.selectionStart, edit) ??
+                      from + markdown.length),
+                  end: atPasteSelection
+                    ? from + markdown.length
+                    : (mapSourcePosition(current, nextValue, source.selectionEnd, edit) ??
+                      from + markdown.length),
+                  direction: source.selectionDirection,
+                }
+              : null;
+          updateDraft(nextValue, edit);
+          if (source && caret)
+            requestAnimationFrame(() => {
+              if (
+                sourceRef.current === source &&
+                draftRef.current === nextValue &&
+                document.activeElement === source
+              ) {
+                source.setSelectionRange(caret.start, caret.end, caret.direction);
+              }
+            });
+        } else {
+          const decorations =
+            imageUploadKey
+              .getState(editor.state)
+              ?.find(undefined, undefined, (spec) => spec.id === id) ?? [];
+          const placeholder = decorations.find((decoration) => !decoration.spec.selection);
+          if (!placeholder) return;
+          const range = decorations.find((decoration) => decoration.spec.selection);
+          const position =
+            range &&
+            JSON.stringify(editor.state.doc.slice(range.from, range.to).toJSON()) ===
+              upload.selection
+              ? { from: range.from, to: range.to }
+              : placeholder.from;
+          editor.commands.insertContentAt(
+            position,
+            images.map((image) => ({
+              type: 'image',
+              attrs: { src: image.url, alt: image.name.replace(/[\\[\]\r\n]/g, ' ') },
+            })),
+            { updateSelection: false },
+          );
+        }
+      })
+      .catch(() => {
+        if (!upload.controller.signal.aborted && uploads.current.has(id)) {
+          setImageError('图片插入失败，请重新粘贴。');
+        }
+      })
+      .finally(() => {
+        URL.revokeObjectURL(upload.preview);
+        if (!uploads.current.delete(id)) return;
+        uploadCountRef.current -= upload.count;
+        setUploadCount(uploadCountRef.current);
+        if (!editor.isDestroyed && upload.mode === 'visual') {
+          editor.view.dispatch(
+            editor.state.tr.setMeta(imageUploadKey, { remove: id }).setMeta('addToHistory', false),
+          );
+        }
+      });
   };
 
   const polishSelection = async () => {
@@ -431,6 +677,20 @@ export function MarkdownEditor({
 
   return (
     <section
+      onPasteCapture={pasteImages}
+      onKeyDownCapture={(event) => {
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          !event.altKey &&
+          !event.shiftKey &&
+          !event.nativeEvent.isComposing &&
+          event.key.toLowerCase() === 's'
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!event.repeat) void save();
+        }
+      }}
       data-background-surface=""
       className={cn('overflow-hidden rounded-xl border bg-background shadow-sm', className)}
       style={{ '--markdown-editor-min-height': `${minHeight}px` } as React.CSSProperties}
@@ -439,10 +699,17 @@ export function MarkdownEditor({
         <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/25 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-3">
             <TabsList aria-label="Markdown 编辑模式">
-              <TabsTrigger aria-label="显示文本" className="px-2.5" title="显示文本" value="visual">
+              <TabsTrigger
+                disabled={uploadCount > 0}
+                aria-label="显示文本"
+                className="px-2.5"
+                title="显示文本"
+                value="visual"
+              >
                 <Eye />
               </TabsTrigger>
               <TabsTrigger
+                disabled={uploadCount > 0}
                 aria-label="Markdown 源码"
                 className="px-2.5"
                 title="Markdown 源码"
@@ -461,17 +728,25 @@ export function MarkdownEditor({
                 saveState === 'error' ? 'text-destructive' : 'text-muted-foreground',
               )}
             >
-              {saveState === 'saving'
-                ? '正在保存…'
-                : saveState === 'error'
-                  ? '保存失败，请重试'
-                  : isDirty
-                    ? '有未保存的修改'
-                    : '所有修改已保存'}
+              {uploadCount > 0
+                ? `正在上传 ${uploadCount} 张图片，完成后可保存…`
+                : !onSave || disabled
+                  ? disabled
+                    ? '只读模式'
+                    : '未配置保存'
+                  : saveState === 'saving'
+                    ? '正在保存…'
+                    : saveState === 'error'
+                      ? '保存失败，请重试'
+                      : isDirty
+                        ? '有未保存的修改'
+                        : '所有修改已保存'}
             </span>
             <MarkdownShortcutHelp />
             <Button
-              disabled={disabled || saveState === 'saving' || !isDirty}
+              aria-keyshortcuts="Control+s Meta+s"
+              title="保存（Ctrl / ⌘ + S）"
+              disabled={disabled || !onSave || saveState === 'saving' || uploadCount > 0}
               onClick={() => void save()}
               size="sm"
               type="button"
@@ -481,6 +756,21 @@ export function MarkdownEditor({
             </Button>
           </div>
         </header>
+
+        {uploadCount > 0 ? (
+          <p
+            role="status"
+            className="flex items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground"
+          >
+            <LoaderCircle className="size-3 animate-spin" />
+            正在上传 {uploadCount} 张图片，上传完成后可切换模式和保存。你可以继续输入。
+          </p>
+        ) : null}
+        {imageError ? (
+          <p role="alert" className="border-b px-4 py-2 text-sm text-destructive">
+            {imageError}
+          </p>
+        ) : null}
 
         <TabsContent className="m-0 flex min-h-0 flex-col" value="visual">
           <div
@@ -671,10 +961,15 @@ export function MarkdownEditor({
 
         <TabsContent className="m-0 min-h-0" value="source">
           <Textarea
+            ref={sourceRef}
             aria-label="Markdown 源码编辑器"
             className="h-full min-h-(--markdown-editor-min-height) resize-y rounded-none border-0 px-5 py-5 font-mono text-sm leading-7 shadow-none focus-visible:ring-0 sm:px-6"
             disabled={disabled}
-            onChange={(event) => updateDraft(event.target.value)}
+            onChange={(event) => {
+              const edit = sourceEditRef.current;
+              sourceEditRef.current = undefined;
+              updateDraft(event.target.value, edit);
+            }}
             onKeyDown={blockSourceFormattingShortcuts}
             placeholder="# 从这里开始写 Markdown…"
             spellCheck={false}

@@ -17,6 +17,8 @@ const exampleMarkdown = `# Markdown 编辑器
 - 使用 Ctrl + 1 至 Ctrl + 6 切换标题，Ctrl + 0 回到正文
 - 在行首键入 \`> \`、\`- \`、\`1. \` 或 \`# \`，按空格即可转换格式
 - 使用 Ctrl + Shift + Q、K、[、] 快速切换引用、代码块与列表
+- 复制截图或图片后按 **Ctrl + V**，上传完成后即可在正文中看到图片
+- 使用 **Ctrl + S** 保存，源码模式也支持图片粘贴与保存（Mac 使用 ⌘）
 
 > 切换到 Markdown 源码后，格式快捷键会停用，源码本身仍可直接编辑。
 
@@ -30,7 +32,7 @@ function greet(name: string) {
 
 ---
 
-编辑完成后点击右上角的“保存”按钮。`;
+编辑完成后按 **Ctrl + S** 或点击右上角的“保存”按钮。`;
 
 function getInitialMarkdown() {
   if (typeof window === 'undefined') return exampleMarkdown;

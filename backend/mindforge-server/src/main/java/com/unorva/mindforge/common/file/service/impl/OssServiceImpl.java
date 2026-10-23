@@ -10,6 +10,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -40,6 +41,13 @@ public class OssServiceImpl implements FileService {
         PutObjectRequest request =
                 PutObjectRequest.builder().bucket(bucket).key(objectKey).contentType(contentType).build();
         s3Client.putObject(request, RequestBody.fromInputStream(inputStream, contentLength));
+    }
+
+    @Override
+    public Download download(String objectKey) {
+        validateObjectKey(objectKey);
+        var response = s3Client.getObject(GetObjectRequest.builder().bucket(bucket).key(objectKey).build());
+        return new Download(response, response.response().contentLength());
     }
 
     @Override
