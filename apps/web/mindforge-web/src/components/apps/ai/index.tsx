@@ -59,6 +59,7 @@ import { toast } from '@/components/ui/toast';
 import AutomationDialog from './automation-dialog';
 import MarketDialog from './market-dialog';
 import { AssistantContent } from './assistant-content';
+import './ai-assistant.css';
 
 interface ReplyDetailsData {
   reasoning: string;
@@ -475,9 +476,9 @@ export default function AiAssistant() {
       </CommandDialog>
       <MessageScrollerProvider key={activeId ?? 'new'} defaultScrollPosition="end" autoScroll>
         <MessageScroller className="min-h-0 flex-1">
-          <MessageScrollerViewport aria-label="AI 对话消息">
+          <MessageScrollerViewport aria-label="AI 对话消息" className="ai-message-viewport">
             {messages.length || pending || messageLoading ? (
-              <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-5 px-4 py-6">
+              <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-5 px-4 pt-6 pb-24">
                 {messageLoading && <p className="text-sm text-muted-foreground">正在加载消息…</p>}
                 {messages.map((message) => (
                   <MessageScrollerItem
@@ -562,11 +563,12 @@ export default function AiAssistant() {
               </div>
             )}
           </MessageScrollerViewport>
-          <MessageScrollerButton aria-label="滚动到最新消息" />
+          <div aria-hidden="true" className="ai-message-fade" />
+          <MessageScrollerButton aria-label="滚动到最新消息" className="z-1" />
         </MessageScroller>
       </MessageScrollerProvider>
       <div className="relative z-1 shrink-0 px-2 pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4">
-        <InputGroup className="mx-auto w-full max-w-4xl rounded-3xl border-border/70 bg-card/95 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-card/95 dark:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+        <InputGroup className="mx-auto w-full max-w-4xl rounded-3xl border-border/70 bg-card/95 shadow-none backdrop-blur-xl dark:bg-card/95">
           <InputGroupTextarea
             ref={composerRef}
             className="max-h-[min(28dvh,12rem)] min-h-20 overflow-y-auto px-4 pt-4"

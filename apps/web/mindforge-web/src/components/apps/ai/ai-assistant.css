@@ -1,0 +1,15 @@
+/* 消息在靠近输入框的最后 5rem 内渐隐，滚到底部时由内容留白保留完整可读的末条消息。 */
+.ai-message-viewport {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 5rem), transparent);
+}
+
+/* 用渐变遮罩混合清晰和模糊内容，不拦截消息区的滚动、选择和点击。 */
+.ai-message-fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 5rem;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, transparent, #000);
+}
