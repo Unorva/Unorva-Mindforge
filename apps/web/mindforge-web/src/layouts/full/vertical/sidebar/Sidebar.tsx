@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import { getFetcher } from '@/api/global-fetcher';
 import type { ApiResult } from '@/types/api';
 import type { AccountSettingsData } from '@/types/apps/settings';
+import { useMailContext } from '@/context/mail-context/use-mail-context';
 import NavCollapse from './nav-collapse';
 import SimpleBar from 'simplebar-react';
 import FullLogo from '../../shared/logo/FullLogo';
@@ -20,6 +21,7 @@ const appRoutes: Record<string, string> = {
 };
 
 const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
+  const { unreadCount } = useMailContext();
   const { data } = useSWR<ApiResult<AccountSettingsData>>(
     '/api/data/settings/SettingsData',
     getFetcher,
@@ -30,7 +32,18 @@ const SidebarLayout = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
   const filterItems = (items: ChildItem[]): ChildItem[] =>
     items.flatMap((item) => {
       if (item.url && disabledRoutes.some((route) => item.url!.startsWith(route))) return [];
-      if (!item.items) return [item];
+      if (!item.items) {
+        if (item.url !== appRoutes.mail) return [item];
+        return [
+          {
+            ...item,
+            badge: unreadCount > 0,
+            badgeType: 'filled',
+            badgeContent: unreadCount > 99 ? '99+' : String(unreadCount),
+            badgeLabel: `${unreadCount} 封未读邮件`,
+          },
+        ];
+      }
       const children = filterItems(item.items);
       return children.length ? [{ ...item, items: children }] : [];
     });

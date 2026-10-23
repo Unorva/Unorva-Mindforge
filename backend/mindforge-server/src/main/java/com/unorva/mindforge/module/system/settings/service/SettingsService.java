@@ -216,7 +216,7 @@ public class SettingsService {
         AppOptionsDTO options = new AppOptionsDTO("手动", false, false);
         return List.of(
                 new AppIntegrationDTO("projects", "项目管理", "工作台应用偏好", true, options),
-                new AppIntegrationDTO("mail", "邮件中心", "本地草稿与收件箱，外部同步尚未配置", true, options),
+                new AppIntegrationDTO("mail", "邮件中心", "后台同步收件箱与未读邮件", true, new AppOptionsDTO("实时", true, false)),
                 new AppIntegrationDTO("daily-review", "复盘报告", "日常记录与周期复盘", true, options),
                 new AppIntegrationDTO("notes", "笔记", "Markdown 笔记与目录", true, options),
                 new AppIntegrationDTO("blog", "博客", "个人文章与草稿", true, options));

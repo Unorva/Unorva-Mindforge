@@ -54,6 +54,10 @@ public class MailManager {
         return mailDao.listOwned(userId, accountId).stream().map(MailManager::toVO).toList();
     }
 
+    public long unreadCount(long userId) {
+        return cipher.configured() ? mailDao.countUnreadInbox(userId) : 0L;
+    }
+
     public MailConnectionBO requireConnection(long userId, long accountId) {
         return MailAccountConverter.connection(requireAccount(userId, accountId), cipher);
     }
@@ -66,10 +70,7 @@ public class MailManager {
         if (current != null && !"draft".equals(current.folder())) {
             throw conflict("仅草稿可以修改正文或发件账户，请将此邮件复制为新草稿");
         }
-        Long accountId =
-                form.accountId() == null && current != null
-                        ? current.accountId()
-                        : form.accountId();
+        Long accountId = form.accountId() == null && current != null ? current.accountId() : form.accountId();
         if (accountId != null) requireAccount(userId, accountId);
         String folder = value(form.folder(), current == null ? "draft" : current.folder());
         requireFolder(folder);
@@ -85,9 +86,7 @@ public class MailManager {
                         value(form.subject(), current == null ? "" : current.subject()),
                         value(form.body(), current == null ? "" : current.body()),
                         folder,
-                        form.starred() == null
-                                ? current != null && current.starred()
-                                : form.starred(),
+                        form.starred() == null ? current != null && current.starred() : form.starred(),
                         form.unread() == null ? current != null && current.unread() : form.unread(),
                         null,
                         null,
@@ -129,20 +128,17 @@ public class MailManager {
         locks.lock(userId, "mail");
         MailVO current = get(userId, id);
         validatePatch(current, form);
-        if (!Objects.equals(current.accountId(), prepared.accountId()))
-            throw conflict("邮件所属账户已变化，请刷新后重试");
+        if (!Objects.equals(current.accountId(), prepared.accountId())) throw conflict("邮件所属账户已变化，请刷新后重试");
         if (prepared.connection() != null) {
             MailRemoteEntity remote = remoteDao.selectForMail(userId, id);
             if (remote == null
                     || !Objects.equals(remote.getUidValidity(), prepared.uidValidity())
                     || !Objects.equals(remote.getRemoteUid(), prepared.remoteUid())
-                    || !prepared.connection()
-                            .equals(requireConnection(userId, current.accountId()))) {
+                    || !prepared.connection().equals(requireConnection(userId, current.accountId()))) {
                 throw conflict("邮箱消息标识或配置已变化，请重新同步后重试");
             }
         }
-        DaoSupport.requireChanged(
-                mailDao.patchOwned(userId, id, form.folder(), form.starred(), form.unread()));
+        DaoSupport.requireChanged(mailDao.patchOwned(userId, id, form.folder(), form.starred(), form.unread()));
         return get(userId, id);
     }
 
@@ -163,32 +159,33 @@ public class MailManager {
                             locks.lock(userId, "mail");
                             MailConnectionBO connection = requireConnection(userId, accountId);
                             Map<Long, Long> versions = new HashMap<>();
-                            for (MailFlagsVersionBO row :
-                                    mailDao.selectFlagVersions(userId, accountId)) {
-                                versions.put(
-                                        row.getId(),
-                                        Objects.requireNonNullElse(row.getFlagsVersion(), 0L));
+                            for (MailFlagsVersionBO row : mailDao.selectFlagVersions(userId, accountId)) {
+                                versions.put(row.getId(), Objects.requireNonNullElse(row.getFlagsVersion(), 0L));
                             }
-                            return new MailSyncSnapshotBO(connection, versions);
+                            Map<MailRemoteIdentityBO, String> cachedBodies = new HashMap<>();
+                            for (MailCachedBodyBO row : mailDao.selectSyncCache(userId, accountId)) {
+                                cachedBodies.put(
+                                        new MailRemoteIdentityBO(row.getUidValidity(), row.getUid()),
+                                        Objects.requireNonNullElse(row.getBody(), ""));
+                            }
+                            return new MailSyncSnapshotBO(connection, versions, cachedBodies);
                         }));
     }
 
-    public MailSyncVO storeSync(
-            long userId, MailSyncSnapshotBO snapshot, List<RemoteMailBO> remote) {
+    public MailSyncVO storeSync(long userId, MailSyncSnapshotBO snapshot, List<RemoteMailBO> remote) {
         MailConnectionBO connection = snapshot.connection();
         return transactions.execute(
                 status -> {
                     locks.lock(userId, "mail");
                     long accountId = connection.id();
-                    if (!connection.equals(requireConnection(userId, accountId)))
-                        throw conflict("邮箱配置已变化，请重新同步");
+                    if (!connection.equals(requireConnection(userId, accountId))) throw conflict("邮箱配置已变化，请重新同步");
                     Set<String> seen = new HashSet<>();
                     int synced = 0;
+                    int changed = 0;
                     if (!remote.isEmpty()) {
                         long validity = remote.getFirst().uidValidity();
-                        for (Long id :
-                                remoteDao.selectObsoleteMailIds(userId, accountId, validity)) {
-                            mailDao.deleteObsoleteRemote(userId, accountId, id);
+                        for (Long id : remoteDao.selectObsoleteMailIds(userId, accountId, validity)) {
+                            changed += mailDao.deleteObsoleteRemote(userId, accountId, id);
                         }
                         remoteDao.deleteObsolete(userId, accountId, validity);
                     }
@@ -197,18 +194,16 @@ public class MailManager {
                                 || mail.uid() <= 0
                                 || !seen.add(mail.uidValidity() + ":" + mail.uid())) continue;
                         MailRemoteEntity identity =
-                                remoteDao.selectIdentity(
-                                        userId, accountId, mail.uidValidity(), mail.uid());
+                                remoteDao.selectIdentity(userId, accountId, mail.uidValidity(), mail.uid());
                         if (identity != null && identity.getMailId() == null) continue;
                         MailEntity entity = remoteEntity(userId, accountId, mail);
                         if (identity != null) {
                             entity.setId(identity.getMailId());
-                            MailEntity current = mailDao.selectOwned(userId, identity.getMailId());
+                            MailEntity current = mailDao.selectSyncState(userId, identity.getMailId());
                             if (current != null
                                     && !Objects.equals(
                                             snapshot.flagVersions().get(current.getId()),
-                                            Objects.requireNonNullElse(
-                                                    current.getFlagsVersion(), 0L))) {
+                                            Objects.requireNonNullElse(current.getFlagsVersion(), 0L))) {
                                 // A local flag update completed after this fetch started (including
                                 // an ABA toggle).
                                 // Preserve that update while refreshing the message content from
@@ -216,7 +211,10 @@ public class MailManager {
                                 entity.setStarred(current.getStarred());
                                 entity.setUnread(current.getUnread());
                             }
-                            mailDao.refreshRemote(entity);
+                            if (remoteChanged(current, entity)) {
+                                mailDao.refreshRemote(entity);
+                                changed++;
+                            }
                         } else {
                             DaoSupport.requireChanged(mailDao.insertOwned(entity));
                             long id = generatedId(entity);
@@ -228,12 +226,23 @@ public class MailManager {
                             link.setUidValidity(mail.uidValidity());
                             link.setRemoteUid(mail.uid());
                             DaoSupport.requireChanged(remoteDao.insertIdentity(link));
+                            changed++;
                         }
                         synced++;
                     }
                     accountDao.syncSuccess(userId, accountId);
-                    return new MailSyncVO(accountId, synced, "收件箱同步完成");
+                    return new MailSyncVO(accountId, synced, "收件箱同步完成", changed);
                 });
+    }
+
+    private static boolean remoteChanged(MailEntity current, MailEntity incoming) {
+        return current == null
+                || !Objects.equals(current.getSender(), incoming.getSender())
+                || !Objects.equals(current.getRecipient(), incoming.getRecipient())
+                || !Objects.equals(current.getSubject(), incoming.getSubject())
+                || !Objects.equals(current.getBody(), incoming.getBody())
+                || !Objects.equals(current.getStarred(), incoming.getStarred())
+                || !Objects.equals(current.getUnread(), incoming.getUnread());
     }
 
     public MailSendClaimBO claim(long userId, MailSendForm form) {
@@ -241,13 +250,11 @@ public class MailManager {
                 transactions.execute(
                         status -> {
                             locks.lock(userId, "mail");
-                            MailConnectionBO connection =
-                                    requireConnection(userId, form.accountId());
+                            MailConnectionBO connection = requireConnection(userId, form.accountId());
                             MailVO current = form.id() == null ? null : get(userId, form.id());
                             if (current != null && !"draft".equals(current.folder()))
                                 throw conflict("仅草稿可以发送；发送中或已发送邮件不能重复提交");
-                            if (current != null
-                                    && remoteDao.selectForMail(userId, current.id()) != null)
+                            if (current != null && remoteDao.selectForMail(userId, current.id()) != null)
                                 throw conflict("服务商收件邮件不能作为发送草稿");
                             MailVO draft =
                                     new MailVO(
@@ -279,35 +286,27 @@ public class MailManager {
     }
 
     public MailVO finish(long userId, MailSendClaimBO claim, String folder) {
-        if (!Set.of("sent", "draft").contains(folder))
-            throw new IllegalArgumentException("Invalid send outcome");
+        if (!Set.of("sent", "draft").contains(folder)) throw new IllegalArgumentException("Invalid send outcome");
         return transactions.execute(
                 status -> {
                     locks.lock(userId, "mail");
                     if (mailDao.finishSend(userId, claim.id(), claim.token(), folder) != 1)
                         throw conflict("邮件发送状态已变化，请刷新后核对服务商记录");
-                    if ("sent".equals(folder))
-                        accountDao.connectionSuccess(userId, claim.connection().id());
+                    if ("sent".equals(folder)) accountDao.connectionSuccess(userId, claim.connection().id());
                     return get(userId, claim.id());
                 });
     }
 
-    /**
-     * Caller passes a fixed safe message; skip a stale failure if account settings changed during
-     * I/O.
-     */
+    /** Caller passes a fixed safe message; skip a stale failure if account settings changed during I/O. */
     public void recordFailure(long userId, MailConnectionBO connection, String safeMessage) {
         transactions.executeWithoutResult(
                 status -> {
                     locks.lock(userId, "mail");
                     MailAccountEntity account = accountDao.selectOwned(userId, connection.id());
                     if (account == null || !Boolean.TRUE.equals(account.getEnabled())) return;
-                    if (!connection.equals(MailAccountConverter.connection(account, cipher)))
-                        return;
+                    if (!connection.equals(MailAccountConverter.connection(account, cipher))) return;
                     accountDao.connectionFailure(
-                            userId,
-                            connection.id(),
-                            safeMessage.substring(0, Math.min(500, safeMessage.length())));
+                            userId, connection.id(), safeMessage.substring(0, Math.min(500, safeMessage.length())));
                 });
     }
 
@@ -394,8 +393,7 @@ public class MailManager {
     }
 
     private static long generatedId(MailEntity entity) {
-        if (entity.getId() == null)
-            throw new BusinessException("保存失败，请稍后重试", BusinessErrorCode.CONFLICT);
+        if (entity.getId() == null) throw new BusinessException("保存失败，请稍后重试", BusinessErrorCode.CONFLICT);
         return entity.getId();
     }
 
@@ -404,8 +402,7 @@ public class MailManager {
     }
 
     private static void requireFolder(String folder) {
-        if (!FOLDERS.contains(folder))
-            throw new BusinessException("邮件文件夹无效", BusinessErrorCode.INVALID_INPUT);
+        if (!FOLDERS.contains(folder)) throw new BusinessException("邮件文件夹无效", BusinessErrorCode.INVALID_INPUT);
     }
 
     private static void requireFolderTransition(MailVO current, String folder) {

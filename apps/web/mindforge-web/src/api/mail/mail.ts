@@ -1,4 +1,5 @@
 import { deleteFetcher, getFetcher, patchFetcher, postFetcher } from '@/api/global-fetcher';
+import type { RequestOptions } from '@/api/global-fetcher';
 import type { ApiResult } from '@/types/api';
 
 export type MailFolder = 'inbox' | 'draft' | 'sending' | 'sent' | 'archive' | 'trash';
@@ -68,8 +69,12 @@ export interface SendMailInput {
   body: string;
 }
 
-export const getMails = (accountId?: number): Promise<ApiResult<MailItem[]>> =>
-  getFetcher('/mail', { accountId });
+export const getMails = (
+  accountId?: number,
+  options?: RequestOptions,
+): Promise<ApiResult<MailItem[]>> => getFetcher('/mail', { accountId }, options);
+export const getMailUnreadCount = (options?: RequestOptions): Promise<ApiResult<number>> =>
+  getFetcher('/mail/unread-count', undefined, options);
 export const saveMail = (mail: Partial<MailItem>): Promise<ApiResult<MailItem>> =>
   postFetcher('/mail/upsert', mail);
 export const updateMail = (id: number, updates: Partial<MailItem>): Promise<ApiResult<MailItem>> =>
@@ -77,8 +82,8 @@ export const updateMail = (id: number, updates: Partial<MailItem>): Promise<ApiR
 export const deleteMail = (id: number): Promise<ApiResult<void>> => deleteFetcher(`/mail/${id}`);
 export const getMailProviders = (): Promise<ApiResult<MailProvider[]>> =>
   getFetcher('/mail/providers');
-export const getMailAccounts = (): Promise<ApiResult<MailAccount[]>> =>
-  getFetcher('/mail/accounts');
+export const getMailAccounts = (options?: RequestOptions): Promise<ApiResult<MailAccount[]>> =>
+  getFetcher('/mail/accounts', undefined, options);
 export const saveMailAccount = (account: MailAccountInput): Promise<ApiResult<MailAccount>> =>
   postFetcher('/mail/accounts/upsert', account);
 export const deleteMailAccount = (id: number): Promise<ApiResult<void>> =>
@@ -89,8 +94,9 @@ export const testMailAccount = (
   postFetcher(`/mail/accounts/${id}/test`);
 export const syncMailAccount = (
   id: number,
+  options?: RequestOptions,
 ): Promise<ApiResult<{ accountId: number; syncedCount: number; message: string }>> =>
-  postFetcher(`/mail/accounts/${id}/sync`);
+  postFetcher(`/mail/accounts/${id}/sync`, undefined, options);
 export const sendMail = (mail: SendMailInput): Promise<ApiResult<MailItem>> =>
   postFetcher('/mail/send', mail);
 export const recoverMailSend = (id: number): Promise<ApiResult<MailItem>> =>

@@ -24,6 +24,7 @@ export default function NavItem({ item, hasChildren, className, isActive }: NavI
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      title={item.badge && item.badgeLabel ? `${item.name}，${item.badgeLabel}` : undefined}
     >
       <AnimatePresence>
         {isHovered && (
@@ -40,24 +41,52 @@ export default function NavItem({ item, hasChildren, className, isActive }: NavI
 
       <span className={'relative flex items-center gap-2 w-full  rounded-md '}>
         {/* Icon */}
-        {item.icon && <item.icon className={`h-4 w-4 ${item.color ?? ''}`} />}
+        {item.icon && (
+          <span className="relative shrink-0">
+            <item.icon className={cn('h-4 w-4', item.color)} aria-hidden="true" />
+            {item.badge && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute -right-1 -top-1 hidden size-2 rounded-full ring-2 group-data-[collapsible=icon]:block [.sidebar-box:hover_&]:hidden',
+                  isActive ? 'bg-primary-foreground ring-primary' : 'bg-primary ring-background',
+                )}
+              />
+            )}
+          </span>
+        )}
 
         {/* Name */}
-        <span className="font-medium hide-menu">{item.name}</span>
+        <span
+          className="font-medium hide-menu"
+          aria-hidden={item.badge && item.badgeLabel ? true : undefined}
+        >
+          {item.name}
+        </span>
 
         {/* Badge */}
         {item.badge && (
-          <Badge
-            className={cn(
-              'ms-auto hide-menu',
-              item.badgeType === 'filled'
-                ? 'bg-primary text-white dark:text-black'
-                : 'border-primary text-primary',
+          <>
+            {item.badgeLabel && (
+              <span className="sr-only">
+                {item.name}，{item.badgeLabel}
+              </span>
             )}
-            variant={item.badgeType === 'filled' ? 'default' : 'outline'}
-          >
-            {item.badgeContent}
-          </Badge>
+            <Badge
+              aria-hidden={item.badgeLabel ? true : undefined}
+              className={cn(
+                'ms-auto hide-menu tabular-nums',
+                isActive
+                  ? 'border-primary-foreground/30 bg-primary-foreground text-primary'
+                  : item.badgeType === 'filled'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border-primary text-primary',
+              )}
+              variant={item.badgeType === 'filled' ? 'default' : 'outline'}
+            >
+              {item.badgeContent}
+            </Badge>
+          </>
         )}
 
         {/* Pro Badge */}

@@ -23,6 +23,21 @@
  <if test="accountId != null">AND account_id = #{accountId}</if>
  ORDER BY created_at DESC, id DESC LIMIT 1000
 </select>
+<select id="countUnreadInbox" resultType="java.lang.Long">
+ SELECT COUNT(*) FROM mf_mail mail
+ INNER JOIN mf_mail_account account ON account.id = mail.account_id AND account.user_id = mail.user_id
+ WHERE mail.user_id = #{userId} AND mail.folder = 'inbox' AND mail.unread = TRUE
+ AND account.enabled = TRUE AND account.password_ciphertext IS NOT NULL AND TRIM(account.password_ciphertext) != ''
+</select>
+<select id="selectSyncCache" resultType="com.unorva.mindforge.module.business.mail.domain.bo.MailCachedBodyBO">
+ SELECT remote.uid_validity AS uidValidity, remote.remote_uid AS uid, COALESCE(mail.body, '') AS body
+ FROM mf_mail_remote remote
+ INNER JOIN mf_mail mail ON mail.id = remote.mail_id AND mail.user_id = remote.user_id AND mail.account_id = remote.account_id
+ WHERE remote.user_id = #{userId} AND remote.account_id = #{accountId} AND remote.remote_folder = 'INBOX'
+ AND mail.body IS NOT NULL
+ ORDER BY remote.uid_validity DESC, remote.remote_uid DESC LIMIT 200
+</select>
+<select id="selectSyncState" resultMap="entity">SELECT <include refid="columns"/> FROM mf_mail WHERE user_id = #{userId} AND id = #{id}</select>
 <select id="selectFlagVersions" resultType="com.unorva.mindforge.module.business.mail.domain.bo.MailFlagsVersionBO">
  SELECT id, flags_version AS flagsVersion FROM mf_mail WHERE user_id = #{userId} AND account_id = #{accountId}
 </select>

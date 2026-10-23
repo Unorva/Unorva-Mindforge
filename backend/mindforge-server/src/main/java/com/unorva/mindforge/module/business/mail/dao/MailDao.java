@@ -1,6 +1,7 @@
 package com.unorva.mindforge.module.business.mail.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.unorva.mindforge.module.business.mail.domain.bo.MailCachedBodyBO;
 import com.unorva.mindforge.module.business.mail.domain.bo.MailFlagsVersionBO;
 import com.unorva.mindforge.module.business.mail.domain.entity.*;
 
@@ -14,10 +15,15 @@ import java.util.List;
 public interface MailDao extends BaseMapper<MailEntity> {
     List<MailEntity> listOwned(@Param("userId") long userId, @Param("accountId") Long accountId);
 
-    List<MailFlagsVersionBO> selectFlagVersions(
-            @Param("userId") long userId, @Param("accountId") long accountId);
+    long countUnreadInbox(@Param("userId") long userId);
+
+    List<MailFlagsVersionBO> selectFlagVersions(@Param("userId") long userId, @Param("accountId") long accountId);
+
+    List<MailCachedBodyBO> selectSyncCache(@Param("userId") long userId, @Param("accountId") long accountId);
 
     MailEntity selectOwned(@Param("userId") long userId, @Param("id") long id);
+
+    MailEntity selectSyncState(@Param("userId") long userId, @Param("id") long id);
 
     int insertOwned(@Param("entity") MailEntity entity);
 
@@ -32,10 +38,7 @@ public interface MailDao extends BaseMapper<MailEntity> {
 
     int deleteOwned(@Param("userId") long userId, @Param("id") long id);
 
-    int claim(
-            @Param("userId") long userId,
-            @Param("id") long id,
-            @Param("attemptToken") String token);
+    int claim(@Param("userId") long userId, @Param("id") long id, @Param("attemptToken") String token);
 
     int finishSend(
             @Param("userId") long userId,
@@ -51,8 +54,7 @@ public interface MailDao extends BaseMapper<MailEntity> {
 
     int deleteRemoteCache(@Param("userId") long userId, @Param("accountId") long accountId);
 
-    int deleteObsoleteRemote(
-            @Param("userId") long userId, @Param("accountId") long accountId, @Param("id") long id);
+    int deleteObsoleteRemote(@Param("userId") long userId, @Param("accountId") long accountId, @Param("id") long id);
 
     int refreshRemote(@Param("entity") MailEntity entity);
 }

@@ -23,10 +23,7 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Real manager, mocked MyBatis Daos and transport: owner isolation and delivery state without
- * network I/O.
- */
+/** Real manager, mocked MyBatis Daos and transport: owner isolation and delivery state without network I/O. */
 class MailServiceTest {
     private static final long USER = 7L;
     private static final long ACCOUNT = 3L;
@@ -38,8 +35,7 @@ class MailServiceTest {
     private final MailGateway gateway = mock(MailGateway.class);
     private final BusinessLockManager locks = mock(BusinessLockManager.class);
     private final PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
-    private final MailManager manager =
-            new MailManager(mailDao, accountDao, remoteDao, cipher, locks, transactions);
+    private final MailManager manager = new MailManager(mailDao, accountDao, remoteDao, cipher, locks, transactions);
     private final MailService service = new MailService(manager, gateway);
     private final MailConnectionBO connection =
             new MailConnectionBO(
@@ -55,8 +51,7 @@ class MailServiceTest {
                     "ssl",
                     "credential",
                     "password");
-    private final MailSendForm form =
-            new MailSendForm(MAIL, ACCOUNT, "recipient@example.com", "Subject", "Body");
+    private final MailSendForm form = new MailSendForm(MAIL, ACCOUNT, "recipient@example.com", "Subject", "Body");
 
     @BeforeEach
     void setup() {
@@ -70,8 +65,7 @@ class MailServiceTest {
         when(mailDao.finishSend(eq(USER), eq(MAIL), anyString(), anyString())).thenReturn(1);
         when(mailDao.recover(USER, MAIL)).thenReturn(1);
         when(remoteDao.insertIdentity(any())).thenReturn(1);
-        when(remoteDao.selectObsoleteMailIds(anyLong(), anyLong(), anyLong()))
-                .thenReturn(List.of());
+        when(remoteDao.selectObsoleteMailIds(anyLong(), anyLong(), anyLong())).thenReturn(List.of());
         when(mailDao.insertOwned(any()))
                 .thenAnswer(
                         call -> {
@@ -94,16 +88,14 @@ class MailServiceTest {
         order.verify(transactions).commit(any());
         verify(accountDao).connectionSuccess(USER, ACCOUNT);
         var definitions =
-                org.mockito.ArgumentCaptor.forClass(
-                        org.springframework.transaction.TransactionDefinition.class);
+                org.mockito.ArgumentCaptor.forClass(org.springframework.transaction.TransactionDefinition.class);
         verify(transactions, times(2)).getTransaction(definitions.capture());
         assertTrue(
                 definitions.getAllValues().stream()
                         .allMatch(
                                 definition ->
                                         definition.getPropagationBehavior()
-                                                == org.springframework.transaction
-                                                        .TransactionDefinition
+                                                == org.springframework.transaction.TransactionDefinition
                                                         .PROPAGATION_REQUIRES_NEW));
     }
 
@@ -112,14 +104,7 @@ class MailServiceTest {
         when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail("sent", LocalDateTime.now()));
         assertEquals(
                 "sent",
-                service.send(
-                                USER,
-                                new MailSendForm(
-                                        null,
-                                        ACCOUNT,
-                                        form.recipient(),
-                                        form.subject(),
-                                        form.body()))
+                service.send(USER, new MailSendForm(null, ACCOUNT, form.recipient(), form.subject(), form.body()))
                         .folder());
         var saved = org.mockito.ArgumentCaptor.forClass(MailEntity.class);
         verify(mailDao).insertOwned(saved.capture());
@@ -156,8 +141,7 @@ class MailServiceTest {
         doThrow(new IllegalStateException("secret provider response"))
                 .when(gateway)
                 .send(any(), anyString(), anyString(), anyString());
-        BusinessException error =
-                assertThrows(BusinessException.class, () -> service.send(USER, form));
+        BusinessException error = assertThrows(BusinessException.class, () -> service.send(USER, form));
         assertEquals(BusinessErrorCode.PROVIDER_FAILED, error.getErrorCode());
         assertFalse(error.getMessage().contains("secret"));
         verify(mailDao, never()).finishSend(anyLong(), anyLong(), anyString(), anyString());
@@ -169,8 +153,7 @@ class MailServiceTest {
             when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail(folder, LocalDateTime.now()));
             assertEquals(
                     BusinessErrorCode.CONFLICT,
-                    assertThrows(BusinessException.class, () -> service.send(USER, form))
-                            .getErrorCode());
+                    assertThrows(BusinessException.class, () -> service.send(USER, form)).getErrorCode());
         }
         verifyNoInteractions(gateway);
         verify(mailDao, never()).claim(anyLong(), anyLong(), anyString());
@@ -182,8 +165,7 @@ class MailServiceTest {
         when(mailDao.finishSend(eq(USER), eq(MAIL), anyString(), eq("sent"))).thenReturn(0);
         assertEquals(
                 BusinessErrorCode.CONFLICT,
-                assertThrows(BusinessException.class, () -> service.send(USER, form))
-                        .getErrorCode());
+                assertThrows(BusinessException.class, () -> service.send(USER, form)).getErrorCode());
         verify(accountDao, never()).connectionSuccess(anyLong(), anyLong());
         verify(transactions).rollback(any());
     }
@@ -191,15 +173,11 @@ class MailServiceTest {
     @Test
     void validatesSingleRecipientBeforeClaimingOrSending() {
         for (String recipient :
-                List.of(
-                        "a@example.com,b@example.com",
-                        "a@example.com\r\nBcc: b@example.com",
-                        "invalid")) {
+                List.of("a@example.com,b@example.com", "a@example.com\r\nBcc: b@example.com", "invalid")) {
             var invalid = new MailSendForm(MAIL, ACCOUNT, recipient, "Subject", "Body");
             assertEquals(
                     BusinessErrorCode.INVALID_INPUT,
-                    assertThrows(BusinessException.class, () -> service.send(USER, invalid))
-                            .getErrorCode());
+                    assertThrows(BusinessException.class, () -> service.send(USER, invalid)).getErrorCode());
         }
         verifyNoInteractions(mailDao, accountDao, gateway, transactions);
     }
@@ -219,7 +197,7 @@ class MailServiceTest {
         var first = remote(1);
         var existing = remote(2);
         var deleted = remote(3);
-        when(gateway.fetchInbox(connection)).thenReturn(List.of(first, first, existing, deleted));
+        when(gateway.fetchInbox(eq(connection), anyMap())).thenReturn(List.of(first, first, existing, deleted));
         when(remoteDao.selectIdentity(USER, ACCOUNT, 5L, 2L)).thenReturn(identity(22L, 2L));
         when(remoteDao.selectIdentity(USER, ACCOUNT, 5L, 3L)).thenReturn(identity(null, 3L));
         assertEquals(2, service.sync(USER, ACCOUNT).syncedCount());
@@ -240,11 +218,10 @@ class MailServiceTest {
     void rejectsFetchedMailIfAccountChangedDuringNetworkCall() {
         when(accountDao.selectOwned(USER, ACCOUNT))
                 .thenReturn(account("sender@example.com"), account("changed@example.com"));
-        when(gateway.fetchInbox(connection)).thenReturn(List.of(remote(1)));
+        when(gateway.fetchInbox(eq(connection), anyMap())).thenReturn(List.of(remote(1)));
         assertEquals(
                 BusinessErrorCode.CONFLICT,
-                assertThrows(BusinessException.class, () -> service.sync(USER, ACCOUNT))
-                        .getErrorCode());
+                assertThrows(BusinessException.class, () -> service.sync(USER, ACCOUNT)).getErrorCode());
         verify(mailDao).selectFlagVersions(USER, ACCOUNT);
         verifyNoInteractions(remoteDao);
         verify(mailDao, never()).insertOwned(any());
@@ -263,13 +240,12 @@ class MailServiceTest {
         latest.setUnread(false);
         latest.setFlagsVersion(6L);
         when(mailDao.selectOwned(USER, MAIL)).thenReturn(latest);
-        when(gateway.fetchInbox(connection)).thenReturn(List.of(remote(1)));
+        when(mailDao.selectSyncState(USER, MAIL)).thenReturn(latest);
+        when(gateway.fetchInbox(eq(connection), anyMap())).thenReturn(List.of(remote(1)));
         service.sync(USER, ACCOUNT);
-        var refreshed = org.mockito.ArgumentCaptor.forClass(MailEntity.class);
-        verify(mailDao).refreshRemote(refreshed.capture());
-        assertTrue(refreshed.getValue().getStarred());
-        assertFalse(refreshed.getValue().getUnread());
-        assertEquals("Body", refreshed.getValue().getBody());
+        verify(mailDao, never()).refreshRemote(any());
+        assertTrue(latest.getStarred());
+        assertFalse(latest.getUnread());
     }
 
     @Test
@@ -284,7 +260,7 @@ class MailServiceTest {
         current.setUnread(false);
         current.setFlagsVersion(4L);
         when(mailDao.selectOwned(USER, MAIL)).thenReturn(current);
-        when(gateway.fetchInbox(connection)).thenReturn(List.of(remote(1)));
+        when(gateway.fetchInbox(eq(connection), anyMap())).thenReturn(List.of(remote(1)));
         service.sync(USER, ACCOUNT);
         var refreshed = org.mockito.ArgumentCaptor.forClass(MailEntity.class);
         verify(mailDao).refreshRemote(refreshed.capture());
@@ -299,9 +275,7 @@ class MailServiceTest {
         assertThrows(BusinessException.class, () -> service.recoverSend(USER, MAIL));
         verify(mailDao).recover(USER, MAIL);
         when(mailDao.selectOwned(USER, MAIL))
-                .thenReturn(
-                        mail("sending", LocalDateTime.now().minusMinutes(6)),
-                        mail("draft", LocalDateTime.now()));
+                .thenReturn(mail("sending", LocalDateTime.now().minusMinutes(6)), mail("draft", LocalDateTime.now()));
         when(mailDao.recover(USER, MAIL)).thenReturn(1);
         assertEquals("draft", service.recoverSend(USER, MAIL).folder());
         verify(mailDao, times(2)).recover(USER, MAIL);
@@ -311,11 +285,9 @@ class MailServiceTest {
     @Test
     void recoveryUsesDatabaseAgeWhenJdbcAndApplicationTimestampsDifferByEightHours() {
         // An eight-hour offset in a zone-less JDBC value is not evidence of an old delivery claim.
-        when(mailDao.selectOwned(USER, MAIL))
-                .thenReturn(mail("sending", LocalDateTime.now().minusHours(8)));
+        when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail("sending", LocalDateTime.now().minusHours(8)));
         when(mailDao.recover(USER, MAIL)).thenReturn(0);
-        BusinessException blocked =
-                assertThrows(BusinessException.class, () -> service.recoverSend(USER, MAIL));
+        BusinessException blocked = assertThrows(BusinessException.class, () -> service.recoverSend(USER, MAIL));
         assertEquals(BusinessErrorCode.CONFLICT, blocked.getErrorCode());
         verify(mailDao).recover(USER, MAIL);
         verify(mailDao).selectOwned(USER, MAIL);
@@ -325,9 +297,7 @@ class MailServiceTest {
     @Test
     void cannotMoveOrDeleteAClaimWhileDeliveryIsUncertain() {
         when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail("sending", LocalDateTime.now()));
-        assertThrows(
-                BusinessException.class,
-                () -> service.patch(USER, MAIL, new MailPatchForm("draft", true, false)));
+        assertThrows(BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm("draft", true, false)));
         assertThrows(BusinessException.class, () -> service.delete(USER, MAIL));
         verify(mailDao, never()).patchOwned(anyLong(), anyLong(), any(), any(), any());
         verify(mailDao, never()).deleteOwned(anyLong(), anyLong());
@@ -342,46 +312,25 @@ class MailServiceTest {
                             service.save(
                                     USER,
                                     new MailSaveForm(
-                                            null,
-                                            "",
-                                            "recipient@example.com",
-                                            "",
-                                            "",
-                                            folder,
-                                            false,
-                                            false,
-                                            null)));
+                                            null, "", "recipient@example.com", "", "", folder, false, false, null)));
         }
         assertThrows(
                 BusinessException.class,
-                () ->
-                        service.save(
-                                USER,
-                                new MailSaveForm(
-                                        MAIL, null, null, null, null, "sent", null, null,
-                                        ACCOUNT)));
-        assertThrows(
-                BusinessException.class,
-                () -> service.patch(USER, MAIL, new MailPatchForm("sent", null, null)));
+                () -> service.save(USER, new MailSaveForm(MAIL, null, null, null, null, "sent", null, null, ACCOUNT)));
+        assertThrows(BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm("sent", null, null)));
         when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail("sent", LocalDateTime.now()));
-        assertThrows(
-                BusinessException.class,
-                () -> service.patch(USER, MAIL, new MailPatchForm("draft", null, null)));
+        assertThrows(BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm("draft", null, null)));
         // Moving a sent item through another folder must not make it eligible for delivery again.
         for (String archivedFolder : List.of("archive", "trash", "inbox")) {
-            when(mailDao.selectOwned(USER, MAIL))
-                    .thenReturn(mail(archivedFolder, LocalDateTime.now()));
+            when(mailDao.selectOwned(USER, MAIL)).thenReturn(mail(archivedFolder, LocalDateTime.now()));
             assertThrows(
-                    BusinessException.class,
-                    () -> service.patch(USER, MAIL, new MailPatchForm("draft", null, null)));
+                    BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm("draft", null, null)));
             assertThrows(
                     BusinessException.class,
                     () ->
                             service.save(
                                     USER,
-                                    new MailSaveForm(
-                                            MAIL, null, null, null, null, "draft", null, null,
-                                            ACCOUNT)));
+                                    new MailSaveForm(MAIL, null, null, null, null, "draft", null, null, ACCOUNT)));
         }
         verify(mailDao, never()).insertOwned(any());
         verify(mailDao, never()).updateOwned(any());
@@ -391,11 +340,8 @@ class MailServiceTest {
 
     @Test
     void remoteFlagsRunBetweenDatabaseReadsAndRejectAChangedIdentity() {
-        when(remoteDao.selectForMail(USER, MAIL))
-                .thenReturn(identity(MAIL, 1L), identity(MAIL, 2L));
-        assertThrows(
-                BusinessException.class,
-                () -> service.patch(USER, MAIL, new MailPatchForm(null, true, false)));
+        when(remoteDao.selectForMail(USER, MAIL)).thenReturn(identity(MAIL, 1L), identity(MAIL, 2L));
+        assertThrows(BusinessException.class, () -> service.patch(USER, MAIL, new MailPatchForm(null, true, false)));
         verify(gateway).updateFlags(connection, 5L, 1L, true, false);
         verify(mailDao, never()).patchOwned(anyLong(), anyLong(), any(), any(), any());
     }

@@ -2,6 +2,7 @@ import { clearAccessToken, getAccessToken } from '@/utils/auth';
 import { toast } from '@/components/ui/toast';
 
 type ApiErrorPayload = Record<string, unknown>;
+export type RequestOptions = { silent?: boolean };
 
 class ReportedRequestError extends Error {}
 
@@ -21,17 +22,27 @@ function showRequestError(message: string) {
 }
 
 /**
- * 所有 HTTP 请求共用同一条失败反馈：网络、状态码和业务响应失败都会提示一次。
+ * 前台请求的网络、状态码和业务失败统一提示一次；后台轮询可用 silent 保持安静。
  * 业务失败也会抛出异常，只有成功响应会交给调用方更新页面。
  */
-async function request(url: string, init: RequestInit, fallbackMessage: string) {
+async function request(
+  url: string,
+  init: RequestInit,
+  fallbackMessage: string,
+  options: RequestOptions = {},
+) {
+  const reportError = (message: string) => {
+    if (!options.silent) showRequestError(message);
+  };
   try {
     const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
     const response = await fetch(`${apiBase}${url}`, {
       ...init,
       signal:
         init.signal ??
-        AbortSignal.timeout(url.startsWith('/ai/') ? 65000 : url.startsWith('/mail') ? 120000 : 30000),
+        AbortSignal.timeout(
+          url.startsWith('/ai/') ? 65000 : url.startsWith('/mail') ? 120000 : 30000,
+        ),
     });
     const payload = await response.json().catch(() => undefined);
 
@@ -44,19 +55,19 @@ async function request(url: string, init: RequestInit, fallbackMessage: string) 
 
     if (!response.ok) {
       const message = getResponseErrorMessage(payload, fallbackMessage);
-      showRequestError(message);
+      reportError(message);
       throw new ReportedRequestError(message);
     }
 
     if (payload === undefined) {
       const message = '服务器响应格式错误，请稍后重试。';
-      showRequestError(message);
+      reportError(message);
       throw new ReportedRequestError(message);
     }
 
     if (isApiErrorPayload(payload) && payload.success === false) {
       const message = getResponseErrorMessage(payload, fallbackMessage);
-      showRequestError(message);
+      reportError(message);
       throw new ReportedRequestError(message);
     }
 
@@ -72,7 +83,7 @@ async function request(url: string, init: RequestInit, fallbackMessage: string) 
           : error instanceof Error && error.message
             ? error.message
             : '网络请求失败，请检查网络后重试。';
-    showRequestError(message);
+    reportError(message);
     throw error;
   }
 }
@@ -92,6 +103,7 @@ const getAuthorizationHeader = (): HeadersInit => {
 const getFetcher = async (
   url: string,
   params?: Record<string, string | number | boolean | undefined>,
+  options?: RequestOptions,
 ) => {
   if (params) {
     const searchParams = new URLSearchParams();
@@ -115,13 +127,14 @@ const getFetcher = async (
       headers: getAuthorizationHeader(),
     },
     '获取数据失败，请稍后重试。',
+    options,
   );
 };
 
 /**
  * POST 请求
  */
-const postFetcher = (url: string, arg?: unknown) =>
+const postFetcher = (url: string, arg?: unknown, options?: RequestOptions) =>
   request(
     url,
     {
@@ -133,6 +146,7 @@ const postFetcher = (url: string, arg?: unknown) =>
       body: arg !== undefined ? JSON.stringify(arg) : undefined,
     },
     '提交数据失败，请稍后重试。',
+    options,
   );
 
 /**

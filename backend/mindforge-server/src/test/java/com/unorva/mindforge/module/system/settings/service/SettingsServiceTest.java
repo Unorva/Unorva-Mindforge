@@ -97,6 +97,22 @@ class SettingsServiceTest {
     }
 
     @Test
+    void defaultsMailToLiveSyncWithoutChangingExplicitManualPreferences() {
+        var mail = service.get(7L).apps().stream().filter(app -> "mail".equals(app.id())).findFirst().orElseThrow();
+        assertEquals("实时", mail.options().syncFrequency());
+        assertTrue(mail.options().notifyEnabled());
+        when(settings.sections(7L))
+                .thenReturn(
+                        Map.of(
+                                "apps",
+                                "[{\"id\":\"mail\",\"enabled\":true,\"options\":{\"syncFrequency\":\"手动\",\"notify\":false}}]"));
+        var saved = service.get(7L).apps().getFirst();
+        assertEquals("手动", saved.options().syncFrequency());
+        assertFalse(saved.options().notifyEnabled());
+        verify(settings, never()).saveSection(anyLong(), anyString(), anyString());
+    }
+
+    @Test
     void defaultsAppearanceForExistingAccountsWithoutPreferences() {
         assertEquals("plain", service.get(7L).appearance().background());
         when(settings.sections(7L)).thenReturn(Map.of("appearance", "{}"));

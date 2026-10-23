@@ -3,6 +3,7 @@ package com.unorva.mindforge.module.business.mail.client;
 import com.unorva.mindforge.common.exception.BusinessErrorCode;
 import com.unorva.mindforge.common.exception.BusinessException;
 import com.unorva.mindforge.module.business.mail.domain.bo.MailConnectionBO;
+import com.unorva.mindforge.module.business.mail.domain.bo.MailRemoteIdentityBO;
 import com.unorva.mindforge.module.business.mail.domain.bo.RemoteMailBO;
 
 import jakarta.mail.Address;
@@ -79,10 +80,8 @@ public class MailGateway {
                     Map.entry("imap:imap.163.com", 993), Map.entry("smtp:smtp.163.com", 465),
                     Map.entry("imap:imap.126.com", 993), Map.entry("smtp:smtp.126.com", 465),
                     Map.entry("imap:imap.gmail.com", 993), Map.entry("smtp:smtp.gmail.com", 465),
-                    Map.entry("imap:outlook.office365.com", 993),
-                            Map.entry("smtp:smtp-mail.outlook.com", 587),
-                    Map.entry("imap:imap.mail.me.com", 993),
-                            Map.entry("smtp:smtp.mail.me.com", 587));
+                    Map.entry("imap:outlook.office365.com", 993), Map.entry("smtp:smtp-mail.outlook.com", 587),
+                    Map.entry("imap:imap.mail.me.com", 993), Map.entry("smtp:smtp.mail.me.com", 587));
     private final boolean allowPrivateHosts;
     private final boolean allowProviderFakeIp;
 
@@ -104,9 +103,7 @@ public class MailGateway {
 
         public DeliveryException(boolean definitelyNotSent) {
             super(
-                    definitelyNotSent
-                            ? "邮件发送失败，请检查收件地址、授权信息或服务器配置；草稿已保留"
-                            : "邮件发送结果尚未确认，请先在邮箱服务商核对已发送邮件，再解除发送锁重试",
+                    definitelyNotSent ? "邮件发送失败，请检查收件地址、授权信息或服务器配置；草稿已保留" : "邮件发送结果尚未确认，请先在邮箱服务商核对已发送邮件，再解除发送锁重试",
                     BusinessErrorCode.PROVIDER_FAILED);
             this.definitelyNotSent = definitelyNotSent;
         }
@@ -128,14 +125,17 @@ public class MailGateway {
             throw connectionFailure("收件 IMAP", account.authType(), exception);
         }
         try (Transport transport = smtpSession(account).getTransport("smtp")) {
-            transport.connect(
-                    account.smtpHost(), account.smtpPort(), account.username(), account.password());
+            transport.connect(account.smtpHost(), account.smtpPort(), account.username(), account.password());
         } catch (MessagingException | RuntimeException exception) {
             throw connectionFailure("发件 SMTP", account.authType(), exception);
         }
     }
 
     public List<RemoteMailBO> fetchInbox(MailConnectionBO account) {
+        return fetchInbox(account, Map.of());
+    }
+
+    public List<RemoteMailBO> fetchInbox(MailConnectionBO account, Map<MailRemoteIdentityBO, String> cachedBodies) {
         long deadline = System.nanoTime() + SYNC_DEADLINE_NANOS;
         try (Store store = openInboxStore(account)) {
             Folder inbox = store.getFolder("INBOX");
@@ -144,8 +144,7 @@ public class MailGateway {
                 if (!(inbox instanceof UIDFolder uidFolder)) throw connectionFailure();
                 int count = inbox.getMessageCount();
                 if (count == 0) return List.of();
-                Message[] messages =
-                        inbox.getMessages(Math.max(1, count - MAX_INBOX_MESSAGES + 1), count);
+                Message[] messages = inbox.getMessages(Math.max(1, count - MAX_INBOX_MESSAGES + 1), count);
                 FetchProfile profile = new FetchProfile();
                 profile.add(FetchProfile.Item.ENVELOPE);
                 profile.add(FetchProfile.Item.FLAGS);
@@ -162,10 +161,13 @@ public class MailGateway {
                     if (uid < 1 || uidValidity < 1) continue;
                     // Large messages and attachments are deliberately not downloaded into the local
                     // cache.
+                    String cached = cachedBodies.get(new MailRemoteIdentityBO(uidValidity, uid));
                     String body =
-                            message.getSize() > 2_000_000
-                                    ? "此邮件较大，请在邮箱服务商查看完整内容与附件。"
-                                    : extractText(message, 0, new int[] {64});
+                            cached != null
+                                    ? cached
+                                    : message.getSize() > 2_000_000
+                                            ? "此邮件较大，请在邮箱服务商查看完整内容与附件。"
+                                            : extractText(message, 0, new int[] {64});
                     Date received = message.getReceivedDate();
                     if (received == null) received = message.getSentDate();
                     result.add(
@@ -180,16 +182,14 @@ public class MailGateway {
                                     !message.isSet(Flags.Flag.SEEN),
                                     received == null
                                             ? LocalDateTime.now(MAIL_TIME_ZONE)
-                                            : LocalDateTime.ofInstant(
-                                                    received.toInstant(), MAIL_TIME_ZONE)));
+                                            : LocalDateTime.ofInstant(received.toInstant(), MAIL_TIME_ZONE)));
                 }
                 return result;
             } finally {
                 if (inbox.isOpen()) inbox.close(false);
             }
         } catch (MessagingException | IOException | RuntimeException exception) {
-            throw new BusinessException(
-                    "收件箱同步失败，请检查邮箱授权信息、TLS 与网络连接", BusinessErrorCode.PROVIDER_FAILED);
+            throw new BusinessException("收件箱同步失败，请检查邮箱授权信息、TLS 与网络连接", BusinessErrorCode.PROVIDER_FAILED);
         }
     }
 
@@ -205,14 +205,12 @@ public class MailGateway {
             message.setText(body == null ? "" : body, "UTF-8");
             message.setSentDate(new Date());
             message.saveChanges();
-            transport.connect(
-                    account.smtpHost(), account.smtpPort(), account.username(), account.password());
+            transport.connect(account.smtpHost(), account.smtpPort(), account.username(), account.password());
             transmissionStarted = true;
             transport.sendMessage(message, new Address[] {address});
             transmissionAccepted = true;
         } catch (SendFailedException exception) {
-            if (transmissionAccepted)
-                return; // A failed QUIT cannot undo a confirmed DATA response.
+            if (transmissionAccepted) return; // A failed QUIT cannot undo a confirmed DATA response.
             throw new DeliveryException(!transmissionStarted || definitelyRejected(exception));
         } catch (MessagingException | IOException | RuntimeException exception) {
             if (transmissionAccepted) return;
@@ -220,12 +218,9 @@ public class MailGateway {
         }
     }
 
-    /**
-     * Missing validSent addresses alone is not evidence that a timed-out DATA command was rejected.
-     */
+    /** Missing validSent addresses alone is not evidence that a timed-out DATA command was rejected. */
     static boolean definitelyRejected(SendFailedException exception) {
-        if (exception.getValidSentAddresses() != null
-                && exception.getValidSentAddresses().length > 0) return false;
+        if (exception.getValidSentAddresses() != null && exception.getValidSentAddresses().length > 0) return false;
         if (exception instanceof SMTPSendFailedException smtp) {
             return smtp.getReturnCode() >= 400 && smtp.getReturnCode() <= 599;
         }
@@ -237,22 +232,16 @@ public class MailGateway {
     }
 
     public void updateFlags(
-            MailConnectionBO account,
-            long uidValidity,
-            long remoteUid,
-            Boolean starred,
-            Boolean unread) {
+            MailConnectionBO account, long uidValidity, long remoteUid, Boolean starred, Boolean unread) {
         try (Store store = openInboxStore(account)) {
             Folder inbox = store.getFolder("INBOX");
             try {
                 inbox.open(Folder.READ_WRITE);
-                if (!(inbox instanceof UIDFolder uidFolder)
-                        || uidFolder.getUIDValidity() != uidValidity) {
+                if (!(inbox instanceof UIDFolder uidFolder) || uidFolder.getUIDValidity() != uidValidity) {
                     throw new BusinessException("邮箱消息标识已变化，请先重新同步", BusinessErrorCode.CONFLICT);
                 }
                 Message message = uidFolder.getMessageByUID(remoteUid);
-                if (message == null)
-                    throw new BusinessException("邮件已不在服务商收件箱中，请重新同步", BusinessErrorCode.NOT_FOUND);
+                if (message == null) throw new BusinessException("邮件已不在服务商收件箱中，请重新同步", BusinessErrorCode.NOT_FOUND);
                 if (starred != null) message.setFlag(Flags.Flag.FLAGGED, starred);
                 if (unread != null) message.setFlag(Flags.Flag.SEEN, !unread);
             } finally {
@@ -267,16 +256,10 @@ public class MailGateway {
 
     private Store openInboxStore(MailConnectionBO account) throws MessagingException {
         Session session =
-                Session.getInstance(
-                        properties(
-                                "imap",
-                                account.imapHost(),
-                                account.imapSecurity(),
-                                account.authType()));
+                Session.getInstance(properties("imap", account.imapHost(), account.imapSecurity(), account.authType()));
         Store store = session.getStore("imap");
         try {
-            store.connect(
-                    account.imapHost(), account.imapPort(), account.username(), account.password());
+            store.connect(account.imapHost(), account.imapPort(), account.username(), account.password());
             // NetEase/Coremail requires client identification before EXAMINE or SELECT.
             // Only send the extension when advertised, preserving compatibility with other servers.
             if (store instanceof IMAPStore imap && imap.hasCapability("ID")) {
@@ -294,14 +277,12 @@ public class MailGateway {
     }
 
     private Session smtpSession(MailConnectionBO account) {
-        return Session.getInstance(
-                properties("smtp", account.smtpHost(), account.smtpSecurity(), account.authType()));
+        return Session.getInstance(properties("smtp", account.smtpHost(), account.smtpSecurity(), account.authType()));
     }
 
     Properties properties(String protocol, String host, String security, String authType) {
         if (!"ssl".equals(security) && !"starttls".equals(security)) {
-            throw new BusinessException(
-                    "邮箱连接必须使用 SSL/TLS 或 STARTTLS", BusinessErrorCode.INVALID_INPUT);
+            throw new BusinessException("邮箱连接必须使用 SSL/TLS 或 STARTTLS", BusinessErrorCode.INVALID_INPUT);
         }
         Properties properties = new Properties();
         String prefix = "mail." + protocol;
@@ -311,19 +292,15 @@ public class MailGateway {
         properties.setProperty(prefix + ".ssl.enable", Boolean.toString("ssl".equals(security)));
         properties.setProperty(prefix + ".ssl.checkserveridentity", "true");
         properties.setProperty(prefix + ".ssl.protocols", "TLSv1.3 TLSv1.2");
-        properties.setProperty(
-                prefix + ".starttls.enable", Boolean.toString("starttls".equals(security)));
-        properties.setProperty(
-                prefix + ".starttls.required", Boolean.toString("starttls".equals(security)));
+        properties.setProperty(prefix + ".starttls.enable", Boolean.toString("starttls".equals(security)));
+        properties.setProperty(prefix + ".starttls.required", Boolean.toString("starttls".equals(security)));
         properties.setProperty(prefix + ".socketFactory.fallback", "false");
         properties.put(
                 prefix + ".socketFactory",
                 new VerifiedSocketFactory(protocol, host, allowPrivateHosts, allowProviderFakeIp));
         properties.setProperty(prefix + ".auth", "true");
-        properties.setProperty(
-                prefix + ".auth.mechanisms", "oauth2".equals(authType) ? "XOAUTH2" : "PLAIN LOGIN");
-        properties.setProperty(
-                prefix + ".auth.xoauth2.disable", Boolean.toString(!"oauth2".equals(authType)));
+        properties.setProperty(prefix + ".auth.mechanisms", "oauth2".equals(authType) ? "XOAUTH2" : "PLAIN LOGIN");
+        properties.setProperty(prefix + ".auth.xoauth2.disable", Boolean.toString(!"oauth2".equals(authType)));
         if ("oauth2".equals(authType)) {
             properties.setProperty(prefix + ".auth.login.disable", "true");
             properties.setProperty(prefix + ".auth.plain.disable", "true");
@@ -338,16 +315,13 @@ public class MailGateway {
     }
 
     static InternetAddress singleRecipient(String recipient) throws MessagingException {
-        InternetAddress[] addresses =
-                InternetAddress.parse(recipient == null ? "" : recipient, true);
-        if (addresses.length != 1 || addresses[0].isGroup())
-            throw new MessagingException("Invalid recipient");
+        InternetAddress[] addresses = InternetAddress.parse(recipient == null ? "" : recipient, true);
+        if (addresses.length != 1 || addresses[0].isGroup()) throw new MessagingException("Invalid recipient");
         addresses[0].validate();
         return addresses[0];
     }
 
-    static String extractText(Part part, int depth, int[] partsLeft)
-            throws MessagingException, IOException {
+    static String extractText(Part part, int depth, int[] partsLeft) throws MessagingException, IOException {
         if (depth > 8
                 || partsLeft[0]-- <= 0
                 || Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())
@@ -386,13 +360,7 @@ public class MailGateway {
             char[] buffer = new char[4096];
             int count;
             while (result.length() < MAX_BODY_LENGTH
-                    && (count =
-                                    reader.read(
-                                            buffer,
-                                            0,
-                                            Math.min(
-                                                    buffer.length,
-                                                    MAX_BODY_LENGTH - result.length())))
+                    && (count = reader.read(buffer, 0, Math.min(buffer.length, MAX_BODY_LENGTH - result.length())))
                             != -1) {
                 result.append(buffer, 0, count);
             }
@@ -409,22 +377,19 @@ public class MailGateway {
                             private int hidden;
 
                             @Override
-                            public void handleStartTag(
-                                    HTML.Tag tag, MutableAttributeSet attributes, int position) {
+                            public void handleStartTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
                                 if (tag == HTML.Tag.SCRIPT || tag == HTML.Tag.STYLE) hidden++;
                                 if (tag.isBlock() && hidden == 0) result.append('\n');
                             }
 
                             @Override
                             public void handleEndTag(HTML.Tag tag, int position) {
-                                if ((tag == HTML.Tag.SCRIPT || tag == HTML.Tag.STYLE) && hidden > 0)
-                                    hidden--;
+                                if ((tag == HTML.Tag.SCRIPT || tag == HTML.Tag.STYLE) && hidden > 0) hidden--;
                                 if (tag.isBlock() && hidden == 0) result.append('\n');
                             }
 
                             @Override
-                            public void handleSimpleTag(
-                                    HTML.Tag tag, MutableAttributeSet attributes, int position) {
+                            public void handleSimpleTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
                                 if (tag == HTML.Tag.BR && hidden == 0) result.append('\n');
                             }
 
@@ -441,10 +406,7 @@ public class MailGateway {
         if (addresses == null || addresses.length == 0) return "";
         List<String> values = new ArrayList<>();
         for (Address address : addresses) {
-            values.add(
-                    address instanceof InternetAddress internet
-                            ? internet.getAddress()
-                            : address.toString());
+            values.add(address instanceof InternetAddress internet ? internet.getAddress() : address.toString());
         }
         return bounded(String.join(", ", values), 254);
     }
@@ -454,14 +416,10 @@ public class MailGateway {
     }
 
     private static BusinessException connectionFailure() {
-        return new BusinessException(
-                "邮箱连接失败，请检查 IMAP/SMTP 地址、TLS、授权码或 OAuth2 令牌", BusinessErrorCode.PROVIDER_FAILED);
+        return new BusinessException("邮箱连接失败，请检查 IMAP/SMTP 地址、TLS、授权码或 OAuth2 令牌", BusinessErrorCode.PROVIDER_FAILED);
     }
 
-    /**
-     * Provider errors are classified by type; raw responses, host details and credentials stay
-     * private.
-     */
+    /** Provider errors are classified by type; raw responses, host details and credentials stay private. */
     static BusinessException connectionFailure(String stage, String authType, Throwable failure) {
         String detail;
         if (hasFailure(failure, AuthenticationFailedException.class)) {
@@ -470,9 +428,7 @@ public class MailGateway {
                             ? "认证失败，请确认 OAuth2 访问令牌有效、尚未过期，并已授予 IMAP 与 SMTP 权限"
                             : "认证失败，请确认已开启 IMAP/SMTP 服务并填写客户端授权码或 App 专用密码；QQ、网易邮箱不能直接使用登录密码";
         } else if (hasFailure(failure, FakeProxyMailHostException.class)) {
-            detail =
-                    "服务器被 DNS 解析到代理的虚拟地址（Fake-IP），当前安全策略已阻止连接；请将代理 DNS 切换为真实 IP 模式，或为邮箱服务器设置真实 DNS"
-                            + " 后重试";
+            detail = "服务器被 DNS 解析到代理的虚拟地址（Fake-IP），当前安全策略已阻止连接；请将代理 DNS 切换为真实 IP 模式，或为邮箱服务器设置真实 DNS" + " 后重试";
         } else if (hasFailure(failure, BlockedMailHostException.class)) {
             detail = "服务器解析为本地或内网地址，连接已被阻止；请检查 DNS，或让管理员确认内网邮箱访问配置";
         } else if (hasFailure(failure, UnknownHostException.class)) {
@@ -481,8 +437,7 @@ public class MailGateway {
             detail = "连接或读取超时，请检查网络、防火墙及邮箱服务器端口，稍后重试";
         } else if (hasFailure(failure, SSLException.class)) {
             detail = "TLS 握手或证书验证失败，请确认服务器域名、端口与 SSL/STARTTLS 配置正确";
-        } else if (hasFailure(failure, ConnectException.class)
-                || hasFailure(failure, NoRouteToHostException.class)) {
+        } else if (hasFailure(failure, ConnectException.class) || hasFailure(failure, NoRouteToHostException.class)) {
             detail = "无法连接服务器，请检查服务器端口、网络、防火墙及服务商连接限制";
         } else {
             detail = "连接失败，请确认服务器、SSL/STARTTLS 配置、邮箱授权与网络连接";
@@ -499,8 +454,7 @@ public class MailGateway {
             if (!seen.add(current)) continue;
             if (expected.isInstance(current)) return true;
             if (current.getCause() != null) pending.add(current.getCause());
-            if (current instanceof MessagingException messaging
-                    && messaging.getNextException() != null) {
+            if (current instanceof MessagingException messaging && messaging.getNextException() != null) {
                 pending.add(messaging.getNextException());
             }
         }
@@ -523,14 +477,12 @@ public class MailGateway {
     }
 
     /** Opt-in proxy compatibility is restricted to exact built-in protocol/host/port endpoints. */
-    static boolean providerFakeIpAllowed(
-            boolean enabled, String protocol, String host, int port, InetAddress address) {
+    static boolean providerFakeIpAllowed(boolean enabled, String protocol, String host, int port, InetAddress address) {
         if (!enabled
                 || host == null
                 || !("imap".equals(protocol) || "smtp".equals(protocol))
                 || !isFakeProxyAddress(address)) return false;
-        Integer presetPort =
-                PROVIDER_FAKE_IP_ENDPOINTS.get(protocol + ":" + host.toLowerCase(Locale.ROOT));
+        Integer presetPort = PROVIDER_FAKE_IP_ENDPOINTS.get(protocol + ":" + host.toLowerCase(Locale.ROOT));
         return presetPort != null && presetPort == port;
     }
 
@@ -548,8 +500,7 @@ public class MailGateway {
         for (InetAddress candidate : resolved) {
             if (!allowPrivate
                     && isPrivateAddress(candidate)
-                    && !providerFakeIpAllowed(
-                            allowProviderFakeIp, protocol, host, port, candidate)) {
+                    && !providerFakeIpAllowed(allowProviderFakeIp, protocol, host, port, candidate)) {
                 if (isFakeProxyAddress(candidate)) throw new FakeProxyMailHostException();
                 throw new BlockedMailHostException();
             }
@@ -575,17 +526,14 @@ public class MailGateway {
         return (Byte.toUnsignedInt(bytes[0]) & 0xfe) == 0xfc;
     }
 
-    /**
-     * Resolve and validate at connect time; connect to that exact address to avoid DNS rebinding.
-     */
+    /** Resolve and validate at connect time; connect to that exact address to avoid DNS rebinding. */
     static final class VerifiedSocketFactory extends SocketFactory {
         private final String protocol;
         private final String host;
         private final boolean allowPrivate;
         private final boolean allowProviderFakeIp;
 
-        VerifiedSocketFactory(
-                String protocol, String host, boolean allowPrivate, boolean allowProviderFakeIp) {
+        VerifiedSocketFactory(String protocol, String host, boolean allowPrivate, boolean allowProviderFakeIp) {
             this.protocol = protocol;
             this.host = host;
             this.allowPrivate = allowPrivate;
@@ -605,8 +553,7 @@ public class MailGateway {
         }
 
         @Override
-        public Socket createSocket(String host, int port, InetAddress localHost, int localPort)
-                throws IOException {
+        public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
             Socket socket = createSocket();
             socket.bind(new InetSocketAddress(localHost, localPort));
             socket.connect(InetSocketAddress.createUnresolved(host, port), CONNECT_TIMEOUT_MS);
@@ -631,11 +578,7 @@ public class MailGateway {
         private final boolean allowPrivate;
         private final boolean allowProviderFakeIp;
 
-        VerifiedSocket(
-                String protocol,
-                String expectedHost,
-                boolean allowPrivate,
-                boolean allowProviderFakeIp) {
+        VerifiedSocket(String protocol, String expectedHost, boolean allowPrivate, boolean allowProviderFakeIp) {
             this.protocol = protocol;
             this.expectedHost = expectedHost;
             this.allowPrivate = allowPrivate;
@@ -644,24 +587,16 @@ public class MailGateway {
 
         @Override
         public void connect(SocketAddress endpoint, int timeout) throws IOException {
-            if (!(endpoint instanceof InetSocketAddress address)
-                    || expectedHost == null
-                    || expectedHost.isBlank()) {
+            if (!(endpoint instanceof InetSocketAddress address) || expectedHost == null || expectedHost.isBlank()) {
                 throw new IOException("Invalid mail server");
             }
             InetAddress[] resolved = InetAddress.getAllByName(expectedHost);
             verifyResolvedAddresses(
-                    protocol,
-                    expectedHost,
-                    address.getPort(),
-                    allowPrivate,
-                    allowProviderFakeIp,
-                    resolved);
+                    protocol, expectedHost, address.getPort(), allowPrivate, allowProviderFakeIp, resolved);
             // SocketFetcher wraps this verified socket in the default SSL socket, retaining TLS
             // hostname validation.
             super.connect(
-                    new InetSocketAddress(resolved[0], address.getPort()),
-                    timeout > 0 ? timeout : CONNECT_TIMEOUT_MS);
+                    new InetSocketAddress(resolved[0], address.getPort()), timeout > 0 ? timeout : CONNECT_TIMEOUT_MS);
         }
 
         @Override

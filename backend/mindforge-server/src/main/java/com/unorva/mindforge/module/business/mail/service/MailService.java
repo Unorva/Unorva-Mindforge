@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Orchestrates provider I/O between committed manager transactions. */
 @Service
@@ -22,9 +25,16 @@ import java.util.List;
 public class MailService {
     private final MailManager manager;
     private final MailGateway gateway;
+    private final ConcurrentHashMap<SyncKey, CompletableFuture<MailSyncVO>> syncRequests = new ConcurrentHashMap<>();
+
+    private record SyncKey(long userId, long accountId) {}
 
     public List<MailVO> list(long userId, Long accountId) {
         return manager.list(userId, accountId);
+    }
+
+    public long unreadCount(long userId) {
+        return manager.unreadCount(userId);
     }
 
     public MailVO save(long userId, MailSaveForm form) {
@@ -43,21 +53,42 @@ public class MailService {
         var prepared = manager.preparePatch(userId, id, form);
         if (prepared.connection() != null) {
             gateway.updateFlags(
-                    prepared.connection(),
-                    prepared.uidValidity(),
-                    prepared.remoteUid(),
-                    form.starred(),
-                    form.unread());
+                    prepared.connection(), prepared.uidValidity(), prepared.remoteUid(), form.starred(), form.unread());
         }
         return manager.patch(userId, id, form, prepared);
     }
 
     public MailSyncVO sync(long userId, long accountId) {
+        SyncKey key = new SyncKey(userId, accountId);
+        CompletableFuture<MailSyncVO> request = new CompletableFuture<>();
+        CompletableFuture<MailSyncVO> existing = syncRequests.putIfAbsent(key, request);
+        if (existing != null) {
+            try {
+                return existing.join();
+            } catch (CompletionException exception) {
+                if (exception.getCause() instanceof RuntimeException cause) throw cause;
+                if (exception.getCause() instanceof Error cause) throw cause;
+                throw exception;
+            }
+        }
+        try {
+            MailSyncVO result = synchronize(userId, accountId);
+            request.complete(result);
+            return result;
+        } catch (RuntimeException | Error exception) {
+            request.completeExceptionally(exception);
+            throw exception;
+        } finally {
+            syncRequests.remove(key, request);
+        }
+    }
+
+    private MailSyncVO synchronize(long userId, long accountId) {
         var snapshot = manager.prepareSync(userId, accountId);
         var connection = snapshot.connection();
         List<RemoteMailBO> remote;
         try {
-            remote = gateway.fetchInbox(connection);
+            remote = gateway.fetchInbox(connection, snapshot.cachedBodies());
         } catch (BusinessException exception) {
             manager.recordFailure(userId, connection, "收件箱同步失败，请检查邮箱认证与网络连接");
             throw exception;
@@ -70,18 +101,14 @@ public class MailService {
         var claim = manager.claim(userId, form);
         try {
             gateway.send(
-                    claim.connection(),
-                    form.recipient().trim(),
-                    value(form.subject(), ""),
-                    value(form.body(), ""));
+                    claim.connection(), form.recipient().trim(), value(form.subject(), ""), value(form.body(), ""));
         } catch (MailGateway.DeliveryException exception) {
             if (exception.definitelyNotSent()) manager.finish(userId, claim, "draft");
             manager.recordFailure(userId, claim.connection(), "邮件发送失败，请检查邮箱认证、收件地址与网络连接");
             throw exception;
         } catch (RuntimeException exception) {
             // Unknown errors retain the claim; they do not prove SMTP rejected delivery.
-            throw new BusinessException(
-                    "邮件发送结果尚未确认，请在服务商核对后恢复草稿", BusinessErrorCode.PROVIDER_FAILED);
+            throw new BusinessException("邮件发送结果尚未确认，请在服务商核对后恢复草稿", BusinessErrorCode.PROVIDER_FAILED);
         }
         return manager.finish(userId, claim, "sent");
     }

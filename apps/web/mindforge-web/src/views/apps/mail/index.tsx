@@ -54,6 +54,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
+import { useMailContext } from '@/context/mail-context/use-mail-context';
 import { cn } from '@/lib/utils';
 import AccountManager from './account-manager';
 import MailSelect from './mail-select';
@@ -88,6 +89,8 @@ export default function MailApp() {
   const [composeError, setComposeError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<MailItem | null>(null);
   const [recoverTarget, setRecoverTarget] = useState<MailItem | null>(null);
+  const { subscribeToSync, refreshUnreadCount } = useMailContext();
+  const mutationVersion = useRef(0);
   const operation = useRef(false);
   const recipientInput = useRef<HTMLInputElement>(null);
 
@@ -116,6 +119,27 @@ export default function MailApp() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      while (active) {
+        if (operation.current) {
+          await new Promise(resolve => window.setTimeout(resolve, 100));
+          continue;
+        }
+        const version = mutationVersion.current;
+        const [messages, accountResult] = await Promise.all([getMails(undefined, { silent: true }), getMailAccounts({ silent: true })]);
+        if (!active) return;
+        if (operation.current || version !== mutationVersion.current) continue;
+        setMails(sortMails(messages.data));
+        setAccounts(accountResult.data);
+        return;
+      }
+    };
+    const unsubscribe = subscribeToSync(refresh, () => operation.current);
+    return () => { active = false; unsubscribe(); };
+  }, [subscribeToSync]);
+
   const filter =
     accountFilter === 'all' || accounts.some((item) => String(item.id) === accountFilter)
       ? accountFilter
@@ -143,6 +167,9 @@ export default function MailApp() {
     [filteredMails, folder, query],
   );
   const selected = visibleMails.find((item) => item.id === selectedId) ?? visibleMails[0];
+  useEffect(() => {
+    if (selected && selected.id !== selectedId) setSelectedId(selected.id);
+  }, [selected, selectedId]);
   const locked = !!busy || loading;
   const composeLocked = locked || composeStatus !== 'editable';
   const draftIsBound =
@@ -178,6 +205,7 @@ export default function MailApp() {
 
   const apply = async (mail: MailItem, updates: Partial<MailItem>) => {
     if (operation.current || mail.folder === 'sending') return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy('update');
     try {
@@ -187,6 +215,7 @@ export default function MailApp() {
       setError(mailError(cause, '邮件更新失败，请重试。'));
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };
@@ -197,6 +226,7 @@ export default function MailApp() {
         ? enabledAccounts
         : enabledAccounts.filter((account) => String(account.id) === filter);
     if (operation.current || !targets.length) return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy('sync');
     setError('');
@@ -225,6 +255,7 @@ export default function MailApp() {
       }
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };
@@ -238,6 +269,7 @@ export default function MailApp() {
       return;
     }
     if (deliver && !recipientInput.current?.reportValidity()) return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy(deliver ? 'send' : 'save');
     setComposeError('');
@@ -318,12 +350,14 @@ export default function MailApp() {
       }
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };
 
   const refreshSendState = async () => {
     if (!draft?.id || operation.current) return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy('refresh-send');
     try {
@@ -350,6 +384,7 @@ export default function MailApp() {
       setComposeError(mailError(cause, '发送状态刷新失败，请重试。'));
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };
@@ -361,6 +396,7 @@ export default function MailApp() {
 
   const permanentlyDelete = async () => {
     if (!deleteTarget || operation.current) return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy('delete');
     try {
@@ -372,12 +408,14 @@ export default function MailApp() {
       setError(mailError(cause, '删除失败，请重试。'));
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };
 
   const recover = async () => {
     if (!recoverTarget || operation.current) return;
+    mutationVersion.current++;
     operation.current = true;
     setBusy('recover');
     try {
@@ -394,6 +432,7 @@ export default function MailApp() {
       setError(mailError(cause, '发送状态恢复失败，请重试。'));
     } finally {
       operation.current = false;
+      void refreshUnreadCount();
       setBusy('');
     }
   };

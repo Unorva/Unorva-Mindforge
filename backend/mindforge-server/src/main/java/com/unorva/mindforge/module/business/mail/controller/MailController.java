@@ -1,7 +1,7 @@
 package com.unorva.mindforge.module.business.mail.controller;
 
-import com.unorva.mindforge.common.web.vo.Result;
 import com.unorva.mindforge.common.security.support.CurrentUser;
+import com.unorva.mindforge.common.web.vo.Result;
 import com.unorva.mindforge.module.business.mail.domain.form.MailAccountSaveForm;
 import com.unorva.mindforge.module.business.mail.domain.form.MailPatchForm;
 import com.unorva.mindforge.module.business.mail.domain.form.MailSaveForm;
@@ -12,6 +12,7 @@ import com.unorva.mindforge.module.business.mail.domain.vo.MailSyncVO;
 import com.unorva.mindforge.module.business.mail.domain.vo.MailVO;
 import com.unorva.mindforge.module.business.mail.domain.vo.ProviderVO;
 import com.unorva.mindforge.module.business.mail.service.MailAccountService;
+import com.unorva.mindforge.module.business.mail.service.MailLiveService;
 import com.unorva.mindforge.module.business.mail.service.MailService;
 
 import jakarta.validation.Valid;
@@ -35,6 +36,7 @@ import java.util.List;
 public class MailController {
     private final MailService mailService;
     private final MailAccountService accountService;
+    private final MailLiveService liveService;
 
     @GetMapping("/mail")
     public Result<List<MailVO>> list(@RequestParam(required = false) Long accountId) {
@@ -46,6 +48,11 @@ public class MailController {
         return Result.success(accountService.providers());
     }
 
+    @GetMapping("/mail/unread-count")
+    public Result<Long> unreadCount() {
+        return Result.success(mailService.unreadCount(CurrentUser.id()));
+    }
+
     @GetMapping("/mail/accounts")
     public Result<List<MailAccountVO>> accounts() {
         return Result.success(accountService.list(CurrentUser.id()));
@@ -53,13 +60,13 @@ public class MailController {
 
     @PostMapping("/mail/accounts/upsert")
     public Result<MailAccountVO> saveAccount(@RequestBody @Valid MailAccountSaveForm param) {
-        return Result.success(accountService.save(CurrentUser.id(), param));
+        return updated(accountService.save(CurrentUser.id(), param));
     }
 
     @DeleteMapping("/mail/accounts/{id}")
     public Result<Void> deleteAccount(@PathVariable long id) {
         accountService.delete(CurrentUser.id(), id);
-        return Result.success();
+        return updated(null);
     }
 
     @PostMapping("/mail/accounts/{id}/test")
@@ -69,32 +76,37 @@ public class MailController {
 
     @PostMapping("/mail/accounts/{id}/sync")
     public Result<MailSyncVO> syncAccount(@PathVariable long id) {
-        return Result.success(mailService.sync(CurrentUser.id(), id));
+        return updated(mailService.sync(CurrentUser.id(), id));
     }
 
     @PostMapping("/mail/send")
     public Result<MailVO> send(@RequestBody @Valid MailSendForm param) {
-        return Result.success(mailService.send(CurrentUser.id(), param));
+        return updated(mailService.send(CurrentUser.id(), param));
     }
 
     @PostMapping("/mail/{id}/recover-send")
     public Result<MailVO> recoverSend(@PathVariable long id) {
-        return Result.success(mailService.recoverSend(CurrentUser.id(), id));
+        return updated(mailService.recoverSend(CurrentUser.id(), id));
     }
 
     @PostMapping("/mail/upsert")
     public Result<MailVO> save(@RequestBody @Valid MailSaveForm param) {
-        return Result.success(mailService.save(CurrentUser.id(), param));
+        return updated(mailService.save(CurrentUser.id(), param));
     }
 
     @PatchMapping("/mail/{id}")
     public Result<MailVO> patch(@PathVariable long id, @RequestBody @Valid MailPatchForm param) {
-        return Result.success(mailService.patch(CurrentUser.id(), id, param));
+        return updated(mailService.patch(CurrentUser.id(), id, param));
     }
 
     @DeleteMapping("/mail/{id}")
     public Result<Void> delete(@PathVariable long id) {
         mailService.delete(CurrentUser.id(), id);
-        return Result.success();
+        return updated(null);
+    }
+
+    private <T> Result<T> updated(T data) {
+        liveService.changed(CurrentUser.id());
+        return Result.success(data);
     }
 }

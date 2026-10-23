@@ -27,6 +27,7 @@ export interface ChildItem {
   badge?: boolean;
   badgeType?: string;
   badgeContent?: string;
+  badgeLabel?: string;
   isActive?: boolean;
   external?: boolean;
   isPro?: boolean;
