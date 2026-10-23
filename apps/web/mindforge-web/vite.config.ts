@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import svgr from '@svgr/rollup';
 
@@ -35,6 +36,27 @@ export default defineConfig(({ mode }) => {
       },
       dedupe: ['react', 'react-dom'],
     },
-    plugins: [svgr(), react()],
+    plugins: [
+      svgr(),
+      react(),
+      {
+        name: 'excalidraw-font-assets',
+        generateBundle() {
+          const fonts = resolve(
+            projectDirectory,
+            'node_modules/@excalidraw/excalidraw/dist/prod/fonts',
+          );
+          for (const file of readdirSync(fonts, { recursive: true, withFileTypes: true })) {
+            if (!file.isFile()) continue;
+            const path = resolve(file.parentPath, file.name);
+            this.emitFile({
+              type: 'asset',
+              fileName: `excalidraw/fonts/${relative(fonts, path).replaceAll('\\', '/')}`,
+              source: readFileSync(path),
+            });
+          }
+        },
+      },
+    ],
   };
 });

@@ -7,6 +7,8 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  MoreHorizontal,
+  PencilRuler,
   Trash2,
 } from 'lucide-react';
 
@@ -27,12 +29,20 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NotesContext } from '@/context/notes-context/index';
 import { cn } from '@/lib/utils';
 import type { noteFolderType, notesType } from 'src/types/apps/notes';
 
 import CreateItemDialog, { type CreateTarget } from './create-item-dialog';
+import { isDrawingNote } from './note-drawing';
 
 type DeleteTarget =
   { kind: 'folder'; id: string; name: string } | { kind: 'note'; id: number; name: string };
@@ -71,6 +81,8 @@ function NoteContextMenu({
   onDelete: (target: DeleteTarget) => void;
   className?: string;
 }) {
+  const FileIcon = isDrawingNote(note.title) ? PencilRuler : FileText;
+
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -88,7 +100,7 @@ function NoteContextMenu({
           />
         }
       >
-        <FileText
+        <FileIcon
           className={cn(
             'size-4 shrink-0',
             noteColorClasses[note.color ?? ''] ?? 'text-muted-foreground',
@@ -127,58 +139,121 @@ function FolderBranch({
 
   return (
     <div>
-      <ContextMenu>
-        <ContextMenuTrigger
-          render={
-            <button
-              type="button"
-              className="flex h-8 w-full items-center gap-1.5 rounded-md pr-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
-              style={{ paddingLeft: `${8 + depth * 14}px` }}
-              onClick={() => onToggle(folder.id)}
-              aria-expanded={isOpen}
-            />
-          }
-        >
-          {isOpen ? (
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="size-3.5 text-muted-foreground" />
-          )}
-          {isOpen ? (
-            <FolderOpen className="size-4 text-primary" />
-          ) : (
-            <Folder className="size-4 text-muted-foreground" />
-          )}
-          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
-          {childNotes.length > 0 && (
-            <span className="text-xs tabular-nums text-muted-foreground">{childNotes.length}</span>
-          )}
-        </ContextMenuTrigger>
-        <ContextMenuContent className="min-w-44">
-          <ContextMenuItem
-            onClick={() =>
-              onCreate({ kind: 'folder', parentId: folder.id, parentName: folder.name })
+      <div className="flex min-w-0 items-center">
+        <ContextMenu>
+          <ContextMenuTrigger
+            render={
+              <button
+                type="button"
+                className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md pr-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                style={{ paddingLeft: `${8 + depth * 14}px` }}
+                onClick={() => onToggle(folder.id)}
+                aria-expanded={isOpen}
+              />
             }
           >
-            <FolderPlus />
-            新建文件夹
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => onCreate({ kind: 'note', parentId: folder.id, parentName: folder.name })}
+            {isOpen ? (
+              <ChevronDown className="size-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-3.5 text-muted-foreground" />
+            )}
+            {isOpen ? (
+              <FolderOpen className="size-4 text-primary" />
+            ) : (
+              <Folder className="size-4 text-muted-foreground" />
+            )}
+            <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+            {childNotes.length > 0 && (
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {childNotes.length}
+              </span>
+            )}
+          </ContextMenuTrigger>
+          <ContextMenuContent className="min-w-44">
+            <ContextMenuItem
+              onClick={() =>
+                onCreate({ kind: 'folder', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <FolderPlus />
+              新建文件夹
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() =>
+                onCreate({ kind: 'note', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <FilePlus2 />
+              新建笔记
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() =>
+                onCreate({ kind: 'drawing', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <PencilRuler />
+              新建绘图 (.excalidraw)
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              variant="destructive"
+              onClick={() => onDelete({ kind: 'folder', id: folder.id, name: folder.name })}
+            >
+              <Trash2 />
+              删除文件夹
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                aria-label={`“${folder.name}”文件夹菜单`}
+                className="size-7 shrink-0 text-muted-foreground"
+                size="icon"
+                type="button"
+                variant="ghost"
+              />
+            }
           >
-            <FilePlus2 />
-            新建文件
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            variant="destructive"
-            onClick={() => onDelete({ kind: 'folder', id: folder.id, name: folder.name })}
-          >
-            <Trash2 />
-            删除文件夹
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+            <MoreHorizontal className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuItem
+              onClick={() =>
+                onCreate({ kind: 'note', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <FilePlus2 />
+              新建笔记
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                onCreate({ kind: 'drawing', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <PencilRuler />
+              新建绘图 (.excalidraw)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                onCreate({ kind: 'folder', parentId: folder.id, parentName: folder.name })
+              }
+            >
+              <FolderPlus />
+              新建文件夹
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete({ kind: 'folder', id: folder.id, name: folder.name })}
+            >
+              <Trash2 />
+              删除文件夹
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {isOpen && (
         <div>
@@ -259,6 +334,19 @@ const Notelist = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-border p-2">
+        <Button
+          className="w-full justify-start gap-2"
+          disabled={loading || Boolean(error)}
+          onClick={() => setCreateTarget({ kind: 'folder', parentId: null, parentName: '根目录' })}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <FolderPlus className="size-4" />
+          新建文件夹
+        </Button>
+      </div>
       {loading && <p className="px-3 py-4 text-xs text-muted-foreground">正在加载笔记…</p>}
       {error && (
         <p className="px-3 py-4 text-xs text-destructive">笔记加载失败，请重新打开页面。</p>
@@ -301,7 +389,9 @@ const Notelist = () => {
           </ContextMenu>
         </div>
       </ScrollArea>
-      <p className="border-t px-3 py-2 text-xs text-muted-foreground">右键目录或文件夹以创建内容</p>
+      <p className="border-t px-3 py-2 text-xs text-muted-foreground">
+        点击文件夹菜单或右键，新建笔记和绘图
+      </p>
 
       <CreateItemDialog
         target={createTarget}
